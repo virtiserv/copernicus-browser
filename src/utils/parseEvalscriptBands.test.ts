@@ -182,6 +182,127 @@ function setup() {
 }`;
     expect(parseEvalscriptBands(evalscript)).toEqual([]);
   });
+
+  test('intermediate variables with ternary initializers (Highlight Optimized True Color)', () => {
+    const evalscript = `//VERSION=3
+function setup() {
+  return {
+    input: ["B04", "B03", "B02", "dataMask"],
+    output: { bands: 4 }
+  };
+}
+
+function evaluatePixel(samples) {
+  var R = samples.B04 > 0.15 ? Math.cbrt(0.6 * samples.B04) : 2.9876031644 * samples.B04;
+  var G = samples.B03 > 0.15 ? Math.cbrt(0.6 * samples.B03) : 2.9876031644 * samples.B03;
+  var B = samples.B02 > 0.15 ? Math.cbrt(0.6 * samples.B02) : 2.9876031644 * samples.B02;
+  return [R, G, B, samples.dataMask];
+}`;
+    expect(parseEvalscriptBands(evalscript)).toEqual(['B04', 'B03', 'B02']);
+  });
+
+  test('intermediate variable without ternary, reused across return slots', () => {
+    const evalscript = `//VERSION=3
+function setup() {
+  return {
+    input: ["B08", "dataMask"],
+    output: { bands: 4 }
+  };
+}
+
+function evaluatePixel(samples) {
+  let val = samples.B08;
+  return [val, val, val, samples.dataMask];
+}`;
+    expect(parseEvalscriptBands(evalscript)).toEqual(['B08', 'B08', 'B08']);
+  });
+
+  test('lowercase intermediate variables (Urban Land Infrared Color style)', () => {
+    const evalscript = `//VERSION=3
+function setup() {
+  return {
+    input: ["B08", "B04", "B03", "dataMask"],
+    output: { bands: 4 }
+  };
+}
+
+function evaluatePixel(samples) {
+  let r = 2.5 * samples.B08;
+  let g = 2.5 * samples.B04;
+  let b = 2.5 * samples.B03;
+  return [r, g, b, samples.dataMask];
+}`;
+    expect(parseEvalscriptBands(evalscript)).toEqual(['B08', 'B04', 'B03']);
+  });
+
+  test('circular intermediate variable declarations do not cause infinite recursion', () => {
+    const evalscript = `//VERSION=3
+function setup() {
+  return {
+    input: ["B04", "dataMask"],
+    output: { bands: 2 }
+  };
+}
+
+function evaluatePixel(samples) {
+  let a = b;
+  let b = a;
+  return [a, samples.dataMask];
+}`;
+    expect(parseEvalscriptBands(evalscript)).toEqual([]);
+  });
+
+  test('variable resolved via reassignment (ExpressionStatement) rather than initializer', () => {
+    const evalscript = `//VERSION=3
+function setup() {
+  return {
+    input: ["B04", "dataMask"],
+    output: { bands: 2 }
+  };
+}
+
+function evaluatePixel(samples) {
+  let r;
+  r = samples.B04;
+  return [r, samples.dataMask];
+}`;
+    expect(parseEvalscriptBands(evalscript)).toEqual(['B04']);
+  });
+
+  test('variable declared inside a nested block is still resolved', () => {
+    const evalscript = `//VERSION=3
+function setup() {
+  return {
+    input: ["B04", "dataMask"],
+    output: { bands: 2 }
+  };
+}
+
+function evaluatePixel(samples) {
+  {
+    var r = samples.B04;
+  }
+  return [r, samples.dataMask];
+}`;
+    expect(parseEvalscriptBands(evalscript)).toEqual(['B04']);
+  });
+
+  test('later reassignment overrides the original initializer', () => {
+    const evalscript = `//VERSION=3
+function setup() {
+  return {
+    input: ["B04", "B03", "dataMask"],
+    output: { bands: 2 }
+  };
+}
+
+function evaluatePixel(samples) {
+  let r = samples.B03;
+  r = samples.B04;
+  return [r, samples.dataMask];
+}`;
+    expect(parseEvalscriptBands(evalscript)).toEqual(['B04']);
+  });
 });
 
 describe('parseEvalscriptBands — old format (no //VERSION=3)', () => {

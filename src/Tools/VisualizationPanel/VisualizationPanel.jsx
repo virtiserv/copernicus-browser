@@ -162,7 +162,7 @@ function VisualizationPanel({
 
   useEffect(() => {
     if ((displaySocialShareOptions || displayEffects) && visualizationActionsRef.current) {
-      visualizationActionsRef.current.scrollIntoView();
+      visualizationActionsRef.current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
   }, [displaySocialShareOptions, displayEffects]);
 

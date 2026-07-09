@@ -70,6 +70,7 @@ const ElevationProfileChart = ({ data, width, height }: ElevationProfileChartPro
               elevationProfileSlice.actions.setHighlightedPoint({
                 geometry: {
                   type: 'Feature',
+                  properties: {},
                   geometry: {
                     type: 'Point',
                     coordinates: [point.lng, point.lat],

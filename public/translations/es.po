@@ -11520,15 +11520,6 @@ msgstr ""
 msgid "Projection name"
 msgstr ""
 
-msgid "Only applies to data sources within the Snow category."
-msgstr ""
-
-msgid "Only applies to data sources within the Snow and Water Bodies category."
-msgstr ""
-
-msgid "Only applies to data sources within the Water Bodies category."
-msgstr ""
-
 msgid "Tree Cover Density expressed as percentage of tree cover at 10 m resolution."
 msgstr ""
 
@@ -12378,6 +12369,44 @@ msgid ""
 "management and more."
 msgstr ""
 
+msgid ""
+"Only applies to data sources within the Snow, Water Bodies and Auxiliary "
+"Data categories."
+msgstr ""
+
+#. Shared across CLMS collections that expose these structural OData attributes.
+msgid ""
+"Applies to all sub-categories. The format in which the data is stored "
+"(NetCDF or Cloud Optimized GeoTIFF)."
+msgstr ""
+
+msgid ""
+"Applies to all sub-categories. The unique identifier for the specific "
+"dataset within this collection."
+msgstr ""
+
+msgid ""
+"Applies to all sub-categories. The type of product, identifying the "
+"thematic category or processing pipeline."
+msgstr ""
+
+msgid ""
+"Applies to all sub-categories. Missions whose input data was used to "
+"process the product."
+msgstr ""
+
+msgid ""
+"Near real-time consolidation level (RT0–RT6). RT0 is the fastest delivery; "
+"RT6 has the highest accuracy. Only applies to data sources within the "
+"Vegetation category."
+msgstr ""
+
 #, javascript-format
 msgid "Showing ${ processedResults.length } of ${ totalFilteredResults } results"
+msgstr ""
+
+msgid ""
+"The mosaicking order controls which data is used where imagery overlaps on "
+"the map. Fills overlapping areas with either the newest (most recent) or "
+"oldest (least recent) acquisition."
 msgstr ""

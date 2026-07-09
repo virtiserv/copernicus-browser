@@ -704,6 +704,11 @@ export const RRD_THEMES = [
         url: 'https://sh.dataspace.copernicus.eu/ogc/wms/f57f35-YOUR-INSTANCEID-HERE',
       },
       {
+        name: 'GENERAL_PNEO_PANSHARPENED_6BANDS',
+        service: 'WMS',
+        url: 'https://sh.dataspace.copernicus.eu/ogc/wms/f777a2-YOUR-INSTANCEID-HERE',
+      },
+      {
         name: 'GENERAL_SPOT_PANSHARPENED_4BANDS',
         service: 'WMS',
         url: 'https://sh.dataspace.copernicus.eu/ogc/wms/f79e98-YOUR-INSTANCEID-HERE',

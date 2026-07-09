@@ -625,6 +625,9 @@ export async function handleError(
 
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export const toggleInArray = (list, value, checked) =>
+  checked ? [...list, value] : list.filter((v) => v !== value);
+
 export function hasDuplicateObjects(array) {
   const uniqueSet = new Set();
 

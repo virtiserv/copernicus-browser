@@ -1,8 +1,7 @@
 @use '../variables.module.scss' as vars;
 
 /* stylelint-disable */
-.gwt-DialogBox,
-.sgDatePicker-calendarPopup {
+.gwt-DialogBox {
   z-index: 500;
 }
 /* stylelint-enable */

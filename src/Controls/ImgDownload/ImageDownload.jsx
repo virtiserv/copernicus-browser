@@ -957,8 +957,8 @@ function ImageDownload(props) {
               icon="download"
               text={t`Download`}
             />
-            <span className="rodal-close" onClick={() => store.dispatch(modalSlice.actions.removeModal())} />
           </div>
+          <span className="rodal-close" onClick={() => store.dispatch(modalSlice.actions.removeModal())} />
         </div>
         <div className="image-download-content">
           <ImageDownloadWarningPanel warnings={warnings} />

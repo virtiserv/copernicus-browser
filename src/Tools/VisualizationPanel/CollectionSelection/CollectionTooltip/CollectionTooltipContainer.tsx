@@ -1,15 +1,25 @@
 import React from 'react';
 import { FloatingPortal, FloatingArrow } from '@floating-ui/react';
-import { useFloatingTooltip } from '../../../../components/FloatingTooltip/useFloatingTooltip';
+import {
+  useFloatingTooltip,
+  type Direction,
+} from '../../../../components/FloatingTooltip/useFloatingTooltip';
 import '../../../../components/FloatingTooltip/floatingTooltip.scss';
 import './CollectionTooltip.scss';
+
+type Props = {
+  children: React.ReactNode;
+  direction?: Direction;
+  className?: string;
+  closeOnClickOutside?: boolean;
+};
 
 export default function CollectionTooltipContainer({
   direction,
   children,
   className = '',
   closeOnClickOutside,
-}) {
+}: Props) {
   const { refs, floatingStyles, context, getReferenceProps, getFloatingProps, arrowRef, isOpen } =
     useFloatingTooltip({ direction, closeOnClickOutside, defaultPlacement: 'right' });
 

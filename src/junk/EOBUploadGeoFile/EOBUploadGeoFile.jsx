@@ -101,14 +101,17 @@ export class EOBUploadGeoFile extends Component {
         <div className="fileUploadWindow">
           <h3>{fileUploadTitle}</h3>
           <p>{fileUploadText}</p>
-          <Dropzone
-            acceptClassName="ok"
-            rejectClassName="false"
-            className="fileUploadPanel"
-            multiple={false}
-            onDrop={this.onDrop}
-          >
-            {dropAFileString}
+          <Dropzone multiple={false} onDrop={this.onDrop}>
+            {({ getRootProps, getInputProps, isDragAccept, isDragReject }) => (
+              <div
+                {...getRootProps({
+                  className: `fileUploadPanel${isDragAccept ? ' ok' : ''}${isDragReject ? ' false' : ''}`,
+                })}
+              >
+                <input {...getInputProps()} />
+                {dropAFileString}
+              </div>
+            )}
           </Dropzone>
 
           <div className="geometryInput">

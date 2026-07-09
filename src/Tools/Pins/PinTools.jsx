@@ -127,14 +127,17 @@ class PinTools extends Component {
       <div className="file-upload-dialog">
         <h3>{t`File upload`}</h3>
         <p>{t`Upload a JSON file with saved pins.`}</p>
-        <Dropzone
-          acceptClassName="ok"
-          rejectClassName="false"
-          className="file-upload-panel"
-          multiple={false}
-          onDrop={this.onDrop}
-        >
-          {t`Drop JSON file or search your computer`}
+        <Dropzone multiple={false} onDrop={this.onDrop}>
+          {({ getRootProps, getInputProps, isDragAccept, isDragReject }) => (
+            <div
+              {...getRootProps({
+                className: `file-upload-panel${isDragAccept ? ' ok' : ''}${isDragReject ? ' false' : ''}`,
+              })}
+            >
+              <input {...getInputProps()} />
+              {t`Drop JSON file or search your computer`}
+            </div>
+          )}
         </Dropzone>
 
         <p>

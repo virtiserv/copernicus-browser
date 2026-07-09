@@ -60,7 +60,11 @@
     }
 
     .title {
-      height: 35px;
+      // Use min-height (not a fixed height) so that when the collapsed date row
+      // wraps on narrow phones the "show latest date" arrow gets its own line with
+      // room instead of overflowing the fixed-height title and being clipped by the
+      // panel's overflow-y: hidden. See #1133.
+      min-height: 35px;
 
       .title-content {
         .timespan-picker {
@@ -142,6 +146,7 @@
 
       .title-content {
         flex-wrap: wrap;
+        row-gap: 8px;
 
         .date-timespan-label {
           display: flex;
@@ -197,6 +202,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    // Explicit height so the button keeps its full size when the collapsed date
+    // row wraps onto its own line; otherwise it collapses to the SVG height (~15px)
+    // because there is no taller sibling to stretch against. See #1133.
+    height: 35px;
     margin-left: 18px;
     width: 67px;
     background-color: vars.$secondaryColor;
@@ -274,6 +283,19 @@
     &.disabled {
       color: vars.$textColorGray;
       pointer-events: none;
+    }
+  }
+
+  .time-select-type {
+    font-weight: bold;
+    font-size: 13px;
+    text-align: left;
+    width: 100%;
+  }
+
+  .timespan-picker {
+    .timespan-calendar-holder {
+      margin-top: 10px;
     }
   }
 }

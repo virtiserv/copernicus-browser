@@ -26,7 +26,6 @@ import {
   getS5O3Markdown,
   getS5SO2Markdown,
 } from './DatasourceRenderingComponents/dataSourceTooltips/Sentinel5Tooltip';
-import { getS5ProductType } from './datasourceAssets/getS5ProductType';
 import { filterLayers } from './filter';
 
 export default class Sentinel5PCDASDataSourceHandler extends DataSourceHandler {
@@ -159,18 +158,38 @@ export default class Sentinel5PCDASDataSourceHandler extends DataSourceHandler {
     return layerId.startsWith(this.datasetSearchIds[datasetId]);
   };
 
-  getS5ProductType = (datasetId) => {
-    return getS5ProductType(datasetId);
-  };
-
   getBaseLayerForDatasetId = ({ datasetId }) => {
-    const productType = this.getS5ProductType(datasetId);
-    if (productType) {
-      return new this.shLayer({
-        evalscript: true,
-        productType: productType,
-      });
+    let productType;
+    switch (datasetId) {
+      case S5_O3_CDAS:
+        productType = 'O3';
+        break;
+      case S5_NO2_CDAS:
+        productType = 'NO2';
+        break;
+      case S5_SO2_CDAS:
+        productType = 'SO2';
+        break;
+      case S5_CO_CDAS:
+        productType = 'CO';
+        break;
+      case S5_HCHO_CDAS:
+        productType = 'HCHO';
+        break;
+      case S5_CH4_CDAS:
+        productType = 'CH4';
+        break;
+      case S5_AER_AI_CDAS:
+        productType = 'AER_AI';
+        break;
+      default:
+        productType = 'CLOUD';
+        break;
     }
+    return new this.shLayer({
+      evalscript: true,
+      productType: productType,
+    });
   };
 
   convertToStandardTiles = (data, datasetId) => {

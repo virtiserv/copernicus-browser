@@ -1,6 +1,6 @@
 import moment from 'moment';
 
-import { parseDataFusion, updatePath } from './index';
+import { parseDataFusion, updatePath, toggleInArray } from './index';
 import { parseIndexEvalscript } from './parseIndexEvalscript.util';
 import { PROCESSING_OPTIONS, TABS } from '../const';
 import {
@@ -219,5 +219,29 @@ describe('updatePath URL serialization', () => {
 
     expect(params).toHaveProperty('evalscript');
     expect(params).not.toHaveProperty('evalscriptUrl');
+  });
+});
+
+describe('toggleInArray', () => {
+  test('adds the value to the list when checked is true', () => {
+    expect(toggleInArray(['a', 'b'], 'c', true)).toEqual(['a', 'b', 'c']);
+  });
+
+  test('removes the value from the list when checked is false', () => {
+    expect(toggleInArray(['a', 'b', 'c'], 'b', false)).toEqual(['a', 'c']);
+  });
+
+  test('does not mutate the original list', () => {
+    const original = ['a', 'b'];
+    toggleInArray(original, 'c', true);
+    expect(original).toEqual(['a', 'b']);
+  });
+
+  test('adding a value that is already in the list results in a duplicate', () => {
+    expect(toggleInArray(['a', 'b'], 'a', true)).toEqual(['a', 'b', 'a']);
+  });
+
+  test('removing a value that is not in the list is a no-op', () => {
+    expect(toggleInArray(['a', 'b'], 'z', false)).toEqual(['a', 'b']);
   });
 });

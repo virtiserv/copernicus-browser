@@ -1,10 +1,14 @@
 import React from 'react';
-import { GeoJSON, FeatureGroup } from 'react-leaflet';
-import { LeafletMouseEvent } from 'leaflet';
+import { GeoJSON as LeafletGeoJSON, FeatureGroup, type GeoJSONProps } from 'react-leaflet';
+import { LeafletMouseEvent, type PathOptions } from 'leaflet';
 
 import store, { commercialDataSlice } from '../../store';
 import PreviewLayer from '../../Tools/Results/PreviewLayer';
 import { highlightedTileStyle } from '../const';
+
+// react-leaflet v4's GeoJSONProps type omits Leaflet's `style` option even though the
+// underlying leaflet GeoJSON layer honours it at runtime, so it's cast back in here.
+const GeoJSON = LeafletGeoJSON as React.ComponentType<GeoJSONProps & { style?: () => PathOptions }>;
 
 type CommercialDataResult = {
   id: string;

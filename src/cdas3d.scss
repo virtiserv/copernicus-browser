@@ -55,6 +55,8 @@
 }
 
 .sgDatePicker-calendarPopup {
+  z-index: 500 !important;
+
   .datePickerMonthSelector {
     background-color: vars.$mainMedium !important;
     color: vars.$textColor !important;

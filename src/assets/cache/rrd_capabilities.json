@@ -2071,6 +2071,33 @@
         ],
         "datasets": []
     },
+    "f777a2-YOUR-INSTANCEID-HERE": {
+        "title": "GENERAL_PNEO_PANSHARPENED_6BANDS",
+        "layers": [
+            {
+                "id": "FALSE-COLOR",
+                "name": "FALSE COLOR",
+                "description": "",
+                "dataset": "CUSTOM",
+                "legendUrl": null
+            },
+            {
+                "id": "NDVI",
+                "name": "NDVI",
+                "description": "",
+                "dataset": "CUSTOM",
+                "legendUrl": null
+            },
+            {
+                "id": "TRUE-COLOR",
+                "name": "TRUE COLOR",
+                "description": "",
+                "dataset": "CUSTOM",
+                "legendUrl": null
+            }
+        ],
+        "datasets": []
+    },
     "f79e98-YOUR-INSTANCEID-HERE": {
         "title": "GENERAL_SPOT_PANSHARPENED_4BANDS",
         "layers": [

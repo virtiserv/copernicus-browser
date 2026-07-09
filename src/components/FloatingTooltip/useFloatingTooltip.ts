@@ -12,7 +12,7 @@ import {
   type Placement,
 } from '@floating-ui/react';
 
-type Direction = 'up' | 'down' | 'left' | 'right';
+export type Direction = 'up' | 'down' | 'left' | 'right';
 
 export const DIRECTION_TO_PLACEMENT: Record<Direction, Placement> = {
   up: 'top',
@@ -33,7 +33,7 @@ export function useFloatingTooltip({
   defaultPlacement = 'top',
 }: UseFloatingTooltipOptions) {
   const [isOpen, setIsOpen] = useState(false);
-  const arrowRef = useRef<Element>(null);
+  const arrowRef = useRef<SVGSVGElement>(null);
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,

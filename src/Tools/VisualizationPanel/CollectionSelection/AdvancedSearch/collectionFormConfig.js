@@ -103,9 +103,15 @@ export const collections = [
       {
         id: 'AIS',
         label: 'AIS',
-        hasAccess: ({ userToken }) => hasRole(userToken, EXPERT_ROLES.S1C_COMMISSIONING),
+        hasAccess: ({ userToken }) =>
+          hasRole(userToken, EXPERT_ROLES.S1C_COMMISSIONING) || hasRole(userToken, EXPERT_ROLES.S1_AIS_USER),
         productTypes: [
-          { id: 'RAW', name: 'RAW', label: 'Level-0 RAW' },
+          {
+            id: 'RAW',
+            name: 'RAW',
+            label: 'Level-0 RAW',
+            hasAccess: ({ userToken }) => hasRole(userToken, EXPERT_ROLES.S1C_COMMISSIONING),
+          },
           {
             id: 'AISAUX',
             name: 'AISAUX',
@@ -2739,6 +2745,7 @@ export const recursiveCollectionCLMS = [
         getOptions: () => [
           { value: 'SENTINEL1', label: 'S1' },
           { value: 'SENTINEL2', label: 'S2' },
+          { value: 'SENTINEL3', label: 'S3' },
           { value: 'COMBINED', label: 'S1 + S2' },
         ],
       },
@@ -3693,18 +3700,6 @@ export const recursiveCollectionCLMS = [
         getOptions: () => [
           { value: 'nc', label: 'NetCDF' },
           { value: 'cog', label: 'Cloud Optimized GeoTIFF' },
-        ],
-      },
-      {
-        id: AttributeNames.consolidationPeriod,
-        title: FormatedAttributeNames.consolidationPeriod(),
-        render: MultiSelectInput,
-        getOptions: () => [
-          AttributeConsolidationPeriodValues.RT0,
-          AttributeConsolidationPeriodValues.RT1,
-          AttributeConsolidationPeriodValues.RT2,
-          AttributeConsolidationPeriodValues.RT5,
-          AttributeConsolidationPeriodValues.RT6,
         ],
       },
       {

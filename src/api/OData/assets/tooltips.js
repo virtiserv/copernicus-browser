@@ -126,10 +126,32 @@ const DEM = {
     t`This attribute allows selection of available data for a specific grid ID. See more [here](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#copernicus-dem).`,
 };
 
+// Shared across CLMS collections that expose these structural OData attributes.
+const fileFormatTooltip = () =>
+  t`Applies to all sub-categories. The format in which the data is stored (NetCDF or Cloud Optimized GeoTIFF).`;
+const datasetIdentifierTooltip = () =>
+  t`Applies to all sub-categories. The unique identifier for the specific dataset within this collection.`;
+const productTypeTooltip = () =>
+  t`Applies to all sub-categories. The type of product, identifying the thematic category or processing pipeline.`;
+const snowWaterBodiesAuxDataTooltip = () =>
+  t`Only applies to data sources within the Snow, Water Bodies and Auxiliary Data categories.`;
+
 const CLMS_BIOGEOPHYSICAL_PARAMETERS = {
-  [AttributeNames.cloudCover]: () => t`Only applies to data sources within the Snow category.`,
-  'Projection & Resolution': () => t`Only applies to data sources within the Snow and Water Bodies category.`,
-  [AttributeNames.missionShortName]: () => t`Only applies to data sources within the Water Bodies category.`,
+  [AttributeNames.cloudCover]: snowWaterBodiesAuxDataTooltip,
+  'Projection & Resolution': snowWaterBodiesAuxDataTooltip,
+  [AttributeNames.missionShortName]: () =>
+    t`Applies to all sub-categories. Missions whose input data was used to process the product.`,
+  [AttributeNames.fileFormat]: fileFormatTooltip,
+  [AttributeNames.consolidationPeriod]: () =>
+    t`Near real-time consolidation level (RT0–RT6). RT0 is the fastest delivery; RT6 has the highest accuracy. Only applies to data sources within the Vegetation category.`,
+  [AttributeNames.datasetIdentifier]: datasetIdentifierTooltip,
+  [AttributeNames.productType]: productTypeTooltip,
+};
+
+const CLMS_LAND_COVER_AND_LAND_USE_MAPPING = {
+  [AttributeNames.fileFormat]: fileFormatTooltip,
+  [AttributeNames.datasetIdentifier]: datasetIdentifierTooltip,
+  [AttributeNames.productType]: productTypeTooltip,
 };
 
 const eumetsatProcessedTooltip = () => t`This data product was processed by EUMETSAT.`;
@@ -159,6 +181,7 @@ const AttributeTooltips = {
   CCM_SAR,
   DEM,
   CLMS_BIOGEOPHYSICAL_PARAMETERS,
+  CLMS_LAND_COVER_AND_LAND_USE_MAPPING,
 };
 
 export { ProductTypeTooltips, InstrumentTooltips, AttributeTooltips };

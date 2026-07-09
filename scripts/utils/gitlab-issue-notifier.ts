@@ -2,26 +2,29 @@ import axios, { type AxiosInstance } from 'axios';
 import type { Collection } from './rrd-missing-configurations';
 import { buildMissingConfigIssueBody } from './rrd-missing-configurations';
 
-// A single open issue (identified by this label) is kept in sync with the latest check:
-// updated while collections are missing a configuration, and closed once none are.
+// A single open issue (identified by its title, since the CI bot's Guest access can't
+// reliably filter by label) is kept in sync with the latest check: updated while
+// collections are missing a configuration, and closed once none are.
 const ISSUE_LABEL = 'rrd-missing-config';
 const ISSUE_TITLE = 'RRD: collections without a configuration';
 const CC_LINE = '/cc @daniel.thiex /cc @gustav.rensburg /cc @zan.pecovnik /cc @jordi.sabat';
 
 interface GitLabIssue {
   iid: number;
+  title: string;
 }
 
 const findOpenTrackingIssue = async (client: AxiosInstance): Promise<GitLabIssue | null> => {
   const { data } = await client.get<GitLabIssue[]>('/issues', {
-    params: { state: 'opened', labels: ISSUE_LABEL },
+    params: { state: 'opened', search: ISSUE_TITLE, in: 'title' },
   });
-  if (data && data.length > 1) {
+  const matches = data.filter((issue) => issue.title === ISSUE_TITLE);
+  if (matches.length > 1) {
     console.warn(
-      `Found ${data.length} open tracking issues with label "${ISSUE_LABEL}"; using the first one (#${data[0].iid}).`,
+      `Found ${matches.length} open tracking issues titled "${ISSUE_TITLE}"; using the first one (#${matches[0].iid}).`,
     );
   }
-  return data && data.length ? data[0] : null;
+  return matches.length ? matches[0] : null;
 };
 
 /**

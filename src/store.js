@@ -14,7 +14,10 @@ import { compareLayersSlice } from './store/slices/compareLayersSlice';
 import { spectralExplorerSlice } from './store/slices/spectralExplorerSlice';
 import { indexSlice } from './store/slices/indexSlice';
 import { timelapseSlice } from './store/slices/timelapseSlice';
+import { elevationProfileSlice } from './store/slices/elevationProfileSlice';
+import { pinsSlice } from './store/slices/pinsSlice';
 import { terrainViewerSlice } from './store/slices/terrainViewerSlice';
+import { productDownloadSlice } from './store/slices/productDownloadSlice';
 
 import {
   MODES,
@@ -69,7 +72,13 @@ export { authSlice };
 
 export { timelapseSlice };
 
+export { elevationProfileSlice };
+
+export { pinsSlice };
+
 export { terrainViewerSlice };
+
+export { productDownloadSlice };
 
 export const themesSlice = createSlice({
   name: 'themes',
@@ -196,28 +205,6 @@ export const themesSlice = createSlice({
       state.failedThemeParts = [];
       state.currentProjectName = null;
       state.useEvoland = false;
-    },
-  },
-});
-
-export const productDownloadSlice = createSlice({
-  name: 'productDownload',
-  initialState: {
-    progress: {},
-    cancelTokens: {},
-  },
-  reducers: {
-    setProgress: (state, action) => {
-      const { productId, value } = action.payload;
-      state.progress[productId] = value;
-    },
-    setCancelToken: (state, action) => {
-      const { productId, cancelToken } = action.payload;
-      state.cancelTokens[productId] = cancelToken;
-    },
-    reset: (state) => {
-      state.progress = {};
-      state.cancelTokens = {};
     },
   },
 });
@@ -571,50 +558,6 @@ export const visualizationSlice = createSlice({
   },
 });
 
-export const pinsSlice = createSlice({
-  name: 'pins',
-  initialState: {
-    items: [],
-    newPinsCount: 0,
-  },
-  reducers: {
-    updateItems: (state, action) => {
-      state.items = action.payload;
-    },
-    updatePinsByType: (state, action) => {
-      const { pins, pinType } = action.payload;
-      state.items = [
-        // remove any existing pin items of this type:
-        ...state.items.filter((item) => item.type !== pinType),
-        // add the pin items for each of the pins:
-        ...pins.map((pin) => ({
-          type: pinType,
-          item: pin, // misnomer - instead of "item" it should be "pin"
-          opacity: 1.0,
-          clipping: [0, 1],
-        })),
-      ];
-    },
-    clearByType: (state, action) => {
-      const pinType = action.payload;
-      state.items = state.items.filter((item) => item.type !== pinType);
-    },
-    setNewPinsCount: (state, action) => {
-      state.newPinsCount = action.payload;
-    },
-    removeItem: (state, action) => {
-      const index = action.payload;
-      const pinItems = [...state.items];
-      pinItems.splice(index, 1);
-      state.items = pinItems;
-    },
-    reset: (state) => {
-      state.items = [];
-      state.newPinsCount = 0;
-    },
-  },
-});
-
 export const areaAndTimeSectionSlice = createSlice({
   name: 'areaAndTimeSection',
   initialState: {
@@ -880,21 +823,6 @@ export const searchResultsSlice = createSlice({
       state.selectedResult = null;
       state.resultsAvailable = false;
       state.resultsPanelSelected = false;
-    },
-  },
-});
-
-export const elevationProfileSlice = createSlice({
-  name: 'elevationProfile',
-  initialState: {
-    highlightedPoint: null,
-  },
-  reducers: {
-    setHighlightedPoint: (state, action) => {
-      state.highlightedPoint = action.payload.geometry;
-    },
-    reset: (state) => {
-      state.highlightedPoint = null;
     },
   },
 });

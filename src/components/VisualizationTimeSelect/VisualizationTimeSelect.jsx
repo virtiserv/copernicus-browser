@@ -34,12 +34,16 @@ const AdditionalTimeSelectOptions = () => {
   return (
     <EffectDropdown
       key="mosaickingOrder"
-      name={t`Mosaicking order`}
+      name={t`Mosaicking order` + ':'}
       value={getValueOrDefault({ mosaickingOrder }, 'mosaickingOrder', defaultEffects)}
       onChange={onUpdateMosaickingOrder}
       options={getMosaickingOrderOptions()}
       displayLayerDefault={true}
-      separator=":"
+      tooltip={
+        <HelpTooltip direction="right" closeOnClickOutside={true} className="padOnLeft">
+          {t`The mosaicking order controls which data is used where imagery overlaps on the map. Fills overlapping areas with either the newest (most recent) or oldest (least recent) acquisition.`}
+        </HelpTooltip>
+      }
     />
   );
 };
