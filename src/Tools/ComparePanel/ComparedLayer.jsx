@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import Slider, { Range } from 'rc-slider';
+import Slider from 'rc-slider';
 import { t } from 'ttag';
 
 import store, { mainMapSlice, compareLayersSlice } from '../../store';
@@ -105,7 +105,14 @@ const ComparedLayer = ({ layer, compareMode, opacity, clipping, index, onDrop })
             <div className="compare-panel-slider split">
               <label>{t`Split position`}:</label>
               <span onMouseOver={() => shouldDrag(false)} onMouseOut={() => shouldDrag(true)}>
-                <Range min={0} max={1} step={0.01} value={clipping ? clipping : [0, 1]} onChange={onChange} />
+                <Slider
+                  range
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={clipping ? clipping : [0, 1]}
+                  onChange={onChange}
+                />
               </span>
             </div>
           )}

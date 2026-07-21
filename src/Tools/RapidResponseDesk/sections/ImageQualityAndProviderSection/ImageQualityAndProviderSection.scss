@@ -22,6 +22,7 @@
     .resolution-slider {
       height: 16px;
       user-select: none;
+      position: relative;
 
       .rc-slider {
         width: 190px;
@@ -70,10 +71,14 @@
       }
 
       #slider-section-container {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 30px;
         display: flex;
         align-items: center;
+        pointer-events: none;
       }
 
       .slider-section {

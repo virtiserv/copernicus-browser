@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import CollapsiblePanel from '../../../../components/CollapsiblePanel/CollapsiblePanel';
 import { t } from 'ttag';
 import store, { collapsiblePanelSlice, advancedSectionSlice } from '../../../../store';
-import Slider, { Range } from 'rc-slider';
+import Slider from 'rc-slider';
 import CustomCheckbox, {
   CustomCheckboxLabelPosition,
 } from '../../../../components/CustomCheckbox/CustomCheckbox';
@@ -54,7 +54,7 @@ const AdvancedSection = (props) => {
     return (
       <div className={`slider-container`}>
         <label className="label-text">{item.name}:</label>
-        <Range
+        <Slider
           range
           allowCross={false}
           min={item.min}

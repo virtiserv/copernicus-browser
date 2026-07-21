@@ -117,15 +117,10 @@
           }
 
           .rc-slider-handle {
-            width: 17px;
-            height: 17px;
+            // Layout only: this panel uses a thin 1px rail (rail/track margin-top: 6px),
+            // so the handle needs a smaller negative margin than the global default.
+            // Size, colour and interaction states come from the global rule in index.scss.
             margin-top: -2px;
-            border: none;
-            background-color: vars.$sliderPrimaryColor;
-
-            &:focus {
-              box-shadow: none;
-            }
           }
         }
       }

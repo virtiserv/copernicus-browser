@@ -36,6 +36,7 @@ import {
   CDSE_CCM_VHR_IMAGE_2018_COLLECTION,
   CDSE_CCM_VHR_IMAGE_2021_COLLECTION,
   CDSE_CCM_VHR_IMAGE_2024_COLLECTION,
+  CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION,
   COPERNICUS_CLMS_VEGETATION_INDICES_NDVI_GLOBAL,
   COPERNICUS_CLMS_BURNT_AREA_DAILY,
   COPERNICUS_CLMS_BURNT_AREA_MONTHLY,
@@ -2261,6 +2262,7 @@ export const PREDEFINED_LAYERS_METADATA = [
       { datasourceId: CDSE_CCM_VHR_IMAGE_2018_COLLECTION, layerId: '1_TRUE_COLOR' },
       { datasourceId: CDSE_CCM_VHR_IMAGE_2021_COLLECTION, layerId: '1_TRUE_COLOR' },
       { datasourceId: CDSE_CCM_VHR_IMAGE_2024_COLLECTION, layerId: '1_TRUE_COLOR' },
+      { datasourceId: CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION, layerId: '1_TRUE_COLOR' },
     ],
     description: () =>
       t`# True color optimized\n\nThis optimized True color script uses the visible light bands red, green and blue in the corresponding red, green and blue color channels, resulting in a product with natural colours that represents the Earth as humans would naturally see it. The visualisation uses highlight compression and improves the contrast and color vividness through minor contrast and saturation enhancement.`,
@@ -2270,6 +2272,7 @@ export const PREDEFINED_LAYERS_METADATA = [
       { datasourceId: CDSE_CCM_VHR_IMAGE_2018_COLLECTION, layerId: '2_FALSE_COLOR' },
       { datasourceId: CDSE_CCM_VHR_IMAGE_2021_COLLECTION, layerId: '2_FALSE_COLOR' },
       { datasourceId: CDSE_CCM_VHR_IMAGE_2024_COLLECTION, layerId: '2_FALSE-COLOR' },
+      { datasourceId: CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION, layerId: '2_FALSE-COLOR' },
     ],
     description: () =>
       t`# False color composite\n\nA false color composite uses at least one non-visible wavelength to image Earth. The false color composite using near infrared, red and green bands is very popular (a band is a region of the electromagnetic spectrum; a satellite sensor can image Earth in different bands). The false colour composite is most commonly used to assess plant density and health, since plants reflect near infrared and green light, while they absorb red. Cities and exposed ground are grey or tan, and water appears blue or black.\n\n\n\nMore info [here](https://custom-scripts.sentinel-hub.com/sentinel-2/false_color_infrared/).`,
@@ -2279,6 +2282,7 @@ export const PREDEFINED_LAYERS_METADATA = [
       { datasourceId: CDSE_CCM_VHR_IMAGE_2018_COLLECTION, layerId: '3_NDVI' },
       { datasourceId: CDSE_CCM_VHR_IMAGE_2021_COLLECTION, layerId: '3_NDVI' },
       { datasourceId: CDSE_CCM_VHR_IMAGE_2024_COLLECTION, layerId: '3_NDVI' },
+      { datasourceId: CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION, layerId: '3_NDVI' },
     ],
     legend: NDVI_LEGEND,
     description: () =>

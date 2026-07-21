@@ -15,6 +15,8 @@ import store, { floatingPanelNotificationSlice, notificationSlice } from '../../
 import { getProductErrorMessage } from './ProductInfo/ProductInfo.utils';
 import isEqual from 'fast-deep-equal';
 import Loader from '../../Loader/Loader';
+import MessagePanel from '../VisualizationPanel/MessagePanel/MessagePanel';
+import { NotificationPanel } from '../../junk/NotificationPanel/NotificationPanel';
 
 const MAX_PRODUCTS_TO_ADD_AT_ONCE = 1000;
 
@@ -203,19 +205,9 @@ class Results extends Component {
         <div className="results">
           <div className="results-heading">
             {showWarning && (
-              <div className="message-panel">
-                <div className="message-panel-header">
-                  <div className="message-panel-icon">
-                    <i className="fa fa-exclamation-triangle" />
-                  </div>
-                  <div onClick={this.dismissWarning} className="close-message-panel">
-                    <i className="fas fa-times" />
-                  </div>
-                </div>
-                <div className="message-panel-messages">
-                  <div className="notification">{geometrySimplifiedWarning}</div>
-                </div>
-              </div>
+              <MessagePanel variant="boxed" icon="exclamation-triangle" onClose={this.dismissWarning}>
+                <NotificationPanel type="nothing" msg={geometrySimplifiedWarning} />
+              </MessagePanel>
             )}
             <div className="results-heading-top">
               <div className="results-heading-top-left">

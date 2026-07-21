@@ -15,6 +15,7 @@ import {
 } from './dataSourceConstants';
 import { DATASOURCES } from '../../../const';
 import { GFI_IMAGE_SIZE } from '../../../Controls/CLMSVectorFeatureInfo/CLMSVectorFeatureInfo.utils';
+import { getFixedSizeBBoxBounds } from '../../../utils/geojson.utils';
 import { filterLayers } from './filter';
 import {
   getCLMSCollectionMarkdown,
@@ -246,12 +247,7 @@ export class CLMSVectorDataSourceHandler extends DataSourceHandler {
     // Fixed 1 m bbox centered on the click point. At GFI_IMAGE_SIZE pixels this gives
     // ~0.002 m/px — far below the 39.7 m/px vector threshold — so the server always
     // returns vector feature data regardless of the map's current zoom level.
-    const halfWidthDeg = 0.5 / (111320 * Math.cos((lat * Math.PI) / 180));
-    const halfHeightDeg = 0.5 / 111320;
-    const west = lng - halfWidthDeg;
-    const east = lng + halfWidthDeg;
-    const south = lat - halfHeightDeg;
-    const north = lat + halfHeightDeg;
+    const [west, south, east, north] = getFixedSizeBBoxBounds(lat, lng);
     const params = new URLSearchParams({
       SERVICE: 'WMS',
       VERSION: '1.1.1',

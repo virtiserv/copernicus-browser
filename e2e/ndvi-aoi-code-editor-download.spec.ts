@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { CODE_EDITOR_URLS } from './fixtures/urls';
 import { getSaveResultFormat } from './fixtures/helpers';
 
+const OPENEO_RESULT_URL = 'openeosh.dataspace.copernicus.eu/1.2/result';
+
 declare const monaco: {
   editor: {
     getModels: () => Array<{
@@ -14,9 +16,7 @@ declare const monaco: {
 test('NDVI layer → AOI → code editor process graph edit → download format routing', async ({ page }) => {
   // Navigate to the app and wait for initial tiles.
   // S2_L2A_CDAS True Color uses the openEO endpoint (confirmed by visualization-service-routing spec).
-  const initialTiles = page.waitForResponse(
-    (r) => r.url().includes('openeosh.dataspace.copernicus.eu') && r.status() === 200,
-  );
+  const initialTiles = page.waitForResponse((r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200);
   await page.goto(CODE_EDITOR_URLS.s2l2aNDVI);
   await initialTiles;
 
@@ -76,9 +76,7 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
   expect(modifiedGraph).not.toContain('"B04"');
 
   // Apply changes and wait for new tiles to load
-  const newTiles = page.waitForResponse(
-    (r) => r.url().includes('openeosh.dataspace.copernicus.eu') && r.status() === 200,
-  );
+  const newTiles = page.waitForResponse((r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200);
   await page.getByRole('button', { name: 'Apply' }).click();
   await newTiles;
 
@@ -101,13 +99,21 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
   // Wait for any preview requests triggered by the format change to settle
   await page.waitForLoadState('networkidle');
 
-  // Register listener and click together so we can't miss the request
+  // Register listener and click together so we can't miss the request.
+  // The download panel's live preview thumbnail always requests PNG via this same
+  // openEO endpoint, so the predicate must match on the save_result format itself
+  // (not just URL+method) to avoid racing against the preview's request.
   const [tiff32] = await Promise.all([
-    page.waitForRequest((r) => r.method() === 'POST' && r.url().includes('openeosh.dataspace.copernicus.eu')),
+    page.waitForRequest(
+      (r) =>
+        r.method() === 'POST' &&
+        r.url().includes(OPENEO_RESULT_URL) &&
+        getSaveResultFormat(r.postDataJSON()?.process?.process_graph) === 'gtiff',
+    ),
     page.getByText('Download', { exact: true }).click(),
   ]);
 
-  expect(tiff32.url()).toContain('openeosh.dataspace.copernicus.eu/1.2/result');
+  expect(tiff32.url()).toContain(OPENEO_RESULT_URL);
 
   const body = tiff32.postDataJSON();
   expect(getSaveResultFormat(body.process.process_graph)).toBe('gtiff');

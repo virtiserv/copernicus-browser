@@ -83,6 +83,31 @@ export const customSelectStyle = {
     fontWeight: `${fontWeightBold}`,
   }),
 
+  multiValue: (css) => ({
+    ...css,
+    backgroundColor: `${primaryColor}`,
+    borderRadius: '2px',
+    margin: '2px',
+  }),
+
+  multiValueLabel: (css) => ({
+    ...css,
+    color: `${whiteColor}`,
+    fontSize: 14,
+    fontWeight: `${fontWeightNormal}`,
+    padding: '3px 6px',
+  }),
+
+  multiValueRemove: (css) => ({
+    ...css,
+    color: `${whiteColor}`,
+    ':hover': {
+      backgroundColor: `${dropdownHoverBackground}`,
+      color: `${textColor}`,
+      cursor: 'pointer',
+    },
+  }),
+
   group: (css, state) => {
     const { divider } = state.data;
 

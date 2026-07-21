@@ -17,6 +17,7 @@
 
 scripts/*.csv
 scripts/*.txt
+scripts/*.xlsx
 
 npm-debug.log*
 yarn-debug.log*

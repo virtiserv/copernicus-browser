@@ -135,6 +135,8 @@ const productTypeTooltip = () =>
   t`Applies to all sub-categories. The type of product, identifying the thematic category or processing pipeline.`;
 const snowWaterBodiesAuxDataTooltip = () =>
   t`Only applies to data sources within the Snow, Water Bodies and Auxiliary Data categories.`;
+const countryCodeTooltip = () =>
+  t`Filters results by the country the data covers. Country codes follow the Eurostat convention, see the full list [here](https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Glossary%3ACountry_codes).`;
 
 const CLMS_BIOGEOPHYSICAL_PARAMETERS = {
   [AttributeNames.cloudCover]: snowWaterBodiesAuxDataTooltip,
@@ -152,6 +154,10 @@ const CLMS_LAND_COVER_AND_LAND_USE_MAPPING = {
   [AttributeNames.fileFormat]: fileFormatTooltip,
   [AttributeNames.datasetIdentifier]: datasetIdentifierTooltip,
   [AttributeNames.productType]: productTypeTooltip,
+};
+
+const CLMS_LAND_COVER_AND_LAND_USE_IN_PRIORITY_AREAS = {
+  [AttributeNames.countryCode]: countryCodeTooltip,
 };
 
 const eumetsatProcessedTooltip = () => t`This data product was processed by EUMETSAT.`;
@@ -182,6 +188,7 @@ const AttributeTooltips = {
   DEM,
   CLMS_BIOGEOPHYSICAL_PARAMETERS,
   CLMS_LAND_COVER_AND_LAND_USE_MAPPING,
+  CLMS_LAND_COVER_AND_LAND_USE_IN_PRIORITY_AREAS,
 };
 
 export { ProductTypeTooltips, InstrumentTooltips, AttributeTooltips };

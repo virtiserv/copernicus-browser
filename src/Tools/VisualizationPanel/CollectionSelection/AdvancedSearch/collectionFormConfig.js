@@ -18,6 +18,7 @@ import {
   AttributeDEMDatasetsMap,
   AttributeS2ProductTypeValues,
   AttributeConsolidationPeriodValues,
+  AttributeCountryCodeValues,
 } from '../../../../api/OData/assets/attributes';
 import { EXPERT_ROLES } from '../../../../api/OData/assets/accessRoles';
 import {
@@ -29,6 +30,7 @@ import {
 } from './filters/AdditionalFilters.utils';
 import { DefaultInput } from './filters/DefaultInput';
 import { MultiSelectInput } from './filters/MultiSelectInput';
+import { SearchableMultiSelectInput } from './filters/SearchableMultiSelectInput';
 import { NumericInput } from './filters/NumericInput';
 import { AcrossTrackIncidenceAngleTag } from './filters/CustomTags';
 import {
@@ -2863,6 +2865,13 @@ export const recursiveCollectionCLMS = [
             ],
           },
         ],
+      },
+    ],
+    additionalFilters: [
+      {
+        id: AttributeNames.countryCode,
+        render: SearchableMultiSelectInput,
+        getOptions: () => Object.values(AttributeCountryCodeValues),
       },
     ],
   },

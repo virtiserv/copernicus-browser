@@ -2,7 +2,7 @@ import React from 'react';
 import RCSlider from 'rc-slider';
 import { logToLinear, capValue, calcLog } from '../../utils/effectsUtils';
 
-const EffectSlider = ({ name, min, max, step, value, onChange, useLogScale = true }) => {
+const EffectSlider = ({ name, min, max, step, sliderStep = step, value, onChange, useLogScale = true }) => {
   const [sliderValue, setSliderValue] = React.useState(useLogScale ? logToLinear(value, min, max) : value);
   const [inputValue, setinputValue] = React.useState(value);
 
@@ -19,14 +19,14 @@ const EffectSlider = ({ name, min, max, step, value, onChange, useLogScale = tru
           className="slider-no-left-value"
           min={min}
           max={max}
-          step={step}
+          step={sliderStep}
           value={sliderValue}
           onChange={(x) => {
             setSliderValue(x);
             const cappedValue = capValue(useLogScale ? calcLog(x, min, max) : x, min, max);
             setinputValue(cappedValue);
           }}
-          onAfterChange={() => onChange(inputValue)}
+          onChangeComplete={() => onChange(inputValue)}
         />
 
         <input

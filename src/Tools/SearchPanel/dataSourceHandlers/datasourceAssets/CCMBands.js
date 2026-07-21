@@ -80,3 +80,30 @@ export const CCM_VHR_IMAGE_2024_BANDS = [
     color: '',
   },
 ];
+
+export const CCM_VHR_IMAGE_2024_MOSAIC_BANDS = [
+  {
+    name: 'Red',
+    sampleType: 'UINT8',
+    getDescription: () => t`Red band`,
+    color: '',
+  },
+  {
+    name: 'Green',
+    sampleType: 'UINT8',
+    getDescription: () => t`Green band`,
+    color: '',
+  },
+  {
+    name: 'Blue',
+    sampleType: 'UINT8',
+    getDescription: () => t`Blue band`,
+    color: '',
+  },
+  {
+    name: 'Grey',
+    sampleType: 'UINT8',
+    getDescription: () => t`Grey band`,
+    color: '',
+  },
+];

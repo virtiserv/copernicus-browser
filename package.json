@@ -59,7 +59,7 @@
     "papaparse": "^5.4.1",
     "proj4": "^2.6.2",
     "query-string": "^6.14.1",
-    "rc-slider": "^8.6.1",
+    "rc-slider": "^11.1.9",
     "rdndmb-html5-to-touch": "^9.0.0",
     "react": "^18.3.1",
     "react-bootstrap-typeahead": "^6.3.2",
@@ -93,6 +93,7 @@
     "wellknown": "^0.5.0"
   },
   "scripts": {
+    "prepare": "husky",
     "version-check": "node scripts/check-versions.js",
     "start": "npm run version-check && vite",
     "build": "npm run version-check && vite build",
@@ -130,7 +131,8 @@
     "validate-config-collections": "node scripts/manual/validate-config-collections.js",
     "check-collections-band-names": "node scripts/manual/check-collections-band-names.js",
     "list-configurations-without-layers": "node scripts/manual/list-configurations-without-layers.js",
-    "check-rrd-missing-configurations": "tsx scripts/check-rrd-missing-configurations.ts"
+    "check-rrd-missing-configurations": "tsx scripts/check-rrd-missing-configurations.ts",
+    "cdse-collection-share": "tsx scripts/cdse-collection-share.ts"
   },
   "browserslist": [
     ">0.2%",
@@ -167,8 +169,9 @@
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "exceljs": "^4.4.0",
     "globals": "^17.6.0",
-    "husky": "^3.1.0",
+    "husky": "^9.1.7",
     "jest": "^30.4.1",
     "jest-canvas-mock": "^2.3.1",
     "jest-environment-jsdom": "^30.4.1",
@@ -185,11 +188,6 @@
     "vite": "^6.4.3",
     "vite-plugin-node-polyfills": "^0.24.0",
     "vite-plugin-svgr": "^4.3.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint"
-    }
   },
   "engines": {
     "npm": ">=10",

@@ -9,7 +9,13 @@ import moment from 'moment';
 import { connect } from 'react-redux';
 import { t } from 'ttag';
 import { getDataSourceHandler } from '../../../SearchPanel/dataSourceHandlers/dataSourceHandlers';
-import store, { searchResultsSlice, visualizationSlice, mainMapSlice, tabsSlice } from '../../../../store';
+import store, {
+  searchResultsSlice,
+  visualizationSlice,
+  mainMapSlice,
+  tabsSlice,
+  workspaceSlice,
+} from '../../../../store';
 import { getSavedWorkspaceProducts } from '../../../../api/OData/workspace';
 import {
   MODE_THEMES_LIST,
@@ -50,6 +56,7 @@ import RecursiveCollectionForm from './RecursiveCollectionForm';
 import { AttributeNames } from '../../../../api/OData/assets/attributes';
 import { ODataCollections } from '../../../../api/OData/ODataTypes';
 import { REACT_MARKDOWN_REHYPE_PLUGINS } from '../../../../rehypeConfig';
+import MessagePanel from '../../MessagePanel/MessagePanel';
 
 const WarningMessage = {
   geometrySimplified: () => t`Your search geometry was simplified to fit the search query limits.`,
@@ -518,8 +525,10 @@ class AdvancedSearch extends Component {
       const ODataQuery = this.getQuery();
       this.props.setODataSearchAuthToken(this.props.userToken);
 
-      const productSaved = await getSavedWorkspaceProducts();
-      store.dispatch(tabsSlice.actions.setSavedWorkspaceProducts(productSaved));
+      if (!!this.props.user) {
+        const productSaved = await getSavedWorkspaceProducts();
+        store.dispatch(workspaceSlice.actions.setSavedWorkspaceProducts(productSaved));
+      }
 
       this.props.productSearch(ODataQuery);
     } catch (e) {
@@ -924,13 +933,17 @@ class AdvancedSearch extends Component {
             <EOBButton loading={searchInProgress} onClick={this.doSearch} fluid text={t`Search`} />
           </div>
           {error ? (
-            <div ref={this.errorPanelRef}>
-              <NotificationPanel
-                msg={
-                  <ReactMarkdown rehypePlugins={REACT_MARKDOWN_REHYPE_PLUGINS}>{error.message}</ReactMarkdown>
-                }
-                type="error"
-              />
+            <div className="error-panel" ref={this.errorPanelRef}>
+              <MessagePanel variant="boxed-no-header">
+                <NotificationPanel
+                  type="info"
+                  msg={
+                    <ReactMarkdown rehypePlugins={REACT_MARKDOWN_REHYPE_PLUGINS}>
+                      {error.message}
+                    </ReactMarkdown>
+                  }
+                />
+              </MessagePanel>
             </div>
           ) : null}
         </div>
@@ -966,7 +979,7 @@ const mapStoreToProps = (store) => ({
   selectedTab: store.tabs.selectedTabSearchPanelIndex,
   terrainViewerId: store.terrainViewer.id,
   userToken: store.auth.user.access_token,
-  savedWorkspaceProducts: store.tabs.savedWorkspaceProducts,
+  savedWorkspaceProducts: store.workspace.savedWorkspaceProducts,
 });
 
 export default connect(mapStoreToProps, null)(withODataSearchHOC(AdvancedSearch));

@@ -1,3 +1,4 @@
+import bboxPolygon from '@turf/bbox-polygon';
 import {
   buildSearchGeometry,
   countGeometryVertices,
@@ -6,6 +7,7 @@ import {
   estimateWktLength,
   isValidGeometry,
   getPolygonDefect,
+  getFixedSizeBBoxBounds,
   DEFAULT_MAX_GEOMETRY_CHARS,
 } from './geojson.utils';
 
@@ -527,6 +529,74 @@ describe('boundsToPolygon', () => {
     expect(coords[2]).toEqual([20, 50]); // NE
     expect(coords[3]).toEqual([10, 50]); // NW
     expect(coords[4]).toEqual([10, 40]); // Close ring (back to SW)
+  });
+});
+
+describe('getFixedSizeBBoxBounds', () => {
+  // @turf/helpers' mean earth radius, used to derive the expected geodesic offset independently
+  // of the implementation.
+  const EARTH_RADIUS_METERS = 6371008.8;
+
+  test('at the equator with default 1m size, half-width equals half-height and matches the great-circle radius', () => {
+    const lat = 0;
+    const lng = 0;
+    const [west, south, east, north] = getFixedSizeBBoxBounds(lat, lng);
+
+    const expectedHalfDeg = (0.5 / EARTH_RADIUS_METERS) * (180 / Math.PI);
+
+    expect(west).toBeCloseTo(lng - expectedHalfDeg, 12);
+    expect(east).toBeCloseTo(lng + expectedHalfDeg, 12);
+    expect(south).toBeCloseTo(lat - expectedHalfDeg, 12);
+    expect(north).toBeCloseTo(lat + expectedHalfDeg, 12);
+
+    // At the equator, longitude and latitude half-extents should match exactly
+    expect(east - lng).toBeCloseTo(north - lat, 12);
+  });
+
+  test('at high latitude (60 degrees), longitude half-width is larger than latitude half-height', () => {
+    const lat = 60;
+    const lng = 10;
+    const [, , east, north] = getFixedSizeBBoxBounds(lat, lng);
+
+    const halfWidthDeg = east - lng;
+    const halfHeightDeg = north - lat;
+
+    // cos(60deg) = 0.5, so the geodesic circle needs twice the longitude degree-width
+    expect(halfWidthDeg / halfHeightDeg).toBeCloseTo(1 / Math.cos((lat * Math.PI) / 180), 5);
+    expect(halfWidthDeg).toBeGreaterThan(halfHeightDeg);
+  });
+
+  test('custom sizeMeters scales the box proportionally', () => {
+    const lat = 45;
+    const lng = 20;
+    const [, , baseEast, baseNorth] = getFixedSizeBBoxBounds(lat, lng, 1);
+    const [, , scaledEast, scaledNorth] = getFixedSizeBBoxBounds(lat, lng, 10);
+
+    const baseHalfWidth = baseEast - lng;
+    const baseHalfHeight = baseNorth - lat;
+    const scaledHalfWidth = scaledEast - lng;
+    const scaledHalfHeight = scaledNorth - lat;
+
+    expect(scaledHalfWidth).toBeCloseTo(baseHalfWidth * 10, 9);
+    expect(scaledHalfHeight).toBeCloseTo(baseHalfHeight * 10, 9);
+  });
+
+  test('stays finite exactly at the pole, where the old flat cos(lat) approximation divided by zero', () => {
+    const bounds = getFixedSizeBBoxBounds(90, 0);
+
+    expect(bounds.every((value) => Number.isFinite(value))).toBe(true);
+  });
+
+  test('returns a bbox usable by @turf/bbox-polygon to build a closed Polygon', () => {
+    const lat = 30;
+    const lng = -15;
+    const bounds = getFixedSizeBBoxBounds(lat, lng, 5);
+    const polygon = bboxPolygon(bounds).geometry;
+
+    expect(polygon.type).toBe('Polygon');
+    const ring = polygon.coordinates[0];
+    expect(ring).toHaveLength(5);
+    expect(ring[0]).toEqual(ring[4]);
   });
 });
 

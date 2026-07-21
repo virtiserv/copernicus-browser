@@ -3,6 +3,7 @@ import {
   CDSE_CCM_VHR_IMAGE_2018_COLLECTION,
   CDSE_CCM_VHR_IMAGE_2021_COLLECTION,
   CDSE_CCM_VHR_IMAGE_2024_COLLECTION,
+  CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION,
 } from './dataSourceConstants';
 import moment from 'moment';
 import { LocationIdSHv3 } from '@sentinel-hub/sentinelhub-js';
@@ -14,12 +15,14 @@ import {
   getCCMVHRImage2018Markdown,
   getCCMVHRImage2021Markdown,
   getCCMVHRImage2024Markdown,
+  getCCMVHRImageMosaic2024Markdown,
 } from './DatasourceRenderingComponents/dataSourceTooltips/CCMTooltip';
 
 import {
   CCM_VHR_IMAGE_2018_BANDS,
   CCM_VHR_IMAGE_2021_BANDS,
   CCM_VHR_IMAGE_2024_BANDS,
+  CCM_VHR_IMAGE_2024_MOSAIC_BANDS,
 } from './datasourceAssets/CCMBands';
 
 export default class CCMDataSourceHandler extends AbstractBYOCDataSourceHandler {
@@ -27,12 +30,14 @@ export default class CCMDataSourceHandler extends AbstractBYOCDataSourceHandler 
     [CDSE_CCM_VHR_IMAGE_2018_COLLECTION]: t`VHR Europe 2018`,
     [CDSE_CCM_VHR_IMAGE_2021_COLLECTION]: t`VHR Europe 2021`,
     [CDSE_CCM_VHR_IMAGE_2024_COLLECTION]: t`VHR Europe 2024`,
+    [CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION]: t`VHR Europe 2024 Mosaic`,
   });
 
   urls = {
     [CDSE_CCM_VHR_IMAGE_2018_COLLECTION]: [],
     [CDSE_CCM_VHR_IMAGE_2021_COLLECTION]: [],
     [CDSE_CCM_VHR_IMAGE_2024_COLLECTION]: [],
+    [CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION]: [],
   };
   datasets = [];
   allLayers = [];
@@ -52,18 +57,24 @@ export default class CCMDataSourceHandler extends AbstractBYOCDataSourceHandler 
       min: 8,
       max: 25,
     },
+    [CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION]: {
+      min: 7,
+      max: 25,
+    },
   };
 
   KNOWN_COLLECTIONS = {
     [CDSE_CCM_VHR_IMAGE_2018_COLLECTION]: ['4ab2c8f6-ef9e-4989-9c2e-3fae9c88da1e'], // collection id from byoc admin account
     [CDSE_CCM_VHR_IMAGE_2021_COLLECTION]: ['0c96598b-edb2-4a5b-afb0-4d35389ba098'],
     [CDSE_CCM_VHR_IMAGE_2024_COLLECTION]: ['b016cf66-b68e-472d-8421-1fe9d384762f'],
+    [CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION]: ['e68d016e-60c3-4675-a278-3e46110ac03f'],
   };
 
   KNOWN_COLLECTIONS_LOCATIONS = {
     [CDSE_CCM_VHR_IMAGE_2018_COLLECTION]: LocationIdSHv3.cdse,
     [CDSE_CCM_VHR_IMAGE_2021_COLLECTION]: LocationIdSHv3.cdse,
     [CDSE_CCM_VHR_IMAGE_2024_COLLECTION]: LocationIdSHv3.cdse,
+    [CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION]: LocationIdSHv3.cdse,
   };
 
   MIN_MAX_DATES = {
@@ -79,6 +90,10 @@ export default class CCMDataSourceHandler extends AbstractBYOCDataSourceHandler 
       minDate: moment.utc('2023-01-01'),
       maxDate: moment.utc('2025-12-31'),
     },
+    [CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION]: {
+      minDate: moment.utc('2024-01-01'),
+      maxDate: moment.utc('2024-01-01'),
+    },
   };
 
   getDescription = () => getCCMCollectionMarkdown();
@@ -91,6 +106,8 @@ export default class CCMDataSourceHandler extends AbstractBYOCDataSourceHandler 
         return CCM_VHR_IMAGE_2021_BANDS;
       case CDSE_CCM_VHR_IMAGE_2024_COLLECTION:
         return CCM_VHR_IMAGE_2024_BANDS;
+      case CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION:
+        return CCM_VHR_IMAGE_2024_MOSAIC_BANDS;
       default:
         return null;
     }
@@ -104,6 +121,8 @@ export default class CCMDataSourceHandler extends AbstractBYOCDataSourceHandler 
         return getCCMVHRImage2021Markdown();
       case CDSE_CCM_VHR_IMAGE_2024_COLLECTION:
         return getCCMVHRImage2024Markdown();
+      case CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION:
+        return getCCMVHRImageMosaic2024Markdown();
       default:
         return null;
     }
@@ -118,4 +137,13 @@ export default class CCMDataSourceHandler extends AbstractBYOCDataSourceHandler 
   getDefaultScalingFactor(_datasetId) {
     return 1 / 1000;
   }
+
+  supportsFindProductsForCurrentView = (datasetId) => {
+    switch (datasetId) {
+      case CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION:
+        return false;
+      default:
+        return true;
+    }
+  };
 }

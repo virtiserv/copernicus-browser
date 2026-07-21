@@ -13,7 +13,7 @@ import multiSentinelBannerUrl from './icons/multi-sentinel-banner.svg';
 import './Tabs.scss';
 import { t } from 'ttag';
 import { TABS } from '../../const';
-import store, { tabsSlice } from '../../store';
+import store, { tabsSlice, workspaceSlice } from '../../store';
 import { connect } from 'react-redux';
 import { getSavedWorkspaceProducts } from '../../api/OData/workspace';
 
@@ -22,7 +22,7 @@ const Tabs = (props) => {
     (async () => {
       if (!!props.user.userdata) {
         const savedWorkspaceProducts = await getSavedWorkspaceProducts();
-        store.dispatch(tabsSlice.actions.setSavedWorkspaceProducts(savedWorkspaceProducts));
+        store.dispatch(workspaceSlice.actions.setSavedWorkspaceProducts(savedWorkspaceProducts));
       }
     })();
   }, [props.user]);
@@ -179,7 +179,7 @@ const Tabs = (props) => {
 
 const mapStoreToProps = (store) => ({
   scrollTop: store.tabs.scrollTop,
-  savedWorkspaceProducts: store.tabs.savedWorkspaceProducts,
+  savedWorkspaceProducts: store.workspace.savedWorkspaceProducts,
   user: store.auth.user,
 });
 

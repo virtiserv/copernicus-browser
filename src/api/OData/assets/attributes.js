@@ -54,6 +54,7 @@ export const AttributeNames = {
   verticalTileNumber: 'verticalTileNumber',
   projectionName: 'projectionName',
   missionShortName: 'missionShortName',
+  countryCode: 'countryCode',
 };
 
 /**
@@ -280,6 +281,7 @@ export const ODataAttributes = {
   nominalDate: new ODataDateTimeAttribute(AttributeNames.nominalDate),
   projectionName: new ODataStringAttribute(AttributeNames.projectionName),
   missionShortName: new ODataStringAttribute(AttributeNames.missionShortName),
+  countryCode: new ODataStringAttribute(AttributeNames.countryCode),
 };
 
 export const AttributeOriginValues = {
@@ -416,4 +418,48 @@ export const AttributeAreaOfInterestValues = {
 
 export const AttributeComponentValues = {
   BIOGEOPHYSICAL: { value: 'bio-geophysical', label: 'Bio-geophysical' },
+};
+
+// Urban Atlas coverage: EU-27, United Kingdom, EFTA states and Western Balkans/Turkey (enlargement countries).
+// Country codes follow the Eurostat convention (e.g. EL for Greece, UK for United Kingdom) referenced in the source issue.
+export const AttributeCountryCodeValues = {
+  AL: { value: 'AL', label: 'Albania (AL)' },
+  AT: { value: 'AT', label: 'Austria (AT)' },
+  BE: { value: 'BE', label: 'Belgium (BE)' },
+  BA: { value: 'BA', label: 'Bosnia and Herzegovina (BA)' },
+  BG: { value: 'BG', label: 'Bulgaria (BG)' },
+  HR: { value: 'HR', label: 'Croatia (HR)' },
+  CY: { value: 'CY', label: 'Cyprus (CY)' },
+  CZ: { value: 'CZ', label: 'Czechia (CZ)' },
+  DK: { value: 'DK', label: 'Denmark (DK)' },
+  EE: { value: 'EE', label: 'Estonia (EE)' },
+  FI: { value: 'FI', label: 'Finland (FI)' },
+  FR: { value: 'FR', label: 'France (FR)' },
+  DE: { value: 'DE', label: 'Germany (DE)' },
+  EL: { value: 'EL', label: 'Greece (EL)' },
+  HU: { value: 'HU', label: 'Hungary (HU)' },
+  IS: { value: 'IS', label: 'Iceland (IS)' },
+  IE: { value: 'IE', label: 'Ireland (IE)' },
+  IT: { value: 'IT', label: 'Italy (IT)' },
+  XK: { value: 'XK', label: 'Kosovo (XK)' },
+  LV: { value: 'LV', label: 'Latvia (LV)' },
+  LI: { value: 'LI', label: 'Liechtenstein (LI)' },
+  LT: { value: 'LT', label: 'Lithuania (LT)' },
+  LU: { value: 'LU', label: 'Luxembourg (LU)' },
+  MT: { value: 'MT', label: 'Malta (MT)' },
+  ME: { value: 'ME', label: 'Montenegro (ME)' },
+  NL: { value: 'NL', label: 'Netherlands (NL)' },
+  MK: { value: 'MK', label: 'North Macedonia (MK)' },
+  NO: { value: 'NO', label: 'Norway (NO)' },
+  PL: { value: 'PL', label: 'Poland (PL)' },
+  PT: { value: 'PT', label: 'Portugal (PT)' },
+  RO: { value: 'RO', label: 'Romania (RO)' },
+  RS: { value: 'RS', label: 'Serbia (RS)' },
+  SK: { value: 'SK', label: 'Slovakia (SK)' },
+  SI: { value: 'SI', label: 'Slovenia (SI)' },
+  ES: { value: 'ES', label: 'Spain (ES)' },
+  SE: { value: 'SE', label: 'Sweden (SE)' },
+  CH: { value: 'CH', label: 'Switzerland (CH)' },
+  TR: { value: 'TR', label: 'Turkey (TR)' },
+  UK: { value: 'UK', label: 'United Kingdom (UK)' },
 };

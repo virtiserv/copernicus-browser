@@ -8,7 +8,7 @@ else
   exit 1
 fi
 
-required_vars=("WEBDEV_FTP_USERNAME" "WEBDEV_FTP_PASSWORD" "WEBDEV_FTP_HOST" "CDAS_PRODUCTION_FTP_USERNAME" "CDAS_PRODUCTION_FTP_PASSWORD" "CDAS_PRODUCTION_FTP_HOST")
+required_vars=("GITLAB_API_TOKEN" "CDAS_PRODUCTION_FTP_USERNAME" "CDAS_PRODUCTION_FTP_PASSWORD" "CDAS_PRODUCTION_FTP_HOST")
 
 # Check if all required variables are set
 for var in "${required_vars[@]}"; do
@@ -26,24 +26,19 @@ fi
 
 tag="$1"
 
-source_path="/cdse-browser/build/production/$tag"
+source "$(dirname "$0")/lib/download-artifact.sh"
+
+job_name="build_production_cdse"
+ref_name="$tag"
+artifact_dir_name="build_prod_cdas"
+
 target_path="."
 temp_local_path="deploy/production"
 
-rm -rf "$temp_local_path"
-mkdir -p "$temp_local_path"
-
-echo "Download from source to local"
-lftp -e "mirror --delete-first $source_path $temp_local_path ; exit" -u $WEBDEV_FTP_USERNAME,$WEBDEV_FTP_PASSWORD $WEBDEV_FTP_HOST
-mirror_exit_code=$?
-
-if [ $mirror_exit_code -eq 1 ]; then
-  echo "Error: Source folder $source_path does not exist."
-  exit 1
-fi
+download_artifact "$job_name" "$ref_name" "$artifact_dir_name" "$temp_local_path"
 
 echo "Upload from local to target"
-lftp -e "set mirror:parallel-transfer-count 4; mirror -R --delete --overwrite $temp_local_path $target_path ; exit" -u $CDAS_PRODUCTION_FTP_USERNAME,$CDAS_PRODUCTION_FTP_PASSWORD $CDAS_PRODUCTION_FTP_HOST
+lftp -e "set mirror:parallel-transfer-count 4; mirror -R --delete --overwrite $temp_local_path/$artifact_dir_name $target_path ; exit" -u $CDAS_PRODUCTION_FTP_USERNAME,$CDAS_PRODUCTION_FTP_PASSWORD $CDAS_PRODUCTION_FTP_HOST
 
 rm -rf "$temp_local_path"
 echo "Deployment completed"

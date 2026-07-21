@@ -30,7 +30,8 @@ const EffectRangeSlider = ({ name, min, max, step, value, onChange }) => {
           }}
         />
 
-        <RCSlider.Range
+        <RCSlider
+          range
           min={min}
           max={max}
           step={step}
@@ -40,7 +41,7 @@ const EffectRangeSlider = ({ name, min, max, step, value, onChange }) => {
             const newRange = { min: newMinRange, max: newMaxRange };
             setRange(newRange);
           }}
-          onAfterChange={() => {
+          onChangeComplete={() => {
             onChange([range.min, range.max]);
           }}
           allowCross={false}

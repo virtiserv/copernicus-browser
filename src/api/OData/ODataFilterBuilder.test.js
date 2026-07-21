@@ -2,6 +2,7 @@ import { FilterElement, Functions } from './FilterElement';
 import { ODataDoubleAttribute, ODataStringAttribute } from './ODataAttribute';
 import { ODataFilterBuilder } from './ODataFilterBuilder';
 import { ODataFilterOperator } from './ODataTypes';
+import { AttributeCountryCodeValues, ODataAttributes } from './assets/attributes';
 
 describe('ODataFilterBuilder', () => {
   test('contains', () => {
@@ -128,6 +129,14 @@ describe('ODataFilterBuilder', () => {
     ofb.attribute(new ODataDoubleAttribute('cc'), ODataFilterOperator.le, 30);
     expect(ofb.getQueryString()).toBe(
       "Attributes/OData.CSC.DoubleAttribute/any(att:att/Name eq 'cc' and att/OData.CSC.DoubleAttribute/Value le 30)",
+    );
+  });
+
+  test('attribute - countryCode', () => {
+    const ofb = new ODataFilterBuilder();
+    ofb.attribute(ODataAttributes.countryCode, ODataFilterOperator.eq, AttributeCountryCodeValues.EL.value);
+    expect(ofb.getQueryString()).toBe(
+      "Attributes/OData.CSC.StringAttribute/any(att:att/Name eq 'countryCode' and att/OData.CSC.StringAttribute/Value eq 'EL')",
     );
   });
 });

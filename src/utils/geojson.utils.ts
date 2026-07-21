@@ -1,5 +1,7 @@
 import bboxPolygon from '@turf/bbox-polygon';
 import bbox from '@turf/bbox';
+import buffer from '@turf/buffer';
+import { point } from '@turf/helpers';
 import area from '@turf/area';
 import L from 'leaflet';
 import turfArea from '@turf/area';
@@ -7,7 +9,7 @@ import turfLength from '@turf/length';
 import union from '@turf/union';
 import booleanIntersects from '@turf/boolean-intersects';
 import booleanValid from '@turf/boolean-valid';
-import type { Feature, Geometry, Position } from 'geojson';
+import type { BBox, Feature, Geometry, Position } from 'geojson';
 
 // Returns true when the geometry is valid per @turf/boolean-valid (closed rings, enough
 // unique nodes, no duplicate/degenerate vertices, holes inside the exterior, etc.).
@@ -133,6 +135,12 @@ export const boundsToPolygon = (bounds) => {
       ],
     ],
   };
+};
+
+// Returns a [west, south, east, north] bbox of the given size (in meters) centered on lat/lng.
+// Pass to @turf/bbox-polygon's bboxPolygon(...).geometry to get a GeoJSON Polygon.
+export const getFixedSizeBBoxBounds = (lat: number, lng: number, sizeMeters = 1): BBox => {
+  return bbox(buffer(point([lng, lat]), sizeMeters / 2, { units: 'meters' }));
 };
 
 export const isPolygon = (geometry) => geometry?.type === 'Polygon';

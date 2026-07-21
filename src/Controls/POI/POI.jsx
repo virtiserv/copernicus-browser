@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import EOBPOIPanelButton from '../../junk/EOBPOIPanelButton/EOBPOIPanelButton';
 import { connect } from 'react-redux';
 import L from 'leaflet';
+import bboxPolygon from '@turf/bbox-polygon';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import './POI.css';
@@ -12,7 +13,7 @@ import {
   datasetHasAnyFISLayer,
   getDatasetLabel,
 } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
-import { getLeafletBoundsFromGeoJSON } from '../../utils/geojson.utils';
+import { getFixedSizeBBoxBounds, getLeafletBoundsFromGeoJSON } from '../../utils/geojson.utils';
 import { ModalId } from '../../const';
 import pin from './pin.png';
 
@@ -29,10 +30,11 @@ class POI extends Component {
       if (e.shape && e.shape === 'Marker') {
         this.props.map.removeLayer(e.layer);
         this.props.map.pm.disableDraw('Marker');
-        const geometry = this.generateSmallBBoxAroundPOI(e.layer.getLatLng());
+        const latlng = e.layer.getLatLng();
+        const geometry = bboxPolygon(getFixedSizeBBoxBounds(latlng.lat, latlng.lng)).geometry;
         store.dispatch(
           poiSlice.actions.set({
-            position: e.layer.getLatLng(),
+            position: latlng,
             geometry: geometry,
             bounds: getLeafletBoundsFromGeoJSON(geometry),
           }),
@@ -76,10 +78,11 @@ class POI extends Component {
     }
 
     this.POILayerRef.on('dragend', (f) => {
-      const geometry = this.generateSmallBBoxAroundPOI(f.target.getLatLng());
+      const latlng = f.target.getLatLng();
+      const geometry = bboxPolygon(getFixedSizeBBoxBounds(latlng.lat, latlng.lng)).geometry;
       store.dispatch(
         poiSlice.actions.set({
-          position: f.target.getLatLng(),
+          position: latlng,
           geometry: geometry,
           bounds: getLeafletBoundsFromGeoJSON(geometry),
         }),
@@ -101,20 +104,6 @@ class POI extends Component {
     this.props.map.pm.disableDraw('Marker');
     store.dispatch(poiSlice.actions.reset());
   };
-
-  generateSmallBBoxAroundPOI(latlng) {
-    const { x, y } = this.props.map.latLngToContainerPoint(latlng);
-    const { lat: south, lng: west } = this.props.map.containerPointToLatLng(L.point(x - 2, y + 2));
-    const { lat: north, lng: east } = this.props.map.containerPointToLatLng(L.point(x + 2, y - 2));
-    const lowLeft = [west, south];
-    const topLeft = [west, north];
-    const topRight = [east, north];
-    const lowRight = [east, south];
-    return {
-      type: 'Polygon',
-      coordinates: [[lowLeft, lowRight, topRight, topLeft, lowLeft]],
-    };
-  }
 
   centerMapOnMarker = () => {
     if (!this.POILayerRef) {

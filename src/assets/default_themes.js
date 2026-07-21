@@ -271,6 +271,12 @@ export const DEFAULT_THEMES = [
         }/ogc/wms/9bfc0e-YOUR-INSTANCEID-HERE`,
       },
       {
+        name: 'CCM VHR Europe 2024 Mosaic',
+        url: `${
+          global.window ? global.window.API_ENDPOINT_CONFIG.SH_SERVICES_URL : FALLBACK_SH_SERVICES_URL
+        }/ogc/wms/49eaa5-YOUR-INSTANCEID-HERE`,
+      },
+      {
         name: 'CLMS Vegetation indices NDVI',
         url: `${
           global.window ? global.window.API_ENDPOINT_CONFIG.SH_SERVICES_URL : FALLBACK_SH_SERVICES_URL

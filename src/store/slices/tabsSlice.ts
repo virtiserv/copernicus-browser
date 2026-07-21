@@ -3,13 +3,11 @@ import { TABS } from '../../const';
 
 interface TabsState {
   selectedTabIndex: (typeof TABS)[keyof typeof TABS];
-  savedWorkspaceProducts: unknown[];
   scrollTop: number | null;
 }
 
 const initialState: TabsState = {
   selectedTabIndex: TABS.VISUALIZE_TAB,
-  savedWorkspaceProducts: [],
   scrollTop: null,
 };
 
@@ -22,9 +20,6 @@ export const tabsSlice = createSlice({
     },
     setScrollTop: (state, action: PayloadAction<number | null>) => {
       state.scrollTop = action.payload;
-    },
-    setSavedWorkspaceProducts: (state, action: PayloadAction<unknown[]>) => {
-      state.savedWorkspaceProducts = action.payload;
     },
   },
 });

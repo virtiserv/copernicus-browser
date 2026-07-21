@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { usePrevious } from '../../../hooks/usePrevious';
 
 import { connect } from 'react-redux';
-import Select from 'react-select';
 import { t } from 'ttag';
 
 import CollapsiblePanel from '../../../components/CollapsiblePanel/CollapsiblePanel';
@@ -18,13 +17,10 @@ import { DATASOURCES } from '../../../const';
 import { getDataSourceHandler } from '../../SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import { EOBButton } from '../../../junk/EOBCommon/EOBButton/EOBButton';
 
-import { customSelectStyle } from '../../../components/CustomSelectInput/CustomSelectStyle';
+import { SearchableSelect } from '../../../components/SearchableSelect/SearchableSelect';
 
 import Loader from '../../../Loader/Loader';
 import CheckmarkSvg from './checkmark.svg?react';
-
-import { CustomDropdownIndicator } from '../../../components/CustomSelectInput/CustomDropdownIndicator';
-import { CustomOption } from '../../../components/CustomOption/CustomOption';
 
 import './CollectionSelection.scss';
 import CollectionTooltip from './CollectionTooltip/CollectionTooltip';
@@ -186,20 +182,17 @@ const renderCollections = (collectionGroups, selectedCollection, onSelect, isExp
     return (
       <div className="collection-buttons-container">
         <div className="sensors-satellites-selection">
-          <Select
+          <SearchableSelect
             value={value}
-            getValue={() => selectedCollection.datasource}
             options={options}
             placeholder={'No collection selected'}
             onChange={setValue}
-            styles={customSelectStyle}
             menuPosition="fixed"
             menuShouldBlockScroll={true}
             className="collection-select-dropdown"
             classNamePrefix="collection-select"
             filterOption={filterOption}
-            components={{ DropdownIndicator: CustomDropdownIndicator, Option: CustomOption }}
-          ></Select>
+          />
 
           {!!selectedCollectionGroup?.getDescription && (
             <CollectionTooltip

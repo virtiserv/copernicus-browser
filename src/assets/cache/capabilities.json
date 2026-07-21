@@ -2881,6 +2881,33 @@
         ],
         "datasets": []
     },
+    "49eaa5-YOUR-INSTANCEID-HERE": {
+        "title": "CCM VHR 2024 Mosaic",
+        "layers": [
+            {
+                "id": "1_TRUE_COLOR",
+                "name": "True color",
+                "description": "",
+                "dataset": "CUSTOM",
+                "legendUrl": null
+            },
+            {
+                "id": "2_FALSE-COLOR",
+                "name": "False color",
+                "description": "",
+                "dataset": "CUSTOM",
+                "legendUrl": null
+            },
+            {
+                "id": "3_NDVI",
+                "name": "NDVI",
+                "description": "",
+                "dataset": "CUSTOM",
+                "legendUrl": null
+            }
+        ],
+        "datasets": []
+    },
     "4a3475-YOUR-INSTANCEID-HERE": {
         "title": "[NEW] fcover_global_1km_10daily_v2_RT6",
         "layers": [

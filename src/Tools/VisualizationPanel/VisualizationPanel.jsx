@@ -9,6 +9,7 @@ import CollectionSelection from './CollectionSelection/CollectionSelection';
 import Highlights from '../SearchPanel/Highlights/Highlights';
 import EOBEffectsPanel from '../../junk/EOBEffectsPanel/EOBEffectsPanel';
 import MessagePanel from './MessagePanel/MessagePanel';
+import useMessagePanelContent from './MessagePanel/useMessagePanelContent';
 import ActionBar from '../../components/ActionBar/ActionBar';
 import SocialShare from '../../components/SocialShare/SocialShare';
 import PinPanel from '../Pins/PinPanel';
@@ -138,6 +139,12 @@ function VisualizationPanel({
   const [layerActionsOpen, setLayerActionsOpen] = useState(false);
 
   const { height: windowHeight } = useWindowSize();
+
+  const {
+    show: showMessagePanel,
+    onClose: onMessagePanelClose,
+    content: messagePanelContent,
+  } = useMessagePanelContent();
 
   const visualizationActionsRef = useRef();
   const selectedTimeRef = useRef(toTime);
@@ -284,7 +291,11 @@ function VisualizationPanel({
             />
           </div>
         )}
-        <MessagePanel />
+        {showMessagePanel && (
+          <MessagePanel variant="plain" onClose={onMessagePanelClose}>
+            {messagePanelContent}
+          </MessagePanel>
+        )}
         <ThemeSelect
           compareShare={compareShare}
           setShowLayerPanel={setShowLayerPanel}

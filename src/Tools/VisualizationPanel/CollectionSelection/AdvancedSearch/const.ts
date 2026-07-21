@@ -14,7 +14,7 @@ export const ErrorMessage = {
   [ErrorCode.noResults]: () =>
     t`No products were found for the selected time range and area. To search for products select a time range within an area where data is displayed on the map first.`,
   [ErrorCode.noMatchingProducts]: () =>
-    t`No products were found for the selected search parameters.\n\nTo get more results, try selecting more data sources, extending the time range and/or selecting a larger area on the map.`,
+    t`No products were found for the selected search parameters.\n\nThe filters you've applied might be limiting your results. To get more results, try selecting more data sources, extending the time range or selecting a larger area on the map. You could also review your additional filters.`,
   [ErrorCode.selectSearchCriteria]: () => t`Select a data source or enter search criteria to see results.`,
   [ErrorCode.invalidTimeRange]: () => t`Invalid time range!`,
   [ErrorCode.invalidDateRange]: () => t`Invalid date range!`,

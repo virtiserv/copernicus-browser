@@ -4,7 +4,7 @@ import CreditsList from '../../../SearchPanel/dataSourceHandlers/DatasourceRende
 import CollectionTooltipContainer from './CollectionTooltipContainer';
 import { REACT_MARKDOWN_REHYPE_PLUGINS } from '../../../../rehypeConfig';
 
-const CollectionTooltip = ({ title, source, credits, className }) => {
+const CollectionTooltip = ({ title = undefined, source, credits = undefined, className }) => {
   if (!(source || (credits && credits.length))) {
     return null;
   }

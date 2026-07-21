@@ -7,6 +7,7 @@ import AdvancedSection from './sections/Advanced/AdvancedSection';
 import { t } from 'ttag';
 import Button, { ButtonType } from '../../components/Button/Button';
 import MessagePanel from '../VisualizationPanel/MessagePanel/MessagePanel';
+import useMessagePanelContent from '../VisualizationPanel/MessagePanel/useMessagePanelContent';
 import store, {
   areaAndTimeSectionSlice,
   collapsiblePanelSlice,
@@ -58,6 +59,11 @@ const RapidResponseDesk = ({
   isArchiveEnabled,
 }) => {
   const [cartSize, setCartSize] = useState(0);
+  const {
+    show: showMessagePanel,
+    onClose: onMessagePanelClose,
+    content: messagePanelContent,
+  } = useMessagePanelContent();
 
   const divErrorMessageRef = useRef();
   const divResultsRef = useRef();
@@ -313,7 +319,11 @@ const RapidResponseDesk = ({
     <div className="rapid-response-desk">
       <div className="rapid-response-desk-body">
         <div ref={divErrorMessageRef}>
-          <MessagePanel />
+          {showMessagePanel && (
+            <MessagePanel variant="plain" onClose={onMessagePanelClose}>
+              {messagePanelContent}
+            </MessagePanel>
+          )}
         </div>
         <ProjectDetailsSection />
         <AreaAndTimeSection />

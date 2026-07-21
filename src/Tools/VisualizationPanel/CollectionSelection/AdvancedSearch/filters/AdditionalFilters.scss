@@ -124,6 +124,11 @@
       font-size: 12px;
     }
   }
+
+  &.searchable-multiselect .content {
+    display: block;
+    width: 100%;
+  }
 }
 
 @media screen and (max-width: (vars.$additionalFiltersPanelWidth + vars.$toolsWidth)) {

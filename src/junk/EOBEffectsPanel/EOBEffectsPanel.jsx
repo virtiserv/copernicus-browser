@@ -191,6 +191,7 @@ function renderCommonEffects(props) {
         min={0.01}
         max={100}
         step={0.01}
+        sliderStep={1}
         value={getValueOrDefault(props.effects, 'gainEffect', defaultEffects)}
         onChange={props.onUpdateGainEffect}
       />
@@ -200,6 +201,7 @@ function renderCommonEffects(props) {
         min={0.1}
         max={10}
         step={0.01}
+        sliderStep={0.1}
         value={getValueOrDefault(props.effects, 'gammaEffect', defaultEffects)}
         onChange={props.onUpdateGammaEffect}
       />

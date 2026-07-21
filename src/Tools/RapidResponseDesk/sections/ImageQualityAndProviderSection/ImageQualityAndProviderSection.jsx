@@ -2,11 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import './ImageQualityAndProviderSection.scss';
 import { connect } from 'react-redux';
 import { t } from 'ttag';
-import Slider from 'rc-slider/lib/Slider';
+import Slider from 'rc-slider';
 
 import store, { collapsiblePanelSlice, imageQualityAndProviderSectionSlice } from '../../../../store';
 import RadioButtonGroup from '../../../../components/RadioButtonGroup/RadioButtonGroup';
-import { Range } from 'rc-slider';
 import Optical from './Optical/Optical';
 import Radar from './Radar/Radar';
 import Atmos from './Atmos/Atmos';
@@ -131,6 +130,26 @@ const ImageQualityAndProviderSection = ({
     [isTaskingEnabled],
   );
 
+  const renderResolutionSections = () => (
+    <div id="slider-section-container">
+      <div className="slider-section border">
+        <span>VHR1</span>
+      </div>
+      <div className="slider-section">
+        <span>VHR2</span>
+      </div>
+      <div className="slider-section border">
+        <span>HR1</span>
+      </div>
+      <div className="slider-section">
+        <span>HR2</span>
+      </div>
+      <div className="slider-section border">
+        <span>MR1</span>
+      </div>
+    </div>
+  );
+
   const renderResolutionSlider = () => {
     const sliderClass = `resolution-slider ${isTaskingEnabled ? 'tasking' : ''}`;
     return (
@@ -145,25 +164,8 @@ const ImageQualityAndProviderSection = ({
             step={null}
             defaultValue={Array.isArray(imageResolution) ? imageResolution.at(-1) : imageResolution}
             onChange={onResolutionChange}
-          >
-            <div id="slider-section-container">
-              <div className="slider-section border">
-                <span>VHR1</span>
-              </div>
-              <div className="slider-section">
-                <span>VHR2</span>
-              </div>
-              <div className="slider-section border">
-                <span>HR1</span>
-              </div>
-              <div className="slider-section">
-                <span>HR2</span>
-              </div>
-              <div className="slider-section border">
-                <span>MR1</span>
-              </div>
-            </div>
-          </Slider>
+          />
+          {renderResolutionSections()}
         </div>
         <span className="resolution-current-value-text">{getResolutionText()}</span>
       </div>
@@ -175,7 +177,7 @@ const ImageQualityAndProviderSection = ({
       <div className="resolution-container">
         <label className="resolution-label">{t`Resolution`}:</label>
         <div className="resolution-slider">
-          <Range
+          <Slider
             range
             value={getSliderValueForDisplay(sliderValue)}
             min={0}
@@ -185,25 +187,8 @@ const ImageQualityAndProviderSection = ({
             allowCross={false}
             pushable
             onChange={onResolutionChange}
-          >
-            <div id="slider-section-container">
-              <div className="slider-section border">
-                <span>VHR1</span>
-              </div>
-              <div className="slider-section">
-                <span>VHR2</span>
-              </div>
-              <div className="slider-section border">
-                <span>HR1</span>
-              </div>
-              <div className="slider-section">
-                <span>HR2</span>
-              </div>
-              <div className="slider-section border">
-                <span>MR1</span>
-              </div>
-            </div>
-          </Range>
+          />
+          {renderResolutionSections()}
         </div>
         <span className="resolution-current-value-text">{getResolutionText()}</span>
       </div>

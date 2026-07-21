@@ -79,4 +79,45 @@
       cursor: pointer;
     }
   }
+
+  &.message-panel--boxed {
+    border: 1px solid vars.$orangeColor;
+    border-radius: 4px;
+
+    .message-panel-header {
+      font-size: 18px;
+      padding: 5px 0;
+    }
+
+    .message-panel-messages .notification {
+      padding: 10px;
+      font-size: 13px;
+      text-align: center;
+    }
+  }
+
+  &.message-panel--boxed-no-header {
+    border: 1px solid vars.$orangeColor;
+    border-radius: 4px;
+
+    .message-panel-messages .notification {
+      padding: 10px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .message-panel-messages .notification i {
+      color: vars.$orangeColor;
+    }
+  }
+
+  &.message-panel--plain {
+    .message-panel-messages .notification {
+      min-height: 30px;
+    }
+
+    .close-message-panel {
+      transform: translateX(-11px);
+    }
+  }
 }

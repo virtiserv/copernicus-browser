@@ -4,6 +4,7 @@ import {
   CDSE_CCM_VHR_IMAGE_2018_COLLECTION,
   CDSE_CCM_VHR_IMAGE_2021_COLLECTION,
   CDSE_CCM_VHR_IMAGE_2024_COLLECTION,
+  CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION,
   COPERNICUS_CLMS_VEGETATION_INDICES_NDVI_GLOBAL,
   COPERNICUS_CLMS_BURNT_AREA_DAILY,
   COPERNICUS_CLMS_BURNT_AREA_MONTHLY,
@@ -547,6 +548,12 @@ export const credits = {
     },
   ],
   [CDSE_CCM_VHR_IMAGE_2024_COLLECTION]: [
+    {
+      ...copernicus,
+      link: 'https://www.copernicus.eu/en/contributing-missions',
+    },
+  ],
+  [CDSE_CCM_VHR_IMAGE_MOSAIC_2024_COLLECTION]: [
     {
       ...copernicus,
       link: 'https://www.copernicus.eu/en/contributing-missions',

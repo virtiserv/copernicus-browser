@@ -18,6 +18,10 @@ import { elevationProfileSlice } from './store/slices/elevationProfileSlice';
 import { pinsSlice } from './store/slices/pinsSlice';
 import { terrainViewerSlice } from './store/slices/terrainViewerSlice';
 import { productDownloadSlice } from './store/slices/productDownloadSlice';
+import { toolsSlice } from './store/slices/toolsSlice';
+import { searchResultsSlice } from './store/slices/searchResultsSlice';
+import { clmsSlice } from './store/slices/clmsSlice';
+import { workspaceSlice } from './store/slices/workspaceSlice';
 
 import {
   MODES,
@@ -40,7 +44,6 @@ import {
   SensorModesProperties,
   ResultsSectionSortProperties,
 } from './Tools/RapidResponseDesk/rapidResponseProperties';
-import { DEFAULT_SELECTED_CONSOLIDATION_PERIOD_INDEX } from './Tools/VisualizationPanel/CollectionSelection/CLMSCollectionSelection.utils';
 
 export { poiSlice };
 
@@ -55,6 +58,14 @@ export { indexSlice };
 export { aoiSlice };
 
 export { mainMapSlice };
+
+export { toolsSlice };
+
+export { searchResultsSlice };
+
+export { clmsSlice };
+
+export { workspaceSlice };
 
 export { notificationSlice };
 
@@ -782,96 +793,6 @@ export const commercialDataSlice = createSlice({
   },
 });
 
-export const searchResultsSlice = createSlice({
-  name: 'searchResults',
-  initialState: {
-    displayingSearchResults: false,
-    searchResult: null,
-    selectedTiles: null,
-    highlightedTile: null,
-    selectedResult: null,
-    resultsAvailable: false,
-    resultsPanelSelected: false,
-    searchFormData: null,
-  },
-  reducers: {
-    setDisplayingSearchResults: (state, action) => {
-      state.displayingSearchResults = action.payload;
-    },
-    setSearchResult: (state, action) => {
-      state.searchResult = action.payload;
-      state.resultsAvailable = true;
-      state.resultsPanelSelected = true;
-    },
-    setSearchFormData: (state, action) => {
-      state.searchFormData = action.payload;
-    },
-    setSelectedTiles: (state, action) => {
-      state.selectedTiles = action.payload;
-    },
-    setHighlightedTile: (state, action) => {
-      state.highlightedTile = action.payload;
-    },
-    setSelectedResult: (state, action) => {
-      state.selectedResult = action.payload;
-    },
-    reset: (state) => {
-      state.displayingSearchResults = false;
-      state.searchResult = null;
-      state.selectedTiles = null;
-      state.highlightedTile = null;
-      state.selectedResult = null;
-      state.resultsAvailable = false;
-      state.resultsPanelSelected = false;
-    },
-  },
-});
-
-export const toolsSlice = createSlice({
-  name: 'tools',
-  initialState: {
-    open: true,
-  },
-  reducers: {
-    setOpen: (state, action) => {
-      state.open = action.payload;
-    },
-    reset: (state) => {
-      state.open = true;
-    },
-  },
-});
-
-export const clmsSlice = createSlice({
-  name: 'clms',
-  initialState: {
-    selected: false,
-    selectedPath: null,
-    selectedCollection: null,
-    selectedConsolidationPeriodIndex: DEFAULT_SELECTED_CONSOLIDATION_PERIOD_INDEX,
-  },
-  reducers: {
-    setSelected: (state, action) => {
-      state.selected = action.payload;
-    },
-    setSelectedPath: (state, action) => {
-      state.selectedPath = action.payload;
-    },
-    setSelectedCollection: (state, action) => {
-      state.selectedCollection = action.payload;
-    },
-    setSelectedConsolidationPeriodIndex: (state, action) => {
-      state.selectedConsolidationPeriodIndex = action.payload;
-    },
-    reset: (state) => {
-      state.selected = false;
-      state.selectedPath = null;
-      state.selectedCollection = null;
-      state.selectedConsolidationPeriodIndex = DEFAULT_SELECTED_CONSOLIDATION_PERIOD_INDEX;
-    },
-  },
-});
-
 const reducers = combineReducers({
   aoi: aoiSlice.reducer,
   loi: loiSlice.reducer,
@@ -902,6 +823,7 @@ const reducers = combineReducers({
   resultsSection: resultsSectionSlice.reducer,
   tools: toolsSlice.reducer,
   clms: clmsSlice.reducer,
+  workspace: workspaceSlice.reducer,
 });
 
 const store = configureStore({

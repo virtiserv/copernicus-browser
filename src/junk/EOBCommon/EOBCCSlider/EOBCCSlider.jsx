@@ -28,7 +28,7 @@ export class EOBCCSlider extends React.Component {
             step={1}
             value={this.props.cloudCoverPercentage}
             onChange={this.props.onChange}
-            onAfterChange={this.props.onAfterChange}
+            onChangeComplete={this.props.onAfterChange}
           />
         </div>
         {this.props.showIcons && <i className={this.props.icon}>&nbsp;</i>}

@@ -1,15 +1,8 @@
 import React from 'react';
-import { Range } from 'rc-slider';
+import Slider from 'rc-slider';
 import { KeyboardHandle } from './SliderComponents';
 import { pickColor } from './utils';
 import { SliderThresholdProps } from './types';
-
-interface RcHandleProps {
-  index: number;
-  offset: number;
-  tabIndex: number;
-  ref: React.Ref<KeyboardHandle>;
-}
 
 function calculateGradient(handlePositions: number[], gradient: string[], values: number[]): string {
   const firstValue = values[0];
@@ -54,25 +47,24 @@ export function SliderThreshold({
   return (
     <div className="slider-transparent-background">
       <div className="slider">
-        <Range
+        <Slider
+          range
           min={numericMin}
           max={numericMax}
           step={0.01}
           value={handlePositions}
           allowCross={false}
           onChange={onSliderUpdate}
-          onAfterChange={onSliderChange}
+          onChangeComplete={onSliderChange}
           railStyle={{ background: gradientStyle, height: 34 }}
           trackStyle={Array(values.length - 1).fill({ background: 'transparent', height: 34 })}
-          handle={({ index, offset, tabIndex, ref }: RcHandleProps) =>
+          handleRender={(origin, { index }) =>
             invalidMinMax() ? (
               <span key={index} style={{ display: 'none' }} />
             ) : (
               <KeyboardHandle
                 key={index}
-                ref={ref}
-                offset={offset}
-                tabIndex={tabIndex}
+                origin={origin}
                 rampValue={values[index]}
                 pointingToColor={colors && colors[index]}
               />

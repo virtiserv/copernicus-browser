@@ -4,7 +4,7 @@ import moment from 'moment';
 import { v4 as uuid } from 'uuid';
 import { t } from 'ttag';
 
-import store, { floatingPanelNotificationSlice, tabsSlice } from '../../store';
+import store, { floatingPanelNotificationSlice, workspaceSlice } from '../../store';
 import { getAccessToken } from '../../Auth/authHelpers';
 import { AttributeNames } from './assets/attributes';
 
@@ -73,7 +73,7 @@ export async function addProductsToWorkspace(products) {
     }
 
     const savedWorkspaceProducts = await getSavedWorkspaceProducts();
-    store.dispatch(tabsSlice.actions.setSavedWorkspaceProducts(savedWorkspaceProducts));
+    store.dispatch(workspaceSlice.actions.setSavedWorkspaceProducts(savedWorkspaceProducts));
 
     if (totalSuccessCount === 0 && uniqueErrors.size > 0) {
       const errorMsg = (

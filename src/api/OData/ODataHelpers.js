@@ -235,13 +235,13 @@ import {
   AttributeOperationalModeValues,
   AttributeOrbitDirectionValues,
   AttributePolarisationChannelsValues,
-  FormatedAttributeNames,
   ODataAttributes,
 } from './assets/attributes';
 import Sentinel1DataSourceHandler from '../../Tools/SearchPanel/dataSourceHandlers/Sentinel1DataSourceHandler';
 import { Polarization } from '@sentinel-hub/sentinelhub-js';
 import { recursiveCollections } from '../../Tools/VisualizationPanel/CollectionSelection/AdvancedSearch/collectionFormConfig';
 import { FilterElement } from './FilterElement';
+import { formatSearchResults, formatAttributesNames } from './searchResults.utils';
 import moment from 'moment';
 import { isFunction } from '../../utils';
 import {
@@ -2972,58 +2972,6 @@ const createAdvancedSearchQuery = (params) => {
     .assets();
 
   return oqb;
-};
-
-const getAttributeValue = (result, attributeName) => {
-  const attribute = result.Attributes.find((attr) => attr.Name === attributeName);
-  return attribute?.Value;
-};
-
-const getPreviewUrl = (result) => {
-  return result?.Assets?.[0]?.DownloadLink;
-};
-
-const formatFileSize = (size) => {
-  if (size === null || size === undefined) {
-    return '';
-  }
-  const sizeMb = Math.round(size / (1024 * 1024));
-  if (sizeMb < 1) {
-    return `< 1MB`;
-  }
-  return `${sizeMb}MB`;
-};
-
-const formatSearchResults = (results) => {
-  if (!results) {
-    return null;
-  }
-
-  const converted = results.map((result) => {
-    return {
-      id: result.Id,
-      name: result.Name,
-      geometry: result.Footprint && wellknown.parse(result.Footprint.replace('geography', '')),
-      previewUrl: getPreviewUrl(result),
-      sensingTime: result['ContentDate']['Start'],
-      platformShortName: getAttributeValue(result, AttributeNames.platformShortName),
-      instrumentShortName: getAttributeValue(result, AttributeNames.instrumentShortName),
-      productType: getAttributeValue(result, AttributeNames.productType),
-      size: formatFileSize(result.ContentLength),
-      originDate: result.OriginDate,
-      publicationDate: result.PublicationDate,
-      modificationDate: result.ModificationDate,
-      online: result.Online,
-      S3Path: result.S3Path,
-      attributes: result.Attributes,
-      contentLength: result.ContentLength,
-    };
-  });
-  return converted;
-};
-
-const formatAttributesNames = (attribute) => {
-  return FormatedAttributeNames[attribute] ? FormatedAttributeNames[attribute]() : attribute;
 };
 
 const oDataHelpers = {

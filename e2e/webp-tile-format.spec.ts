@@ -10,8 +10,12 @@ const OPENEO_VISUALIZATION_FORMATS = ['png', 'jpg', 'webp'];
 test('openEO tile requests send a valid visualization format from the process graph save_result node', async ({
   page,
 }) => {
+  // Cold openEO tile load under single-worker CI; the default 30s budget is too tight.
+  test.setTimeout(60_000);
+
   const tileRequest = page.waitForRequest(
     (r) => r.method() === 'POST' && r.url().includes(OPENEO_RESULT_URL),
+    { timeout: 45_000 },
   );
   await page.goto(CODE_EDITOR_URLS.s2L2aTrueColor);
   const req = await tileRequest;
@@ -22,7 +26,12 @@ test('openEO tile requests send a valid visualization format from the process gr
 });
 
 test('SH Processing API tile requests send image/webp as output format', async ({ page }) => {
-  const tileRequest = page.waitForRequest((r) => r.method() === 'POST' && r.url().includes(SH_PROCESS_URL));
+  // Cold tile load under single-worker CI; the default 30s budget is too tight.
+  test.setTimeout(60_000);
+
+  const tileRequest = page.waitForRequest((r) => r.method() === 'POST' && r.url().includes(SH_PROCESS_URL), {
+    timeout: 45_000,
+  });
   await page.goto(CODE_EDITOR_URLS.customScript);
   const req = await tileRequest;
 
@@ -31,7 +40,12 @@ test('SH Processing API tile requests send image/webp as output format', async (
 });
 
 test('WebP download for non-openEO layer routes to SH Processing API with image/webp', async ({ page }) => {
-  const initialTiles = page.waitForResponse((r) => r.url().includes(SH_PROCESS_URL) && r.status() === 200);
+  // Cold tile load under single-worker CI; the default 30s budget is too tight.
+  test.setTimeout(60_000);
+
+  const initialTiles = page.waitForResponse((r) => r.url().includes(SH_PROCESS_URL) && r.status() === 200, {
+    timeout: 45_000,
+  });
   await page.goto(CODE_EDITOR_URLS.customScript);
   await initialTiles;
 
@@ -54,8 +68,12 @@ test('WebP download for non-openEO layer routes to SH Processing API with image/
 });
 
 test('CLMS Vector tiles request image/png, not WebP', async ({ page }) => {
+  // Cold WMS tile load under single-worker CI; the default 30s budget is too tight.
+  test.setTimeout(60_000);
+
   const tileRequest = page.waitForRequest(
     (r) => r.method() === 'GET' && r.url().includes(CLMS_VECTOR_WMS_URL) && r.url().includes('GetMap'),
+    { timeout: 45_000 },
   );
   await page.goto(CODE_EDITOR_URLS.clmsVectorUrbanAtlas);
   const req = await tileRequest;
@@ -67,7 +85,14 @@ test('CLMS Vector tiles request image/png, not WebP', async ({ page }) => {
 });
 
 test('WebP download for openEO layer routes to openEO with correct format', async ({ page }) => {
-  const initialTiles = page.waitForResponse((r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200);
+  // Heavy multi-wait test (cold tile load + download request) under single-worker CI;
+  // the chained wait budgets can exceed 60s, so give the whole test more headroom.
+  test.setTimeout(90_000);
+
+  const initialTiles = page.waitForResponse(
+    (r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200,
+    { timeout: 45_000 },
+  );
   await page.goto(CODE_EDITOR_URLS.s2L2aTrueColor);
   await initialTiles;
 
@@ -80,10 +105,17 @@ test('WebP download for openEO layer routes to openEO with correct format', asyn
   await formatSelect.selectOption({ label: 'WebP (no georeference)' });
   await page.waitForLoadState('networkidle');
 
+  // The download panel's live preview thumbnail always requests PNG via this same
+  // openEO endpoint, so the predicate must match on the save_result format itself
+  // (not just URL+method) to avoid racing against the preview's request.
   const [req] = await Promise.all([
-    page.waitForRequest((r) => r.method() === 'POST' && r.url().includes(OPENEO_RESULT_URL), {
-      timeout: 30000,
-    }),
+    page.waitForRequest(
+      (r) =>
+        r.method() === 'POST' &&
+        r.url().includes(OPENEO_RESULT_URL) &&
+        getSaveResultFormat(r.postDataJSON()?.process?.process_graph) === 'webp',
+      { timeout: 30_000 },
+    ),
     page.getByText('Download', { exact: true }).click(),
   ]);
   expect(getSaveResultFormat(req.postDataJSON().process.process_graph)).toBe('webp');
