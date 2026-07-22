@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { connect } from 'react-redux';
+import { Moment } from 'moment';
 import { getZoomConfiguration } from '../Tools/SearchPanel/dataSourceHandlers/helper';
 import { t } from 'ttag';
 import { EOBButton } from '../junk/EOBCommon//EOBButton/EOBButton';
@@ -78,8 +79,8 @@ type Props = {
   layerId: string | undefined;
   // fromTime, toTime, and selectedLanguage are not used directly but are mapped from the store
   // to trigger a re-render when dates or language change, keeping the notification panel in sync.
-  fromTime: string | null | undefined;
-  toTime: string | null | undefined;
+  fromTime: Moment | null | undefined;
+  toTime: Moment | null | undefined;
   selectedLanguage: string | null | undefined;
   selectedTabIndex: number;
   userAuthError: string | null | undefined;

@@ -115,6 +115,7 @@
     "prettier-html": "prettier --write \"./**/*.html\"",
     "translate": "node scripts/translate",
     "update-metadata-cache-bundle": "node scripts/update-metadata-cache-bundle",
+    "update-urban-atlas-capabilities-cache": "node scripts/update-urban-atlas-capabilities-cache",
     "update-ogc-request-states": "node scripts/update-ogc-request-states",
     "instances-transfer": "node scripts/instances-transfer",
     "deploy:stage": "./scripts/deploy-cdse-stage.sh",
