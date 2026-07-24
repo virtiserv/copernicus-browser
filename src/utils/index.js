@@ -18,19 +18,10 @@ export function getUrlParams() {
   return Object.fromEntries(searchParams.entries());
 }
 
-export function userCanAccessLockedFunctionality(user, selectedTheme) {
-  if (selectedTheme && selectedTheme.type && selectedTheme.type === 'EDUCATION') {
-    return true;
-  }
-
-  return !!user;
-}
-
 /*
   List of all supported URL parameters: (with exception of legacy EOB2 parameters)
   - themesUrl: URL of the JSON file which contains the themes definitions. If not
-    specified, one of the included JSON files is used (either default_themes.js
-    or education_themes.js, depending on themeId which must exist in one of them).
+    specified, one of the included JSON files is used (default_themes.js).
   - themeId: value of the id field in the theme definition
   - datasetId: id of the dataset that was chosen when searching. It is specified so
     that we know which layers to list in Visualization panel.

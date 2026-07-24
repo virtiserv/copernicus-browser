@@ -283,9 +283,11 @@ export async function fetchImage(layer, options) {
           : { ...geometry, height: openEoHeight, width: openEoWidth, crs: bbox.crs.authId };
 
       let collectionId;
-      if (dsh.supportsLowResolutionAlternativeCollection(datasetId)) {
-        const lowResolutionCollectionId = dsh.getLowResolutionCollectionId(datasetId);
-        const lowResolutionMetersPerPixelThreshold = dsh.getLowResolutionMetersPerPixelThreshold(datasetId);
+      if (dsh.supportsLowResolutionAlternativeCollection(layer.collectionId)) {
+        const lowResolutionCollectionId = dsh.getLowResolutionCollectionId(layer.collectionId);
+        const lowResolutionMetersPerPixelThreshold = dsh.getLowResolutionMetersPerPixelThreshold(
+          layer.collectionId,
+        );
 
         const mPerPixel = metersPerPixel(getMapParams.bbox, getMapParams.width);
         if (mPerPixel > lowResolutionMetersPerPixelThreshold) {

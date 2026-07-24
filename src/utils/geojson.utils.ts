@@ -427,6 +427,12 @@ export const buildSearchGeometry = ({
   poiBounds,
   aoiGeometry,
   maxGeometryChars = DEFAULT_MAX_GEOMETRY_CHARS,
+}: {
+  mapBounds?: L.LatLngBounds;
+  aoiBounds?: L.LatLngBounds;
+  poiBounds?: L.LatLngBounds;
+  aoiGeometry?: Geometry;
+  maxGeometryChars?: number;
 }) => {
   // If we have an AOI geometry, use it directly if simple enough, otherwise simplify to bbox
   if (aoiGeometry) {

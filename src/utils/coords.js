@@ -1,9 +1,14 @@
+import L from 'leaflet';
 import { coordEach } from '@turf/meta';
 import { featureCollection, point as turfPoint } from '@turf/helpers';
 import geo_area from '@mapbox/geojson-area';
 import { reprojectGeometry } from './reproject';
 import { BBox, CRS_EPSG3857, CRS_EPSG4326 } from '@sentinel-hub/sentinelhub-js';
 import { BBOX_PADDING } from '../const';
+import {
+  unNormalizeMultiPolygonCoordinates,
+  doCoordinatesCrossAntimeridian,
+} from './handelAntimeridianCoord.utils';
 
 export const EQUATOR_RADIUS = 6378137.0;
 
@@ -122,6 +127,18 @@ export function metersPerPixel(bbox, width) {
 
   return (widthInMeters / width) * Math.cos(lat(latitude));
 }
+
+export const getBoundsAndLatLng = (geometry) => {
+  const geometryCopy = { ...geometry };
+  if (doCoordinatesCrossAntimeridian(geometryCopy)) {
+    geometryCopy.coordinates = unNormalizeMultiPolygonCoordinates(geometryCopy.coordinates, true, true);
+  }
+  const layer = L.geoJSON(geometryCopy);
+  const bounds = layer.getBounds();
+  const { lat, lng } = bounds.getCenter();
+  const zoom = getBoundsZoomLevel(bounds);
+  return { bounds: bounds, lat: lat, lng: lng, zoom: zoom };
+};
 
 export function generateAppropriateSearchBBox(bounds) {
   const minLng = bounds.getWest() + BBOX_PADDING * (bounds.getEast() - bounds.getWest());

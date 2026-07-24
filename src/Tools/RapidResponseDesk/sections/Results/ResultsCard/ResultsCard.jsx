@@ -20,7 +20,7 @@ import ProductPreview from '../../../../Results/ProductPreview/ProductPreview';
 
 import { rrdApi } from '../../../../../api/RRD/RRDApi';
 import { RRDQueryBuilder } from '../../../../../api/RRD/RRDQueryBuilder';
-import { getBoundsAndLatLng } from '../../../../CommercialDataPanel/commercialData.utils';
+import { getBoundsAndLatLng } from '../../../../../utils/coords';
 import { fetchPreviewImage, fetchThumbnailImage } from './results.utils';
 
 import { MetadataSourceType } from '../../../rapidResponseProperties';
@@ -379,6 +379,7 @@ const ResultsCard = ({
             }}
             validate={true}
             isLoading={isLoadingImage}
+            skipNormalization
           />
         </div>
         <div className="description-container">

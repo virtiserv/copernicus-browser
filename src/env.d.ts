@@ -15,3 +15,13 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  API_ENDPOINT_CONFIG?: {
+    SH_SERVICES_URL: string;
+    AUTH_BASEURL: string;
+    OPENEO_BASEURL: string;
+    VECTOR_DATA_BASEURL: string;
+    STAC_BASEURL: string;
+  };
+}

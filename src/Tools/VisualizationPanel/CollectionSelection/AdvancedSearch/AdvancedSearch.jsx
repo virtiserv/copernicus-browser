@@ -27,7 +27,7 @@ import {
   DEFAULT_THEME_ID,
   ADVANCED_SEARCH_CONFIG_SESSION_STORAGE_KEY,
 } from '../../../../const';
-import { getBoundsAndLatLng } from '../../../CommercialDataPanel/commercialData.utils';
+import { getBoundsAndLatLng } from '../../../../utils/coords';
 import Results from '../../../Results/Results';
 import './AdvancedSearch.scss';
 import { buildSearchGeometry } from '../../../../utils/geojson.utils';
@@ -39,12 +39,14 @@ import oDataHelpers, {
 } from '../../../../api/OData/ODataHelpers';
 
 import { withODataSearchHOC } from './withODataSearchHOC';
+import { withSTACSearchHOC } from './withSTACSearchHOC';
 
 import { applyFilterMonthsToDateRange } from './search';
 import ReactMarkdown from 'react-markdown';
 import cloneDeep from 'lodash.clonedeep';
 import { themesSlice } from '../../../../store';
 import { ODATA_SEARCH_ERROR_MESSAGE } from '../../../../hooks/useODataSearch';
+import { STAC_SEARCH_ERROR_MESSAGE } from '../../../../hooks/useSTACSearch';
 import { ErrorCode, ErrorMessage } from './const';
 import {
   CollectionFormInitialState,
@@ -55,6 +57,7 @@ import { recursiveCollections } from './collectionFormConfig';
 import RecursiveCollectionForm from './RecursiveCollectionForm';
 import { AttributeNames } from '../../../../api/OData/assets/attributes';
 import { ODataCollections } from '../../../../api/OData/ODataTypes';
+import { createSTACSearchPayload } from '../../../../api/STAC/STACSearchPayloadBuilder';
 import { REACT_MARKDOWN_REHYPE_PLUGINS } from '../../../../rehypeConfig';
 import MessagePanel from '../../MessagePanel/MessagePanel';
 
@@ -130,6 +133,17 @@ class AdvancedSearch extends Component {
     searchCriteria: '',
     formValidationError: '',
     additionFiltersPositionTop: 0,
+    // Parallel search tracking
+    parallelSearch: {
+      isParallelSearch: false,
+      stacPending: false,
+      odataPending: false,
+      stacResult: null,
+      odataResult: null,
+    },
+    // Non-blocking notice shown alongside results when one leg of a parallel STAC+OData
+    // search comes up empty/errors while the other leg succeeds - see MR review F2.
+    partialResultsWarning: null,
     geometrySimplified: false,
   };
 
@@ -163,7 +177,8 @@ class AdvancedSearch extends Component {
 
       // Restore cached results to Redux immediately for instant UI display, then
       // reconstruct next() locally via hydrate (no network call needed). The hydrate
-      // step is deferred so this.setState above has flushed — getQuery() reads state.
+      // step is deferred so this.setState above has flushed — getQuery()/collection
+      // partitioning read state.
       if (searchConfigFromSession.cachedResults && searchConfigFromSession.resultsAvailable) {
         const cachedPage = searchConfigFromSession.cachedPage ?? 0;
         const cachedTotalCount = searchConfigFromSession.cachedTotalCount ?? 0;
@@ -182,22 +197,11 @@ class AdvancedSearch extends Component {
         );
 
         setTimeout(() => {
-          try {
-            const freshQuery = this.getQuery();
-            // Mark this oDataSearchResult change as a cache restore (not a fresh user
-            // search) so componentDidUpdate doesn't force the search tab back open and
-            // override the tab restored from the URL on refresh.
-            this.hydratingFromCache = true;
-            this.props.hydrateODataSearch({
-              query: freshQuery,
-              results: searchConfigFromSession.cachedResults,
-              page: cachedPage,
-              totalCount: cachedTotalCount,
-              hasMore: cachedHasMore,
-            });
-          } catch (e) {
-            // Swallow to avoid blocking UI; user can trigger a manual search.
-          }
+          // Mark this oDataSearchResult/stacSearchResult change as a cache restore
+          // (not a fresh user search) so componentDidUpdate doesn't force the search
+          // tab back open and override the tab restored from the URL on refresh.
+          this.hydratingFromCache = true;
+          this.hydrateCachedResults(searchConfigFromSession);
         }, 0);
       }
     }
@@ -215,45 +219,95 @@ class AdvancedSearch extends Component {
       this.shouldDisplayTileGeometries(true);
     }
 
-    if (this.props.oDataSearchResult !== prevProps?.oDataSearchResult) {
-      const newSearchFormData = {
-        fromMoment: this.state.fromMoment,
-        toMoment: this.state.toMoment,
-        collectionForm: this.state.collectionForm,
-        searchCriteria: this.state.searchCriteria,
-      };
-
-      // Use the latest hook result for initial display.
-      store.dispatch(searchResultsSlice.actions.setSearchResult(this.props.oDataSearchResult));
-      store.dispatch(searchResultsSlice.actions.setSearchFormData(newSearchFormData));
-
-      // Cache only serializable data (without non-serializable functions like result.next() or query.skip())
-      const cachedResults = this.props.oDataSearchResult?.allResults || [];
-      const cachedTotalCount = this.props.oDataSearchResult?.totalCount || 0;
-      const cachedHasMore = this.props.oDataSearchResult?.hasMore || false;
-
-      // A genuine new search should bring the user to the search tab. A cache restore
-      // (hydrate on page refresh) must not — it would override the tab the URL params
-      // already restored (e.g. Visualise). In that case preserve the persisted flag.
-      const shouldShowAdvancedSearchTab = this.hydratingFromCache
-        ? this.persistedShouldShowAdvancedSearchTab
-        : true;
-      this.hydratingFromCache = false;
-
-      sessionStorage.setItem(
-        ADVANCED_SEARCH_CONFIG_SESSION_STORAGE_KEY,
-        JSON.stringify({
-          searchFormData: newSearchFormData,
-          resultsAvailable: true,
-          resultsPanelSelected: true,
-          shouldShowAdvancedSearchTab,
-          cachedResults: cachedResults,
-          cachedTotalCount: cachedTotalCount,
-          cachedHasMore: cachedHasMore,
-          cachedPage: this.props.oDataSearchResult?.page ?? 0,
-        }),
+    // If user token just became available and we have cached results, trigger a fresh
+    // background search so results reflect the user's actual access. Routed through
+    // doSearch() (rather than unconditionally calling the OData productSearch) so STAC-only
+    // and mixed collections (e.g. Landsat Mosaic) are partitioned and searched via the
+    // correct API - see MR review F2.
+    if (!prevProps.userToken && this.props.userToken) {
+      const searchConfigFromSession = JSON.parse(
+        sessionStorage.getItem(ADVANCED_SEARCH_CONFIG_SESSION_STORAGE_KEY),
       );
+      if (searchConfigFromSession?.cachedResults && searchConfigFromSession?.resultsAvailable) {
+        this.doSearch();
+      }
     }
+
+    const { parallelSearch } = this.state;
+
+    // Handle OData search results
+    if (this.props.oDataSearchResult !== prevProps?.oDataSearchResult && this.props.oDataSearchResult) {
+      if (parallelSearch.isParallelSearch) {
+        // In parallel mode, store the result and wait for both to complete
+        this.setState(
+          (prevState) => ({
+            parallelSearch: {
+              ...prevState.parallelSearch,
+              odataPending: false,
+              odataResult: this.props.oDataSearchResult,
+            },
+          }),
+          this.checkAndMergeParallelResults,
+        );
+      } else {
+        // Single search mode - dispatch result immediately
+        this.dispatchSearchResult(this.props.oDataSearchResult);
+      }
+    }
+
+    // Handle STAC search results
+    if (this.props.stacSearchResult !== prevProps?.stacSearchResult && this.props.stacSearchResult) {
+      if (parallelSearch.isParallelSearch) {
+        // In parallel mode, store the result and wait for both to complete
+        this.setState(
+          (prevState) => ({
+            parallelSearch: {
+              ...prevState.parallelSearch,
+              stacPending: false,
+              stacResult: this.props.stacSearchResult,
+            },
+          }),
+          this.checkAndMergeParallelResults,
+        );
+      } else {
+        // Single search mode - dispatch result immediately
+        this.dispatchSearchResult(this.props.stacSearchResult);
+      }
+    }
+
+    // Handle OData search errors: in parallel mode, a failed OData leg must still count as
+    // "done" (with no result), otherwise odataPending never clears and the STAC leg's
+    // already-successful results are never dispatched - see MR review F2.
+    if (this.props.searchError !== prevProps?.searchError && this.props.searchError) {
+      if (parallelSearch.isParallelSearch) {
+        this.setState(
+          (prevState) => ({
+            parallelSearch: {
+              ...prevState.parallelSearch,
+              odataPending: false,
+            },
+          }),
+          this.checkAndMergeParallelResults,
+        );
+      }
+    }
+
+    // Handle STAC search errors: same reasoning as above, but for a failed STAC leg
+    // stranding the OData leg's already-successful results - see MR review F2.
+    if (this.props.stacSearchError !== prevProps?.stacSearchError && this.props.stacSearchError) {
+      if (parallelSearch.isParallelSearch) {
+        this.setState(
+          (prevState) => ({
+            parallelSearch: {
+              ...prevState.parallelSearch,
+              stacPending: false,
+            },
+          }),
+          this.checkAndMergeParallelResults,
+        );
+      }
+    }
+
     //populate search form with params used for last search when go to search is selected
     if (this.props.searchFormData && !this.props.resultsPanelSelected) {
       const formConfig = getCollectionFormConfig(recursiveCollections, { userToken: this.props.userToken });
@@ -272,6 +326,161 @@ class AdvancedSearch extends Component {
       this.errorPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
+
+  /**
+   * Dispatches search results to the store and session storage
+   */
+  dispatchSearchResult = (searchResult) => {
+    const newSearchFormData = {
+      fromMoment: this.state.fromMoment,
+      toMoment: this.state.toMoment,
+      collectionForm: this.state.collectionForm,
+      searchCriteria: this.state.searchCriteria,
+    };
+
+    store.dispatch(searchResultsSlice.actions.setSearchResult(searchResult));
+    store.dispatch(searchResultsSlice.actions.setSearchFormData(newSearchFormData));
+
+    // Cache only serializable data (without non-serializable functions like result.next() or query.skip())
+    const cachedResults = searchResult?.allResults || [];
+    const cachedTotalCount = searchResult?.totalCount || 0;
+    const cachedHasMore = searchResult?.hasMore || false;
+    // Only meaningful for a single-backend STAC result (parallel/merged results don't
+    // expose a resumable token here — see componentDidMount's cache-restore handling).
+    const cachedStacNextToken = searchResult?.nextToken ?? null;
+    // Merged (parallel) results can't be safely split back into per-backend result
+    // arrays on cache-restore, so we record whether this was a parallel search and
+    // skip reconstructing a "load more" continuation for that case on restore.
+    const cachedIsParallelSearch = !!searchResult?._mergedFrom;
+
+    // A genuine new search should bring the user to the search tab. A cache restore
+    // (hydrate on page refresh) must not — it would override the tab the URL params
+    // already restored (e.g. Visualise). In that case preserve the persisted flag.
+    const shouldShowAdvancedSearchTab = this.hydratingFromCache
+      ? this.persistedShouldShowAdvancedSearchTab
+      : true;
+    this.hydratingFromCache = false;
+
+    sessionStorage.setItem(
+      ADVANCED_SEARCH_CONFIG_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        searchFormData: newSearchFormData,
+        resultsAvailable: true,
+        resultsPanelSelected: true,
+        shouldShowAdvancedSearchTab,
+        cachedResults: cachedResults,
+        cachedTotalCount: cachedTotalCount,
+        cachedHasMore: cachedHasMore,
+        cachedPage: searchResult?.page ?? 0,
+        cachedStacNextToken,
+        cachedIsParallelSearch,
+      }),
+    );
+  };
+
+  /**
+   * Checks if both parallel searches have completed and merges the results
+   */
+  checkAndMergeParallelResults = () => {
+    const { parallelSearch } = this.state;
+
+    // Check if both searches are done (not pending and have results OR were never initiated)
+    const stacDone = !parallelSearch.stacPending;
+    const odataDone = !parallelSearch.odataPending;
+
+    if (stacDone && odataDone) {
+      const stacResult = parallelSearch.stacResult;
+      const odataResult = parallelSearch.odataResult;
+      let partialResultsWarning = null;
+
+      // Merge results if both have data
+      if (stacResult && odataResult) {
+        const mergedResult = this.mergeSearchResults(stacResult, odataResult);
+        this.dispatchSearchResult(mergedResult);
+      } else if (stacResult) {
+        this.dispatchSearchResult(stacResult);
+        // The OData leg of this parallel search came back empty/errored while STAC
+        // succeeded - surface a non-blocking notice alongside the results instead of
+        // silently dropping the fact that one of the selected data sources had no matches.
+        if (parallelSearch.isParallelSearch) {
+          partialResultsWarning = this.buildPartialResultsWarning(this.props.searchError);
+        }
+      } else if (odataResult) {
+        this.dispatchSearchResult(odataResult);
+        if (parallelSearch.isParallelSearch) {
+          partialResultsWarning = this.buildPartialResultsWarning(this.props.stacSearchError);
+        }
+      }
+
+      // Reset the pending flags, but keep the last known per-backend results (and
+      // isParallelSearch flag) around so getNextNResults can tell this was a parallel
+      // search and re-merge correctly when the user clicks "load more".
+      this.setState({
+        parallelSearch: {
+          ...parallelSearch,
+          stacPending: false,
+          odataPending: false,
+        },
+        partialResultsWarning,
+      });
+    }
+  };
+
+  /**
+   * Builds the non-blocking "one data source had no matches" warning message from the
+   * failed leg's error, appending its availability info when present. Returns null when
+   * the error isn't a genuine "no products found" case (e.g. a network/API failure),
+   * since that isn't something the user can resolve by adjusting their search.
+   */
+  buildPartialResultsWarning = (failedLegError) => {
+    const isNoProductsError =
+      failedLegError?.message?.startsWith(ODATA_SEARCH_ERROR_MESSAGE.NO_PRODUCTS_FOUND) ||
+      failedLegError?.message?.startsWith(STAC_SEARCH_ERROR_MESSAGE.NO_PRODUCTS_FOUND);
+    if (!isNoProductsError) {
+      return null;
+    }
+    return failedLegError.availabilityMessage
+      ? `${ErrorMessage[ErrorCode.partialNoMatchingProducts]()}\n${failedLegError.availabilityMessage}`
+      : ErrorMessage[ErrorCode.partialNoMatchingProducts]();
+  };
+
+  /**
+   * Merges search results from STAC and OData APIs
+   * Results are merged and sorted by sensing time (descending)
+   */
+  mergeSearchResults = (stacResult, odataResult) => {
+    const allResults = [...(stacResult.allResults || []), ...(odataResult.allResults || [])];
+
+    // Sort by sensing time descending, pushing results with a missing/invalid
+    // sensingTime to the end instead of letting NaN comparisons silently scramble
+    // their position relative to validly-dated results - see MR review F2.
+    allResults.sort((a, b) => {
+      const timeA = new Date(a.sensingTime).getTime();
+      const timeB = new Date(b.sensingTime).getTime();
+      if (isNaN(timeA) && isNaN(timeB)) {
+        return 0;
+      }
+      if (isNaN(timeA)) {
+        return 1;
+      }
+      if (isNaN(timeB)) {
+        return -1;
+      }
+      return timeB - timeA;
+    });
+
+    return {
+      allResults,
+      hasMore: stacResult.hasMore || odataResult.hasMore,
+      totalCount: (stacResult.totalCount || 0) + (odataResult.totalCount || 0),
+      // "load more" is handled by getNextNResults, which knows how to continue
+      // pagination on whichever backend(s) still have more and re-merge with the
+      // other backend's already-fetched results (see getNextNResults below).
+      next: stacResult.hasMore || odataResult.hasMore ? () => {} : null,
+      // Track source APIs for potential future use
+      _mergedFrom: { stac: !!stacResult, odata: !!odataResult },
+    };
+  };
 
   shouldDisplayTileGeometries = (shouldDisplay) => {
     store.dispatch(searchResultsSlice.actions.setDisplayingSearchResults(shouldDisplay));
@@ -517,20 +726,333 @@ class AdvancedSearch extends Component {
     this.setState({ toMoment: newToMoment });
   };
 
+  /**
+   * Partitions selected collections into STAC-capable and OData-only collections.
+   * This enables parallel search when multiple collections with different API support are selected.
+   *
+   * @param {Array} formConfig - The collection form configuration array
+   * @param {Object} selectedCollections - The currently selected collections object
+   * @returns {Object} Object with stacCollections and odataCollections properties
+   */
+  partitionCollectionsByApiSupport(formConfig, selectedCollections) {
+    const stacCollections = {};
+    const odataCollections = {};
+
+    for (const collectionId of Object.keys(selectedCollections)) {
+      const collectionObj = formConfig.find((c) => c.id === collectionId);
+      if (!collectionObj || !collectionObj.items) {
+        // If no items, default to OData
+        odataCollections[collectionId] = selectedCollections[collectionId];
+        continue;
+      }
+
+      const stacSubCollections = {};
+      const odataSubCollections = {};
+      let hasStacItems = false;
+      let hasOdataItems = false;
+
+      for (const subCollectionId of Object.keys(selectedCollections[collectionId])) {
+        // Skip metadata properties like 'type' and 'platform' (mirrors the same check in
+        // getCollectionFormInitialState in collectionFormConfig.utils.js)
+        if (subCollectionId === 'type' || subCollectionId === 'platform') {
+          continue;
+        }
+
+        const subCollectionObj = collectionObj.items.find((item) => item.id === subCollectionId);
+        if (subCollectionObj && subCollectionObj.supportsStacSearch) {
+          stacSubCollections[subCollectionId] = selectedCollections[collectionId][subCollectionId];
+          hasStacItems = true;
+        } else if (subCollectionObj) {
+          // Only add if it's a valid sub-collection (found in formConfig)
+          odataSubCollections[subCollectionId] = selectedCollections[collectionId][subCollectionId];
+          hasOdataItems = true;
+        }
+      }
+
+      // If no valid sub-collections were matched from selectedCollections,
+      // the parent group was selected — include all children from config
+      if (!hasStacItems && !hasOdataItems) {
+        for (const item of collectionObj.items) {
+          if (item.supportsStacSearch) {
+            stacSubCollections[item.id] = {};
+            hasStacItems = true;
+          } else {
+            odataSubCollections[item.id] = {};
+            hasOdataItems = true;
+          }
+        }
+      }
+
+      // Add to appropriate collection groups, preserving any metadata like 'type'
+      if (hasStacItems) {
+        stacCollections[collectionId] = { ...stacSubCollections };
+        // Copy over type if it exists
+        if (selectedCollections[collectionId].type) {
+          stacCollections[collectionId].type = selectedCollections[collectionId].type;
+        }
+        // Copy over platform if it exists, so extractPlatforms() in STACSearchPayloadBuilder.js
+        // can build the platform CQL2 filter for this collection.
+        if (selectedCollections[collectionId].platform) {
+          stacCollections[collectionId].platform = selectedCollections[collectionId].platform;
+        }
+      }
+      if (hasOdataItems) {
+        odataCollections[collectionId] = { ...odataSubCollections };
+        // Copy over type if it exists
+        if (selectedCollections[collectionId].type) {
+          odataCollections[collectionId].type = selectedCollections[collectionId].type;
+        }
+      }
+    }
+
+    return { stacCollections, odataCollections };
+  }
+
+  /**
+   * Reconstructs the `next()` continuation for cached results restored on page refresh,
+   * without re-fetching the already-cached first page(s). Mirrors doSearch()'s partitioning
+   * so STAC-only collections (e.g. Landsat Mosaic) are hydrated via hydrateSTACSearch and
+   * never routed through the OData hydrate path (see MR review F1).
+   *
+   * Parallel (merged STAC+OData) searches can't be safely split back into per-backend
+   * continuations from the merged cache alone, so for that case we just re-run doSearch()
+   * to get a fresh, correctly-partitioned pair of searches instead of hydrating.
+   */
+  hydrateCachedResults = (searchConfigFromSession) => {
+    if (searchConfigFromSession.cachedIsParallelSearch) {
+      this.hydratingFromCache = false;
+      this.doSearch();
+      return;
+    }
+
+    const { collectionForm } = this.state;
+    const formConfig = getCollectionFormConfig(recursiveCollections, { userToken: this.props.userToken });
+    const { stacCollections, odataCollections } = this.partitionCollectionsByApiSupport(
+      formConfig,
+      collectionForm.selectedCollections,
+    );
+
+    const cachedResults = searchConfigFromSession.cachedResults ?? [];
+    const cachedTotalCount = searchConfigFromSession.cachedTotalCount ?? 0;
+    const cachedHasMore = searchConfigFromSession.cachedHasMore ?? false;
+    const cachedPage = searchConfigFromSession.cachedPage ?? 0;
+    const cachedStacNextToken = searchConfigFromSession.cachedStacNextToken ?? null;
+
+    try {
+      if (Object.keys(stacCollections).length > 0) {
+        const { fromMoment, toMoment, searchCriteria, filterMonths } = this.state;
+        const { mapBounds, aoiBounds, poiBounds } = this.props;
+        const stacSelectedFilters = {};
+        if (collectionForm.selectedFilters) {
+          Object.keys(collectionForm.selectedFilters).forEach((collectionId) => {
+            if (stacCollections[collectionId]) {
+              stacSelectedFilters[collectionId] = collectionForm.selectedFilters[collectionId];
+            }
+          });
+        }
+        const stacCollectionForm = {
+          ...collectionForm,
+          selectedCollections: stacCollections,
+          selectedFilters: stacSelectedFilters,
+        };
+        const stacPayload = createSTACSearchPayload({
+          collectionForm: stacCollectionForm,
+          collectionFormConfig: formConfig,
+          fromMoment,
+          toMoment,
+          searchCriteria,
+          filterMonths,
+          mapBounds,
+          aoiBounds,
+          poiBounds,
+          applyFilterMonthsToDateRange,
+        });
+        this.props.hydrateSTACSearch({
+          payload: stacPayload,
+          results: cachedResults,
+          totalCount: cachedTotalCount,
+          hasMore: cachedHasMore,
+          nextToken: cachedStacNextToken,
+        });
+        return;
+      }
+
+      if (Object.keys(odataCollections).length > 0) {
+        const odataSelectedFilters = {};
+        if (collectionForm.selectedFilters) {
+          Object.keys(collectionForm.selectedFilters).forEach((collectionId) => {
+            if (odataCollections[collectionId]) {
+              odataSelectedFilters[collectionId] = collectionForm.selectedFilters[collectionId];
+            }
+          });
+        }
+        const odataCollectionForm = {
+          ...collectionForm,
+          selectedCollections: odataCollections,
+          selectedFilters: odataSelectedFilters,
+        };
+        const odataQuery = this.getQuery(odataCollectionForm);
+        this.props.hydrateODataSearch({
+          query: odataQuery,
+          results: cachedResults,
+          page: cachedPage,
+          totalCount: cachedTotalCount,
+          hasMore: cachedHasMore,
+        });
+        return;
+      }
+
+      // No selected collections matched either partition (e.g. name-only search) -
+      // fall back to the plain OData query used by doSearch()'s name-only branch.
+      const odataQuery = this.getQuery();
+      this.props.hydrateODataSearch({
+        query: odataQuery,
+        results: cachedResults,
+        page: cachedPage,
+        totalCount: cachedTotalCount,
+        hasMore: cachedHasMore,
+      });
+    } catch (e) {
+      // Regeneration failed (e.g. stale/invalid cached form data) - give up on hydrating
+      // silently; the user can trigger a manual search. Reset the flag so a subsequent
+      // real search isn't mistaken for a cache restore.
+      this.hydratingFromCache = false;
+    }
+  };
+
   doSearch = async () => {
     this.setState({
       formValidationError: '',
+      partialResultsWarning: null,
     });
     try {
-      const ODataQuery = this.getQuery();
-      this.props.setODataSearchAuthToken(this.props.userToken);
+      const { collectionForm, fromMoment, toMoment, searchCriteria, filterMonths } = this.state;
+      const { mapBounds, aoiBounds, poiBounds } = this.props;
+      const formConfig = getCollectionFormConfig(recursiveCollections, { userToken: this.props.userToken });
 
       if (!!this.props.user) {
         const productSaved = await getSavedWorkspaceProducts();
         store.dispatch(workspaceSlice.actions.setSavedWorkspaceProducts(productSaved));
       }
 
-      this.props.productSearch(ODataQuery);
+      // Partition collections by API support
+      const { stacCollections, odataCollections } = this.partitionCollectionsByApiSupport(
+        formConfig,
+        collectionForm.selectedCollections,
+      );
+
+      const hasStacCollections = Object.keys(stacCollections).length > 0;
+      const hasOdataCollections = Object.keys(odataCollections).length > 0;
+
+      // Check if this is a parallel search (both APIs needed)
+      const isParallelSearch = hasStacCollections && hasOdataCollections;
+
+      // Set parallel search state before initiating searches
+      if (isParallelSearch) {
+        this.setState({
+          parallelSearch: {
+            isParallelSearch: true,
+            stacPending: true,
+            odataPending: true,
+            stacResult: null,
+            odataResult: null,
+          },
+        });
+      } else {
+        // Reset parallel search state for single-API searches
+        this.setState({
+          parallelSearch: {
+            isParallelSearch: false,
+            stacPending: hasStacCollections,
+            odataPending: hasOdataCollections,
+            stacResult: null,
+            odataResult: null,
+          },
+        });
+      }
+
+      // Execute STAC search if there are STAC-capable collections
+      if (hasStacCollections) {
+        // Filter selectedFilters to only include filters for STAC collections
+        const stacSelectedFilters = {};
+        if (collectionForm.selectedFilters) {
+          Object.keys(collectionForm.selectedFilters).forEach((collectionId) => {
+            if (stacCollections[collectionId]) {
+              stacSelectedFilters[collectionId] = collectionForm.selectedFilters[collectionId];
+            }
+          });
+        }
+
+        const stacCollectionForm = {
+          ...collectionForm,
+          selectedCollections: stacCollections,
+          selectedFilters: stacSelectedFilters,
+        };
+
+        const stacPayload = createSTACSearchPayload({
+          collectionForm: stacCollectionForm,
+          collectionFormConfig: formConfig,
+          fromMoment,
+          toMoment,
+          searchCriteria,
+          filterMonths,
+          mapBounds,
+          aoiBounds,
+          poiBounds,
+          applyFilterMonthsToDateRange,
+        });
+
+        this.props.setSTACAuthToken(this.props.userToken);
+        this.props.stacSearch(stacPayload);
+      } else {
+        // No STAC-capable collections selected this time - clear any stale STAC search
+        // state (e.g. searchError/availabilityMessage) left over from a previous search
+        // where a STAC data source was selected but has since been deselected.
+        this.props.stacSearch(null);
+      }
+
+      // Execute OData search if there are OData-only collections
+      if (hasOdataCollections) {
+        // Filter selectedFilters to only include filters for OData collections
+        const odataSelectedFilters = {};
+        if (collectionForm.selectedFilters) {
+          Object.keys(collectionForm.selectedFilters).forEach((collectionId) => {
+            if (odataCollections[collectionId]) {
+              odataSelectedFilters[collectionId] = collectionForm.selectedFilters[collectionId];
+            }
+          });
+        }
+
+        const odataCollectionForm = {
+          ...collectionForm,
+          selectedCollections: odataCollections,
+          selectedFilters: odataSelectedFilters,
+        };
+
+        const ODataQuery = this.getQuery(odataCollectionForm);
+        this.props.setODataSearchAuthToken(this.props.userToken);
+        this.props.productSearch(ODataQuery);
+      } else {
+        // No OData-only collections selected this time - clear any stale OData search
+        // state (e.g. searchError/availabilityMessage) left over from a previous search
+        // where an OData data source was selected but has since been deselected. If the
+        // name-only fallback below fires, it will immediately overwrite this with a real
+        // query.
+        this.props.productSearch(null);
+      }
+
+      // If no collections selected, fall back to name-only OData search or show error
+      if (!hasStacCollections && !hasOdataCollections) {
+        if (searchCriteria) {
+          const ODataQuery = this.getQuery();
+          this.props.setODataSearchAuthToken(this.props.userToken);
+          this.props.productSearch(ODataQuery);
+        } else {
+          this.setState({
+            formValidationError: ErrorCode.selectSearchCriteria,
+          });
+        }
+      }
     } catch (e) {
       this.setState({
         formValidationError: e,
@@ -557,18 +1079,55 @@ class AdvancedSearch extends Component {
   };
 
   getNextNResults = async () => {
+    if (this.props.userToken) {
+      this.props.setODataSearchAuthToken(this.props.userToken);
+      this.props.setSTACAuthToken(this.props.userToken);
+    }
+
+    const { parallelSearch } = this.state;
+
+    // Parallel search: the merged result's own `next` is a no-op placeholder (see
+    // mergeSearchResults). Continue pagination on whichever backend(s) still have
+    // more; componentDidUpdate's parallel-search branch will store the fresh page
+    // and checkAndMergeParallelResults will re-merge it with the other backend's
+    // already-fetched results once it resolves.
+    if (parallelSearch.isParallelSearch) {
+      const stacHasMore = !!parallelSearch.stacResult?.next;
+      const odataHasMore = !!parallelSearch.odataResult?.next;
+
+      if (!stacHasMore && !odataHasMore) {
+        return;
+      }
+
+      this.setState((prevState) => ({
+        parallelSearch: {
+          ...prevState.parallelSearch,
+          stacPending: stacHasMore,
+          odataPending: odataHasMore,
+        },
+      }));
+
+      const nextCalls = [];
+      if (stacHasMore) {
+        nextCalls.push(parallelSearch.stacResult.next());
+      }
+      if (odataHasMore) {
+        nextCalls.push(parallelSearch.odataResult.next());
+      }
+      await Promise.all(nextCalls);
+      return;
+    }
+
     if (!this.props.searchResult?.next) {
       // If next() isn't available yet (still restoring from cache), do nothing
       return;
     }
-    if (this.props.userToken) {
-      this.props.setODataSearchAuthToken(this.props.userToken);
-    }
     await this.props.searchResult.next();
   };
 
-  getQuery = () => {
-    const { collectionForm, fromMoment, toMoment, searchCriteria, filterMonths } = this.state;
+  getQuery = (collectionFormOverride = null) => {
+    const collectionForm = collectionFormOverride || this.state.collectionForm;
+    const { fromMoment, toMoment, searchCriteria, filterMonths } = this.state;
     const { mapBounds, aoiBounds, poiBounds, aoiGeometry } = this.props;
     const params = {};
 
@@ -797,6 +1356,8 @@ class AdvancedSearch extends Component {
       searchError,
       searchInProgress,
       searchResult,
+      stacSearchError,
+      stacSearchInProgress,
       resultsPanelSelected,
       resultsAvailable,
       userToken,
@@ -832,8 +1393,41 @@ class AdvancedSearch extends Component {
         }
       : null;
 
+    const stacSearchErrorFormatted = stacSearchError?.message?.startsWith(
+      STAC_SEARCH_ERROR_MESSAGE.NO_PRODUCTS_FOUND,
+    )
+      ? {
+          message: stacSearchError?.availabilityMessage
+            ? `${ErrorMessage[ErrorCode.noMatchingProducts]()}\n${stacSearchError.availabilityMessage}`
+            : ErrorMessage[ErrorCode.noMatchingProducts](),
+        }
+      : stacSearchError;
+
+    // When both legs of a parallel STAC+OData search return "no products found", combine
+    // their availability messages instead of always preferring the OData one - otherwise
+    // the STAC leg's error (and its availabilityMessage) is silently dropped - see MR review F1.
+    const noProductsError =
+      oDataSearchError && stacSearchErrorFormatted
+        ? {
+            message: [oDataSearchError.message, stacSearchErrorFormatted.message]
+              .filter(Boolean)
+              .join('\n\n'),
+          }
+        : oDataSearchError || stacSearchErrorFormatted;
+
     const displayingResults = resultsAvailable && resultsPanelSelected;
-    const error = this.getFormValidationError() || oDataSearchError;
+    // When a partial-results notice is already being shown alongside results, don't also
+    // surface the same "no products found" info as a blocking error - it's redundant now
+    // that the softer, dismissible notice communicates it instead.
+    const error = this.state.partialResultsWarning
+      ? this.getFormValidationError()
+      : this.getFormValidationError() || noProductsError;
+    const isSearchInProgress = searchInProgress || stacSearchInProgress;
+    const partialResultsWarningNode = this.state.partialResultsWarning ? (
+      <ReactMarkdown rehypePlugins={REACT_MARKDOWN_REHYPE_PLUGINS}>
+        {this.state.partialResultsWarning}
+      </ReactMarkdown>
+    ) : null;
     const { selectedCollections, maxCc, selectedFilters } = this.state.collectionForm;
     return (
       <>
@@ -852,11 +1446,12 @@ class AdvancedSearch extends Component {
             isAuthenticated={!!this.props.user}
             savedWorkspaceProducts={this.props.savedWorkspaceProducts}
             geometrySimplifiedWarning={geometrySimplifiedWarning?.message}
+            partialResultsWarning={partialResultsWarningNode}
           />
         )}
 
         <div
-          className={`search-panel ${searchInProgress ? 'disabled' : ''} ${
+          className={`search-panel ${isSearchInProgress ? 'disabled' : ''} ${
             displayingResults ? 'hidden' : ''
           }`}
         >
@@ -930,7 +1525,7 @@ class AdvancedSearch extends Component {
               onChange={this.setFilterMonths}
               isDisabled={!!this.state.searchCriteria}
             />
-            <EOBButton loading={searchInProgress} onClick={this.doSearch} fluid text={t`Search`} />
+            <EOBButton loading={isSearchInProgress} onClick={this.doSearch} fluid text={t`Search`} />
           </div>
           {error ? (
             <div className="error-panel" ref={this.errorPanelRef}>
@@ -982,4 +1577,4 @@ const mapStoreToProps = (store) => ({
   savedWorkspaceProducts: store.workspace.savedWorkspaceProducts,
 });
 
-export default connect(mapStoreToProps, null)(withODataSearchHOC(AdvancedSearch));
+export default connect(mapStoreToProps, null)(withSTACSearchHOC(withODataSearchHOC(AdvancedSearch)));

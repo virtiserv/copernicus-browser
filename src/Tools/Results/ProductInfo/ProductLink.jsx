@@ -24,7 +24,7 @@ export const ProductIdTooltipDescription = () => {
 
 const ProductLink = ({ product }) => {
   const downloadProductUrl = `${ODataEndpoints.download}${new ODataQueryBuilder(ODataEntity.Products)
-    .value(product.id)
+    .value(product.oDataProductId ?? product.id)
     .getQueryString()}`;
 
   return (

@@ -139,7 +139,6 @@ function ThemeSelect({
     );
     store.dispatch(visualizationSlice.actions.reset());
     store.dispatch(collapsiblePanelSlice.actions.setDatePanelExpanded(false));
-    store.dispatch(collapsiblePanelSlice.actions.setCollectionPanelExpanded(false));
 
     highlightsAvailable ? setShowHighlightPanel(true) : setShowLayerPanel(true);
   }

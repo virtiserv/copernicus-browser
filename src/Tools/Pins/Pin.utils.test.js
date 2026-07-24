@@ -3,7 +3,20 @@ import {
   constructTimespanString,
   constructCompareTimespanString,
   normalizePin,
+  layerFromPin,
 } from './Pin.utils';
+import { LayersFactory } from '@sentinel-hub/sentinelhub-js';
+import { getDataSourceHandler } from '../SearchPanel/dataSourceHandlers/dataSourceHandlers';
+
+jest.mock('@sentinel-hub/sentinelhub-js', () => ({
+  ...jest.requireActual('@sentinel-hub/sentinelhub-js'),
+  LayersFactory: { makeLayers: jest.fn() },
+}));
+
+jest.mock('../SearchPanel/dataSourceHandlers/dataSourceHandlers', () => ({
+  ...jest.requireActual('../SearchPanel/dataSourceHandlers/dataSourceHandlers'),
+  getDataSourceHandler: jest.fn(),
+}));
 
 describe('isOnEqualDate', () => {
   it('should return true when both dates are on the same date', () => {
@@ -180,5 +193,65 @@ describe('normalizePin', () => {
     expect(result.evalscriptUrl).toBe('https://example.com/eval');
     expect('evalscripturl' in result).toBe(false);
     expect('processgraphurl' in result).toBe(false);
+  });
+});
+
+describe('layerFromPin — low-resolution BYOC collection lookup (regression #1154)', () => {
+  // Mirrors real CLMS VLCC/byLayer datasets where the WMS layer's collectionId differs
+  // from the pin's datasetId — the low-resolution helpers must be keyed by collectionId.
+  const collectionId = 'byoc-collection-uuid-123';
+  const datasetId = 'COPERNICUS_CLMS_SOME_DATASET_ID';
+  const layerId = 'SOME_LAYER';
+
+  let dsh;
+  let mockLayer;
+
+  beforeEach(() => {
+    mockLayer = {
+      layerId,
+      collectionId,
+      updateLayerFromServiceIfNeeded: jest.fn().mockResolvedValue(undefined),
+    };
+    dsh = {
+      getSentinelHubDataset: jest.fn(() => null),
+      supportsLowResolutionAlternativeCollection: jest.fn((id) => id === collectionId),
+      getLowResolutionCollectionId: jest.fn((id) =>
+        id === collectionId ? 'low-res-collection-uuid-456' : undefined,
+      ),
+      getLowResolutionMetersPerPixelThreshold: jest.fn((id) => (id === collectionId ? 300 : undefined)),
+    };
+    getDataSourceHandler.mockReturnValue(dsh);
+    LayersFactory.makeLayers.mockResolvedValue([mockLayer]);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('calls the low-resolution collection helpers with the layer collectionId, not the dataset id, and applies the low-res values to the layer', async () => {
+    const pin = { datasetId, layerId, visualizationUrl: 'https://example.com/wms' };
+
+    const layer = await layerFromPin(pin, {});
+
+    expect(dsh.supportsLowResolutionAlternativeCollection).toHaveBeenCalledWith(collectionId);
+    expect(dsh.supportsLowResolutionAlternativeCollection).not.toHaveBeenCalledWith(datasetId);
+    expect(dsh.getLowResolutionCollectionId).toHaveBeenCalledWith(collectionId);
+    expect(dsh.getLowResolutionCollectionId).not.toHaveBeenCalledWith(datasetId);
+    expect(dsh.getLowResolutionMetersPerPixelThreshold).toHaveBeenCalledWith(collectionId);
+    expect(dsh.getLowResolutionMetersPerPixelThreshold).not.toHaveBeenCalledWith(datasetId);
+
+    expect(layer.lowResolutionCollectionId).toBe('low-res-collection-uuid-456');
+    expect(layer.lowResolutionMetersPerPixelThreshold).toBe(300);
+  });
+
+  it('does not set low-resolution fields when the handler does not support a low-res alternative for the collectionId', async () => {
+    dsh.supportsLowResolutionAlternativeCollection.mockReturnValue(false);
+    const pin = { datasetId, layerId, visualizationUrl: 'https://example.com/wms' };
+
+    const layer = await layerFromPin(pin, {});
+
+    expect(dsh.supportsLowResolutionAlternativeCollection).toHaveBeenCalledWith(collectionId);
+    expect(layer.lowResolutionCollectionId).toBeUndefined();
+    expect(layer.lowResolutionMetersPerPixelThreshold).toBeUndefined();
   });
 });

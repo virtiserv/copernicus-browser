@@ -75,7 +75,7 @@ export default class ComplementaryDataDataSourceHandler extends DataSourceHandle
   };
 
   SUPPORTS_FIND_PRODUCTS_FOR_CURRENT_VIEW = {
-    [CDAS_LANDSAT_MOSAIC]: false,
+    [CDAS_LANDSAT_MOSAIC]: true,
     [CDAS_L8_L9_LOTL1]: true,
   };
 

@@ -12,7 +12,6 @@ import {
 import { t } from 'ttag';
 
 import { DEFAULT_THEMES } from './assets/default_themes.js';
-import { EDUCATION_THEMES } from './assets/education_themes.js';
 import {
   DEM_COPERNICUS_30_CDAS,
   DEM_COPERNICUS_90_CDAS,
@@ -45,12 +44,6 @@ export const USER_INSTANCES_THEMES_LIST = 'user_instances';
 export const RRD_INSTANCES_THEMES_LIST = 'RRD';
 
 export const NO_THEME = 'no-theme-selected';
-
-export const EDUCATION_MODE = {
-  id: 'education',
-  label: () => t`Education`,
-  themes: EDUCATION_THEMES,
-};
 
 export const DEFAULT_MODE = {
   id: 'default',
@@ -136,7 +129,6 @@ export const TABS = {
   VISUALIZE_TAB: 1,
   SEARCH_TAB: 2,
   RAPID_RESPONSE_DESK: 3,
-  COMMERCIAL_TAB: 4,
 } as const;
 
 export const DISABLED_ORTHORECTIFICATION = 'DISABLED';
@@ -253,18 +245,6 @@ export const STATISTICS_MANDATORY_OUTPUTS: (string | string[])[] = [
 
 export const LOCAL_STORAGE_PRIVACY_CONSENT_KEY = 'eobrowser-privacy-consent';
 
-// --- Commercial data ---
-
-export const TRANSACTION_TYPE = {
-  ORDER: 'ORDER',
-  SUBSCRIPTION: 'SUBSCRIPTION',
-};
-
-export const OrderType = {
-  PRODUCTS: 'PRODUCTS',
-  QUERY: 'QUERY',
-};
-
 export const PROCESSING_OPTIONS = {
   OPENEO: 'OpenEO',
   PROCESS_API: 'Process API',
@@ -330,23 +310,6 @@ export const DATE_MODES = {
 };
 
 // --- Auth & account ---
-
-export const SH_ACCOUNT_TYPE = {
-  TRIAL: 11000,
-  EXPLORATION: 12000,
-  BASIC: 13000,
-  ENTERPRISE: 14000,
-  ENTERPRISE_S: 14001,
-  ENTERPRISE_L: 14002,
-};
-
-export const SH_PAYING_ACCOUNT_TYPES = [
-  SH_ACCOUNT_TYPE.EXPLORATION,
-  SH_ACCOUNT_TYPE.BASIC,
-  SH_ACCOUNT_TYPE.ENTERPRISE,
-  SH_ACCOUNT_TYPE.ENTERPRISE_S,
-  SH_ACCOUNT_TYPE.ENTERPRISE_L,
-];
 
 export const UPDATE_BEFORE_EXPIRY_USER_TOKEN = 3 * 60 * 1000; //minutes*seconds*miliseconds
 export const UPDATE_BEFORE_EXPIRY_ANON_TOKEN = 10 * 1000; //seconds*miliseconds

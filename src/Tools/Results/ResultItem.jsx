@@ -28,14 +28,15 @@ import { ADVANCED_SEARCH_CONFIG_SESSION_STORAGE_KEY, DATASOURCES, reqConfigMemor
 import ProductPreview from './ProductPreview/ProductPreview';
 import { handleError } from './BrowseProduct/BrowseProduct.utils';
 import { AttributeNames } from '../../api/OData/assets/attributes';
+import { getTagsFromAttributes } from '../../api/OData/OData.utils';
 import {
   CLMS_OPTIONS,
   flattenCLMSOptionsWithParent,
 } from '../VisualizationPanel/CollectionSelection/CLMSCollectionSelection.utils';
 import CustomCheckbox from '../../components/CustomCheckbox/CustomCheckbox';
 import { doesUserHaveAccessToCCMVisualization } from '../VisualizationPanel/CollectionSelection/AdvancedSearch/ccmProductTypeAccessRightsConfig';
-import { getTagsFromAttributes } from '../../api/OData/OData.utils';
 import { handleCLMSConsolidationPeriod } from '../../utils/clms';
+import { getPlatformShortName, normalizeResult } from './Results.utils';
 import {
   COPERNICUS_CLMS_CPFLP_10M_YEARLY_V1_DATASET_IDENTIFIERS,
   COPERNICUS_CLMS_CPFLP_10M_YEARLY_V1_LAYER_IDS,
@@ -168,7 +169,6 @@ const visualizationButtonDisabled = (tile, user) => {
 
 const checkProductVisualization = async (datasetId, { geometry, sensingTime, attributes }, layerId) => {
   const dsh = getDataSourceHandler(datasetId);
-
   if (!(datasetId && dsh && geometry && sensingTime)) {
     return ErrorMessage.visualizationNotSupported();
   }
@@ -235,11 +235,13 @@ const ResultItem = ({
   user,
   isProductAlreadySavedToWorkspace,
 }) => {
-  const { sensingTime, name, platformShortName, instrumentShortName, size, contentLength } = tile;
+  // Normalize the tile to ensure consistent format
+  const normalizedTile = normalizeResult(tile);
+  const { sensingTime, name, instrumentShortName, size, contentLength } = normalizedTile;
+  const platformShortName = getPlatformShortName(normalizedTile);
 
   const [{ downloadError }, downloadProduct] = useODataDownload();
-
-  const tileTags = useMemo(() => getTagsFromAttributes(tile), [tile]);
+  const tileTags = useMemo(() => getTagsFromAttributes(normalizedTile), [normalizedTile]);
 
   useEffect(() => {
     if (downloadError) {
@@ -251,7 +253,7 @@ const ResultItem = ({
     if (!productDownloadCancelTokens[tile.id]) {
       setNewAbortController(tile.id);
     }
-  }, [tile.id, productDownloadCancelTokens]);
+  }, [normalizedTile.id, productDownloadCancelTokens, tile.id]);
 
   const visualize = async ({ onResultSelected, tile }) => {
     const datasetId = getDatasetIdFromProductType(tile?.productType, tile?.attributes);
@@ -314,12 +316,13 @@ const ResultItem = ({
   };
 
   const downloadInProgress =
-    productDownloadProgress[tile.id] !== null && productDownloadProgress[tile.id] !== undefined;
+    productDownloadProgress[normalizedTile.id] !== null &&
+    productDownloadProgress[normalizedTile.id] !== undefined;
 
-  const visualizeButtonDisabled = visualizationButtonDisabled(tile, user);
+  const visualizeButtonDisabled = visualizationButtonDisabled(normalizedTile, user);
   return (
     <div
-      onMouseEnter={() => onHover(tile)}
+      onMouseEnter={() => onHover(normalizedTile)}
       onMouseLeave={onStopHover}
       className="result-item"
       role="listitem"
@@ -330,14 +333,14 @@ const ResultItem = ({
             className={'tile-checkbox'}
             inputClassName="white"
             checked={isResultChecked}
-            onChange={() => onResultCheck(tile)}
+            onChange={() => onResultCheck(normalizedTile)}
             disabled={isProductAlreadySavedToWorkspace}
             disabledTitle={ErrorMessage.productAlreadySavedToWorkspace()}
           />
         )}
-        <ProductPreview product={tile} validate={true} />
+        <ProductPreview product={normalizedTile} validate={true} />
         <div className="details">
-          <div className="title" title={oDataHelpers.formatAttributesNames('name')}>
+          <div className="title" title={name}>
             {name}
           </div>
           <div className="content">
@@ -384,7 +387,7 @@ const ResultItem = ({
                 shouldShowAdvancedSearchTab: false,
               }),
             );
-            visualize({ onResultSelected, tile, currentZoom: zoom });
+            visualize({ onResultSelected, tile: normalizedTile, currentZoom: zoom });
           }}
           title={
             visualizeButtonDisabled
@@ -394,21 +397,21 @@ const ResultItem = ({
         />
         <ResultItemFooter
           userToken={userToken}
-          tile={tile}
+          tile={normalizedTile}
           tags={tileTags}
           modalId={modalId}
           downloadInProgress={downloadInProgress}
           downloadProduct={downloadProduct}
-          cancelToken={productDownloadCancelTokens[tile.id]}
+          cancelToken={productDownloadCancelTokens[normalizedTile.id]}
           isAuthenticated={isAuthenticated}
         />
       </div>
       {downloadInProgress && (
         <ProgressBar
-          value={productDownloadProgress[tile.id]}
+          value={productDownloadProgress[normalizedTile.id]}
           onCancel={() => {
-            productDownloadCancelTokens[tile.id].abort();
-            setNewAbortController(tile.id);
+            productDownloadCancelTokens[normalizedTile.id].abort();
+            setNewAbortController(normalizedTile.id);
           }}
         />
       )}

@@ -13,7 +13,7 @@ import { getFromTime } from '../../components/VisualizationTimeSelect/Visualizat
 import moment from 'moment';
 import store, { mainMapSlice, visualizationSlice } from '../../store';
 import { t } from 'ttag';
-import { getBoundsAndLatLng } from '../../Tools/CommercialDataPanel/commercialData.utils';
+import { getBoundsAndLatLng } from '../../utils/coords';
 import { datasetLocationPolygonStyle, highlightedTileStyle } from '../const';
 
 /**

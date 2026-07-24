@@ -146,12 +146,10 @@ const mapStoreToProps = (store) => ({
   selectedLanguage: store.language.selectedLanguage,
   advancedExpanded: store.collapsiblePanel.advancedExpanded,
   aoiCoverage: store.advancedSection.aoiCoverage,
-  satelliteAzimuth: store.advancedSection.satelliteAzimuth,
   azimuth: store.advancedSection.azimuth,
   sunAzimuth: store.advancedSection.sunAzimuth,
   sunElevation: store.advancedSection.sunElevation,
   imageType: store.imageQualityAndProviderSection.imageType,
-  productType: store.advancedSection.productType,
   incidenceAngle: store.advancedSection.incidenceAngle,
   isTaskingEnabled: store.areaAndTimeSection.isTaskingEnabled,
 });

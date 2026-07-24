@@ -24,17 +24,6 @@ export const S2QuarterlyCloudlessMosaicsBaseLayerTheme = {
   ],
 };
 
-const EDUCATION_THEMES = [];
-
-const educationThemesDefaultMode = EDUCATION_THEMES.map((t) => {
-  const normalModePostfix = '-NORMAL-MODE';
-  const eduThemeNormalMode = { ...t, id: `${t.id}${normalModePostfix}` };
-  if (t.pins) {
-    eduThemeNormalMode.pins = t.pins.map((p) => ({ ...p, themeId: `${p.themeId}${normalModePostfix}` }));
-  }
-  return eduThemeNormalMode;
-});
-
 const EVOLAND_THEMES = [
   {
     name: () => t`Evoland`,
@@ -4451,6 +4440,5 @@ export const DEFAULT_THEMES = [
       },
     ],
   },
-  ...educationThemesDefaultMode,
   ...EVOLAND_THEMES,
 ];

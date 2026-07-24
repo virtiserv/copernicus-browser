@@ -111,8 +111,8 @@ export const getCollectionFormInitialState = (collectionFormConfig, formState, o
       }
 
       Object.keys(selections).forEach((itemId) => {
-        // 'Skip type' because is a metadata property
-        if (itemId === 'type') {
+        // 'Skip type' and 'platform' because they are metadata properties, not child item ids
+        if (itemId === 'type' || itemId === 'platform') {
           return;
         }
 
@@ -188,6 +188,39 @@ export const getCollectionFormInitialState = (collectionFormConfig, formState, o
   });
 
   return initialState;
+};
+
+/**
+ * Returns STAC search config for a visualization datasetId, or null if OData should be used.
+ *
+ * To add STAC support for a new dataset, set `datasetId` and `supportsStacSearch: true`
+ * on the relevant entry in collectionFormConfig.js. Both top-level collections and nested
+ * items are checked.
+ *
+ * @param {string} datasetId - The visualization datasetId from Redux state
+ * @param {Array} collections - The raw recursiveCollections array from collectionFormConfig.js
+ * @returns {{ collectionName: string, collectionId: string } | null}
+ */
+export const getSTACConfigForDatasetId = (datasetId, collections) => {
+  if (!datasetId || !Array.isArray(collections)) {
+    return null;
+  }
+
+  for (const entry of collections) {
+    if (entry.datasetId === datasetId && entry.supportsStacSearch) {
+      return { collectionName: entry.collectionName, collectionId: entry.id };
+    }
+
+    if (Array.isArray(entry.items)) {
+      for (const item of entry.items) {
+        if (item.datasetId === datasetId && item.supportsStacSearch) {
+          return { collectionName: item.collectionName ?? entry.collectionName, collectionId: entry.id };
+        }
+      }
+    }
+  }
+
+  return null;
 };
 
 export const getNestedValue = (obj, path) => {

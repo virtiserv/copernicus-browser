@@ -8,9 +8,6 @@ msgstr ""
 "Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-msgid "Education"
-msgstr "Education"
-
 msgid "Normal"
 msgstr "Normal"
 
@@ -3138,61 +3135,8 @@ msgstr "Afficher les détails"
 msgid "Max. cloud coverage:"
 msgstr "Couverture nuageuse max. :"
 
-msgid "Order name"
-msgstr "Nom de la commande"
-
-msgid ""
-"ORDER USING PRODUCTS IDS\n"
-"\n"
-"Search for data and add products to you order by clicking on \"Add to "
-"Order\" buttons. This will add product IDs to your Order Options under "
-"\"Added Products (by ID).\"\n"
-"\n"
-"ORDER USING QUERY\n"
-"\n"
-"Your order will be based on your AOI and time range, without searching for "
-"data and adding products to your order. Especially useful for ordering "
-"time-series data.\n"
-"It's possible for some products to be partially covered by clouds, despite "
-"the cloud coverage % information being 0."
-msgstr ""
-"COMMANDE EN UTILISANT LES IDENTIFIANTS DES PRODUITS\n"
-"\n"
-"Cherche des données et ajoute des produits à ta commande en cliquant sur "
-"les boutons \"Ajouter à la commande\". Cela ajoutera les ID des produits à "
-"tes options de commande sous \"Produits ajoutés (par ID)\".\n"
-"\n"
-"COMMANDE À L'AIDE D'UNE REQUÊTE\n"
-"\n"
-"Ta commande sera basée sur ton AOI et ta plage de temps, sans rechercher de "
-"données et sans ajouter de produits à ta commande. Particulièrement utile "
-"pour commander des données de séries chronologiques.\n"
-"Il est possible que certains produits soient partiellement couverts par des "
-"nuages, même si l'information sur le pourcentage de couverture nuageuse est "
-"de 0."
-
 msgid "Collection ID"
 msgstr "ID de la collection"
-
-msgid "Ordered products will be clipped to the selected area."
-msgstr "Les produits commandés seront découpés dans la zone sélectionnée."
-
-msgid "Set an approximate order limit to prevent undesired large area requests."
-msgstr ""
-"Fixez une limite de commande approximative pour éviter les demandes non "
-"souhaitées de grandes surfaces."
-
-msgid ""
-"When you click \"Create Order\", your order will be created. At this stage, "
-"the order will not go through and no quota will be substracted. This will "
-"happen when you confirm the order. Before you do, you will be able to "
-"review the requested quota and decide if you would like to proceed."
-msgstr ""
-"Lorsque vous cliquez sur \"Créer une commande\", votre commande est créée. "
-"À ce stade, la commande ne sera pas exécutée et aucun quota ne sera "
-"soustrait. Ce sera le cas lorsque vous confirmerez la commande. Avant de le "
-"faire, vous pourrez examiner le quota demandé et décider si vous souhaitez "
-"poursuivre."
 
 msgid "Layer default"
 msgstr "Couche par défaut"
@@ -3224,9 +3168,6 @@ msgstr "Dessiner une zone d'intérêt rectangulaire pour les téléchargements d
 msgid "Draw polygonal area of interest for image downloads and timelapse"
 msgstr "Dessiner une zone d'intérêt polygonale pour les téléchargements d'images"
 
-msgid "My quotas"
-msgstr "Mes quotas"
-
 msgid "Use current display area"
 msgstr "Utiliser la zone d'affichage actuelle"
 
@@ -3245,221 +3186,23 @@ msgstr "Constellation"
 msgid "Processing level"
 msgstr "Niveau de traitement"
 
-msgid "Snow cover"
-msgstr "Couverture neigeuse"
-
 msgid "Incidence angle"
 msgstr "Angle d'incidence"
 
 msgid "Coverage"
 msgstr "Couverture"
 
-msgid "Shadow percent"
-msgstr "Pourcentage d'ombre"
-
-msgid "Pixel resolution"
-msgstr "Résolution en pixel"
-
 msgid "Hide details"
 msgstr "Cacher les détals"
-
-msgid "Product id"
-msgstr "Identifiant du produit"
-
-msgid "Acquisition date"
-msgstr "Date d'acquisition"
-
-msgid "Prepare order"
-msgstr "Préparer la commande"
-
-msgid "From"
-msgstr "De"
-
-msgid "To"
-msgstr "A"
 
 msgid "Provider"
 msgstr "Prestataire"
 
-msgid "Used km"
-msgstr "km utilisés"
-
-msgid "No quotas available"
-msgstr "Pas de quota disponibles"
-
-#, javascript-format
-msgid "Unable to get quotas: ${ err.message }"
-msgstr "Impossible d'obtenir les quotas : ${ err.message }"
-
-msgid "Refresh quotas"
-msgstr "Actualiser les quotas"
-
-msgid "Purchased km"
-msgstr "km achetés"
-
-msgid "Advanced options"
-msgstr "Options avancées"
-
-msgid "Product bundle"
-msgstr "Offre groupée de produits"
-
-msgid "Max. Cloud Coverage"
-msgstr "Couverture nuageuse max."
-
-msgid "Min. Off Nadir"
-msgstr "Min. hors Nadir"
-
-msgid "Max. Off Nadir"
-msgstr "Max. hors Nadir"
-
-msgid "Min. Sun Elevation"
-msgstr "Min. Élévation du soleil"
-
-msgid "Max. Sun Elevation"
-msgstr "Élévation Max. du Soleil"
-
-msgid "Sensor"
-msgstr "Capteur"
-
-msgid "Processing Level"
-msgstr "Niveau de traitement"
-
-msgid "Snow Coverage"
-msgstr "Couverture neigeuse"
-
-msgid "Incidence Angle"
-msgstr "Angle d'incidence"
-
-msgid "add"
-msgstr "ajouter"
-
-msgid "remove"
-msgstr "supprimer"
-
-msgid "Order type"
-msgstr "Type de commande"
-
-msgid "Order limit"
-msgstr "Limite de la commande"
-
-msgid "Order limit (km2)"
-msgstr "Limite d'ordre (km2)"
-
-msgid "Planet API Key"
-msgstr "Clé API Planets"
-
-msgid "Your Planet API key"
-msgstr "Votre clé API Planète"
-
-msgid "Create order"
-msgstr "Créez une commande"
-
-msgid "Created orders (Not confirmed)"
-msgstr "Commandes créées (non confirmées)"
-
-msgid "Running orders"
-msgstr "Commandes en cours"
-
-msgid "Finished orders"
-msgstr "Commandes terminées"
-
-msgid "Created at"
-msgstr "Créé à"
-
-msgid "Confirmed at"
-msgstr "Confirmé à"
-
 msgid "Size"
 msgstr "Taille"
 
-msgid "Status"
-msgstr "Status"
-
-msgid "All input parameters"
-msgstr "Tous les paramètres d'entrée"
-
-#, javascript-format
-msgid "Hide ${ property } values"
-msgstr "Cacher les valeurs de ${ property }"
-
-#, javascript-format
-msgid "Show ${ property } values"
-msgstr "Montrer les valeurs de ${ property }"
-
-msgid "Confirm"
-msgstr "Confirmer"
-
-msgid "Delete"
-msgstr "Supprimer"
-
-msgid "Show coverage"
-msgstr "Couverture de l'exposition"
-
-msgid "Show data"
-msgstr "Données de l'exposition"
-
-msgid "No orders found"
-msgstr "Aucune commande trouvée"
-
-msgid "Error confirming order"
-msgstr "Erreur de confirmation de la commande"
-
-msgid "Error deleting order"
-msgstr "Erreur de suppression de la commande"
-
-msgid "Confirm order"
-msgstr "Confirmer la commande"
-
-msgid "Are you sure you want to confirm this order?"
-msgstr "Êtes-vous de vouloir confirmer cette commande ?"
-
-msgid "Delete order"
-msgstr "Supprimer la commande"
-
-msgid "Are you sure you want to delete this order?"
-msgstr "Êtes-vous sûr de vouloir supprimer cette commande ?"
-
-msgid "Refresh orders"
-msgstr "Rafraîchir les commandes"
-
-msgid "Creating order"
-msgstr "Création d'une commande"
-
-msgid ""
-"Are you sure you want to create an order without a Collection ID?  \n"
-"When you confirm your order a new collection will be created automatically."
-msgstr ""
-"Êtes-vous sûr de vouloir créer une commande sans ID de collection ?  \n"
-"Lorsque vous confirmerez votre commande, une nouvelle collection sera créée "
-"automatiquement."
-
-msgid "Order size (approx)"
-msgstr "Taille de la commande (environ)"
-
-msgid "Create a new collection"
-msgstr "Créer une nouvelle collection"
-
-msgid "Manual Entry"
-msgstr "Entrée manuelle"
-
-msgid "Your collections"
-msgstr "Vos collections"
-
-msgid ""
-"Enter a Planet API key, that you received via email after purchasing a "
-"Planet PlanetScope Sentinel Hub Package"
-msgstr ""
-"Entrez la clé API de Planet, que vous avez reçue par mail après avoir "
-"acheté un forfait Hub Sentinel de PlanetScope"
-
-msgid "Show preview"
-msgstr "Aperçu de l'émission"
-
 msgid "Continue without logging in"
 msgstr "Continuez sans vous connecter"
-
-msgid "e.g.: My planet data"
-msgstr "exemple : les données de ma planète"
 
 msgid "Settings"
 msgstr "Paramètres"
@@ -3611,29 +3354,6 @@ msgstr "Largeur de l'image [px] :"
 msgid "Image height [px]:"
 msgstr "Hauteur de l'image [px] :"
 
-msgid ""
-"Select the resampling kernel to use: \n"
-"- 4x4 cubic convolution (CC), \n"
-"- nearest neighbour (NN), \n"
-"- or the proprietary MTF kernel (MTF)"
-msgstr ""
-"Sélectionnez le noyau de rééchantillonnage à utiliser : \n"
-"- 4x4 convolution cubique (CC), \n"
-"- le plus proche voisin (NN), \n"
-"- ou le noyau propriétaire MTF (MTF)."
-
-msgid "4x4 cubic convolution"
-msgstr "convolution cubique 4 x 4"
-
-msgid "nearest neighbour"
-msgstr "plus proche voisin"
-
-msgid "proprietary MTF kernel"
-msgstr "noyau MTF propriétaire"
-
-msgid "Resampling kernel"
-msgstr "Rééchantillonner le noyau"
-
 msgid "Creating and editing a timelapse is not supported on mobile."
 msgstr ""
 "La création et l'édition d'une série temporelle ne sont pas supportées dans "
@@ -3742,9 +3462,6 @@ msgstr "Durée du fondu"
 
 msgid "Fade duration relative to frame duration"
 msgstr "Durée du fondu par rapport à la durée de l'image"
-
-msgid "Item type"
-msgstr "Type d'article"
 
 msgid "ACCEPT"
 msgstr "ACCEPTER"
@@ -3855,25 +3572,6 @@ msgstr "HV - gamma linéaire0"
 msgid "HV - linear gamma0 - radiometric terrain corrected"
 msgstr "HV - gamma linéaire0 - terrain radiométrique corrigé"
 
-msgid ""
-"Sensing instrument whose values the data should be harmonized to. Supported "
-"values:\n"
-"- NONE to disable harmonization,\n"
-"- Sentinel-2 only for PSScene item type and surface reflectance product "
-"bundles,\n"
-"- PS2 only for PSScene4Band item type and top-of-atmosphere product bundles."
-msgstr ""
-"Instrument de mesure dont les valeurs doivent être harmonisées avec les "
-"données. Valeurs prises en charge :\n"
-"- NONE pour désactiver l'harmonisation,\n"
-"- Sentinel-2 uniquement pour le type d'élément PSScene et les groupes de "
-"produits de réflectance de surface,\n"
-"- PS2 uniquement pour le type d'élément PSScene4Band et les ensembles de "
-"produits relatifs au sommet de l'atmosphère."
-
-msgid "Harmonize to"
-msgstr "Harmoniser à"
-
 msgid "N/A"
 msgstr "N/A"
 
@@ -3916,98 +3614,8 @@ msgstr "Problème lors de la lecture du fichier"
 msgid "Upload"
 msgstr "Télécharger"
 
-msgid "My orders and subscriptions"
-msgstr "Mes commandes et abonnements"
-
-msgid "Created subscriptions (Not confirmed)"
-msgstr "Abonnements créés (Non confirmés)"
-
-msgid "Running subscriptions"
-msgstr "Abonnements en cours"
-
-msgid "Finished subscriptions"
-msgstr "Abonnements clôturés"
-
-msgid "Deleted subscriptions"
-msgstr "Abonnements supprimés"
-
-msgid "No subscriptions found"
-msgstr "Aucun abonnement trouvé"
-
-msgid "Error confirming subscription"
-msgstr "Erreur lors de la confirmation de l'abonnement"
-
-msgid "Error deleting subscription"
-msgstr "Erreur lors de la suppression de l'abonnement"
-
-msgid "Confirm subscription"
-msgstr "Confirmer l'abonnement"
-
-msgid "Are you sure you want to confirm this subscription?"
-msgstr "Êtes-vous sûr de vouloir confirmer cet abonnement?"
-
-msgid "Delete subscription"
-msgstr "Supprimer l'abonnement"
-
-msgid "Are you sure you want to delete this subscription?"
-msgstr "Êtes-vous sûr de vouloir supprimer cet abonnement ?"
-
-msgid "ID"
-msgstr "ID"
-
-msgid "Refresh subscriptions"
-msgstr "Actualiser les abonnements"
-
-msgid "Creating subscription"
-msgstr "Abonnement en cours de création"
-
-msgid ""
-"Are you sure you want to create an subscription without a Collection ID?  \n"
-"When you confirm your subscription a new collection will be created "
-"automatically."
-msgstr ""
-"Êtes-vous sûr de vouloir créer un abonnement sans identifiant de collection "
-"?\n"
-"Lorsque vous confirmez votre abonnement, une nouvelle collection sera créée "
-"automatiquement."
-
-msgid "Subscription name"
-msgstr "Nom de l'abonnement"
-
-msgid "Create subscription"
-msgstr "Créer l'abonnement"
-
 msgid "Order"
 msgstr "Commande"
-
-msgid "Subscription"
-msgid_plural "Subscriptions"
-msgstr[0] "Abonnement"
-msgstr[1] "Abonnements"
-
-msgid "Error cancelling subscription"
-msgstr "Erreur lors de l'annulation de l'abonnement"
-
-msgid "Cancel subscription"
-msgstr "Annuler l'abonnement"
-
-msgid "Are you sure you want to cancel this subscription?"
-msgstr "Êtes-vous sûr de vouloir annuler cet abonnement?"
-
-msgid "No products found"
-msgstr "Aucun produit trouvé"
-
-msgid "Query"
-msgstr "Requête"
-
-msgid "Products"
-msgstr "Produits"
-
-msgid "Create order/subscription"
-msgstr "Créer une commande/un abonnement"
-
-msgid "Show products on map"
-msgstr "Afficher les produits sur la carte"
 
 msgid "Show tutorial"
 msgstr "Afficher le tutoriel"
@@ -4053,14 +3661,6 @@ msgstr "Prévisualiser"
 msgid "Delay last frame"
 msgstr "Retarder la dernière image"
 
-msgid ""
-"The minimum area for ordering SkySat data is 25 km². This means that you "
-"will be charged 25 km² even for AOIs smaller than 25 km²!"
-msgstr ""
-"La superficie minimale pour commander des données SkySat est de 25 km². "
-"Cela signifie que vous serez facturé 25 km² même pour des zones d'intérêt "
-"inférieures à 25 km² !"
-
 msgid "Image width and height must be between 1px and 2500px"
 msgstr ""
 "La largeur et la hauteur de l'image doivent être comprises entre 1px et "
@@ -4092,12 +3692,6 @@ msgstr ""
 "Plus d'informations sur la correction atmosphérique [ici] "
 "(https://www.sentinel-hub.com/develop/api/ogc/custom-parameters/atmospheric-"
 "correction/)."
-
-msgid "Step By Step Guide"
-msgstr "Guide pas-à-pas"
-
-msgid "Data transfer instructions"
-msgstr "Instructions pour le transfert de données"
 
 msgid "Effects and advanced options"
 msgstr "Effets et options avancées"
@@ -4211,9 +3805,6 @@ msgstr "Ordre par défaut"
 
 msgid "Effect:"
 msgstr "Effet:"
-
-msgid "MultiPolygons not supported by Geocento"
-msgstr "Les MultiPolygones ne sont pas pris en charge par Geocento"
 
 msgid "Compare Panel"
 msgstr "Panneau de comparison"
@@ -5767,12 +5358,6 @@ msgstr ""
 msgid "Welcome To Copernicus Browser!"
 msgstr ""
 
-msgid ""
-"Note that it is technically possible to order more PlanetScope data than "
-"your purchased quota. Make sure your order is in line with the Hectares "
-"under Management (HUM) model to avoid overage fees."
-msgstr ""
-
 msgid "Data take id"
 msgstr ""
 
@@ -6095,30 +5680,6 @@ msgid "The .zip file is missing content. The .prj and .shp files are required"
 msgstr ""
 
 msgid "Drop a zipped SHP, KML/KMZ, GPX, WKT (in EPSG:4326) or GEOJSON/JSON file."
-msgstr ""
-
-#, javascript-format
-msgid ""
-"Browse, visualise and analyse Very High Resolution (VHR) data directly in "
-"Browser, tapping into global archives of Planet [PlanetScope](${ "
-"links.planetScope }) and [SkySat](${ links.planetSkySat }), Airbus "
-"[Pleiades](${ links.airbusPleiades }) and [SPOT](${ links.airbusSpot }) as "
-"well as [Maxar WorldView](${ links.maxarWorldView }).  \n"
-"\n"
-"Observe the planet at resolutions starting at 3 meters and all the way up "
-"to 0.5 meters for a cost down to 0.9 EUR per km².\n"
-"\n"
-"![High resolution imagery example.](${ highResImgUrl })\n"
-"\n"
-"&copy CNES (2020), Distribution AIRBUS DS, contains Pleiades data processed "
-"by Sentinel Hub\n"
-"\n"
-"What you need: \n"
-"- An active Sentinel Hub subscription to search the metadata. If you don't "
-"have an account yet: [Sign up](${ links.signUp }).\n"
-"- Pre-purchased quota for any of the constellations. Go to [Dashboard](${ "
-"links.dashboard }) to establish a subscription and purchase commercial data "
-"plans."
 msgstr ""
 
 msgid ""
@@ -9425,57 +8986,6 @@ msgstr ""
 msgid "Histogram not available for edited OpenEO process graph"
 msgstr ""
 
-msgid ""
-"**General**  \n"
-"The \"Commercial data\" tab allows you to search, purchase, and visualise "
-"Commercial Third-Party data.\n"
-"\n"
-"**Available constellations**  \n"
-"We currently offer data from 3 different commercial data providers offering "
-"data from 5 different constellations:\n"
-"- Planet [Planet "
-"scope](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"planetscope) (4/8 bands, 3m resolution)\n"
-"- Planet "
-"[SkySat](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"optical-missions) (4 bands, 0.5m resolution)\n"
-"- Airbus "
-"[Pleiades](https://documentation.dataspace.copernicus.eu/Data/Others/CCM."
-"html#pleiades) (5 bands, 0.5m - 2m resolution)\n"
-"- Airbus "
-"[SPOT](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"spot-6-7) (5 bands, 1.5m - 6m resolution)\n"
-"- Maxar "
-"[WorldView](https://documentation.dataspace.copernicus.eu/Data/Others/CCM."
-"html#worldview-2-3) (5 bands, 0.5m - 2m resolution)\n"
-"\n"
-"As the term \"commercial\" implies, the data comes at a cost, which means "
-"**in addition to your existing Sentinel Hub subscription, you will need to "
-"purchase quota** for the data you are interested in.\n"
-"\n"
-"**Quota**  \n"
-"Check *My quota* to see how much quota you have for each of the "
-"constellations. You can purchase quota through the [Sentinel Hub "
-"Dashboard](https://apps.sentinel-hub.com/dashboard/#/account/billing).\n"
-"\n"
-"**Purchase**  \n"
-"To purchase commercial data, you must:\n"
-"- search for the data (*Search options*),\n"
-"- select a product from the results (*Results*),\n"
-"- add the product to your order,\n"
-"- specify where to save the order (*Order options*),\n"
-"- review the order and confirm it (*Created orders (not confirmed)* in *My "
-"orders*). Your order will now be listed under *Running orders* and move to "
-"*Finished orders* once the data has been purchased and ingested.\n"
-"\n"
-"**More information**  \n"
-"For more information on ordering commercial data ( Third Party Data Import "
-"), please see the [Sentinel Hub Documentation "
-"Page](https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/"
-"Overview/ProcessingUnit.html#data-ordering-and-delivery---applicable-to-"
-"orders-api-subscriptions-api-and-third-party-data-import-api)."
-msgstr ""
-
 msgid "Error loading process graph. Check your URL."
 msgstr ""
 
@@ -9669,9 +9179,6 @@ msgid ""
 msgstr ""
 
 msgid "This data product was processed by EUMETSAT."
-msgstr ""
-
-msgid "Scene id"
 msgstr ""
 
 msgid "Cell id"
@@ -12320,4 +11827,21 @@ msgid "Blue band"
 msgstr ""
 
 msgid "Grey band"
+msgstr ""
+
+msgid "Scene ID"
+msgstr ""
+
+msgid "Projection"
+msgstr ""
+
+msgid "GSD"
+msgstr ""
+
+msgid ""
+"No products were found for one of your selected data sources.\n"
+"\n"
+"The filters you've applied might be limiting the results for that source. "
+"You could try extending the time range, selecting a larger area on the map, "
+"or reviewing your additional filters."
 msgstr ""

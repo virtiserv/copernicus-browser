@@ -200,6 +200,7 @@ import {
   COPERNICUS_CLMS_UA_LCU_2021_VECTOR,
   COPERNICUS_CLMS_UA_LCUC_2018_2021_VECTOR,
   COPERNICUS_CLMS_UA_STL_2021_VECTOR,
+  CDAS_LANDSAT_MOSAIC,
   COPERNICUS_CLMS_UA_BUILDING_HEIGHT_EUROPE_10M_3YEARLY_V1_2021,
   COPERNICUS_CLMS_VLCC_SECONDARY_CROP_TYPES_EUROPE_10M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_GRASSLAND_MOWING_DATES_EUROPE_10M_YEARLY_V1,
@@ -1112,6 +1113,10 @@ export const getDatasetIdFromProductType = (productType, attributes) => {
     )
   ) {
     return PRODUCT_TYPE_TO_DATASETID['VHR_IMAGE_2024'];
+  }
+
+  if (productType === 'landsat_mosaic') {
+    return CDAS_LANDSAT_MOSAIC;
   }
 
   return PRODUCT_TYPE_TO_DATASETID[productType];
@@ -2666,6 +2671,9 @@ const applyAdditionalFilterElement = (filter, additionalFilterConfig, key, opera
 
 //creates additional filters
 //(additionalFilter1 and  additionalFilter2...)
+// OData counterpart of STACSearchPayloadBuilder.ts's createAdditionalFilters (same name,
+// same collectionForm/selectedFilters shape) - keep the two in sync when new filter keys
+// are added to either side.
 const createAdditionalFilters = (collectionId, additionalFilters) => {
   if (!additionalFilters) {
     return null;

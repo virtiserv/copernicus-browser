@@ -12,9 +12,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.8\n"
 
-msgid "Education"
-msgstr "Educació"
-
 msgid "Normal"
 msgstr "Normal"
 
@@ -3100,59 +3097,8 @@ msgstr "Mostrar els detalls"
 msgid "Max. cloud coverage:"
 msgstr "Màx. cobertura de núvols:"
 
-msgid "Order name"
-msgstr "Nom de la comanda"
-
-msgid ""
-"ORDER USING PRODUCTS IDS\n"
-"\n"
-"Search for data and add products to you order by clicking on \"Add to "
-"Order\" buttons. This will add product IDs to your Order Options under "
-"\"Added Products (by ID).\"\n"
-"\n"
-"ORDER USING QUERY\n"
-"\n"
-"Your order will be based on your AOI and time range, without searching for "
-"data and adding products to your order. Especially useful for ordering "
-"time-series data.\n"
-"It's possible for some products to be partially covered by clouds, despite "
-"the cloud coverage % information being 0."
-msgstr ""
-"COMANDA AMB ID DE PRODUCTES\n"
-"\n"
-"Cerqueu dades i afegiu productes a la vostra comanda fent clic als botons "
-"\"Afegeix a la comanda\". Això afegirà identificadors de producte a les "
-"vostres opcions de comanda a \"Productes afegits (per identificador)\".\n"
-"\n"
-"COMANDA AMB CONSULTA\n"
-"\n"
-"La vostra comanda es basarà en el vostre AOI i interval de temps, sense "
-"buscar dades i afegir productes a la vostra comanda. Especialment útil per "
-"demanar dades de sèries temporals.\n"
-"És possible que alguns productes estiguin parcialment coberts pels núvols, "
-"tot i que la informació del % de cobertura del núvol és 0."
-
 msgid "Collection ID"
 msgstr "ID de la col·lecció"
-
-msgid "Ordered products will be clipped to the selected area."
-msgstr "Els productes sol·licitats es retallaran a l'àrea seleccionada."
-
-msgid "Set an approximate order limit to prevent undesired large area requests."
-msgstr ""
-"Estableix un límit d'ordre aproximat per evitar sol·licituds no desitjades "
-"d'àmplies àrees."
-
-msgid ""
-"When you click \"Create Order\", your order will be created. At this stage, "
-"the order will not go through and no quota will be substracted. This will "
-"happen when you confirm the order. Before you do, you will be able to "
-"review the requested quota and decide if you would like to proceed."
-msgstr ""
-"Quan feu clic a \"Crea una comanda\", es crearà la vostra comanda. En "
-"aquesta fase, la comanda no passarà i no es restarà cap quota. Això passarà "
-"quan confirmeu la comanda. Abans de fer-ho, podreu revisar la quota "
-"sol·licitada i decidir si voleu continuar."
 
 msgid "Layer default"
 msgstr "Capa per defecte"
@@ -3186,9 +3132,6 @@ msgstr ""
 msgid "Draw polygonal area of interest for image downloads and timelapse"
 msgstr "Dibuixa l'àrea poligonal d'interès per a la baixada d'imatges i el timelapse"
 
-msgid "My quotas"
-msgstr "Les meves quotes"
-
 msgid "Use current display area"
 msgstr "Utilitzeu l'àrea de visualització actual"
 
@@ -3207,222 +3150,23 @@ msgstr "Constel · lació"
 msgid "Processing level"
 msgstr "Nivell de processament"
 
-msgid "Snow cover"
-msgstr "Cobertura de neu"
-
 msgid "Incidence angle"
 msgstr "Angle d'incidència"
 
 msgid "Coverage"
 msgstr "Cobertura"
 
-msgid "Shadow percent"
-msgstr "Per cent d'ombra"
-
-msgid "Pixel resolution"
-msgstr "Resolució del píxel"
-
 msgid "Hide details"
 msgstr "Amagar els detalls"
-
-msgid "Product id"
-msgstr "Identificador del producte"
-
-msgid "Acquisition date"
-msgstr "Data d'adquisició"
-
-msgid "Prepare order"
-msgstr "Prepara la comanda"
-
-msgid "From"
-msgstr "Des de"
-
-msgid "To"
-msgstr "A"
 
 msgid "Provider"
 msgstr "Proveïdor"
 
-msgid "Used km"
-msgstr "Km usats"
-
-msgid "No quotas available"
-msgstr "No hi ha quotes disponibles"
-
-#, javascript-format
-msgid "Unable to get quotas: ${ err.message }"
-msgstr "No es poden obtenir quotes: ${ err.message }"
-
-msgid "Refresh quotas"
-msgstr "Actualitzar quotes"
-
-msgid "Purchased km"
-msgstr "Km comprats"
-
-msgid "Advanced options"
-msgstr "Opcions avançades"
-
-msgid "Product bundle"
-msgstr "Paquet de productes"
-
-msgid "Max. Cloud Coverage"
-msgstr "Màx. cobertura de núvols"
-
-msgid "Min. Off Nadir"
-msgstr "Min. Fora Nadir"
-
-msgid "Max. Off Nadir"
-msgstr "Max. Fora Nadir"
-
-msgid "Min. Sun Elevation"
-msgstr "Min. Elevació del Sol"
-
-msgid "Max. Sun Elevation"
-msgstr "Màx. Elevació del Sol"
-
-msgid "Sensor"
-msgstr "Sensor"
-
-msgid "Processing Level"
-msgstr "Nivell de processament"
-
-msgid "Snow Coverage"
-msgstr "Cobertura de neu"
-
-msgid "Incidence Angle"
-msgstr "Angle d'incidència"
-
-msgid "add"
-msgstr "afegir"
-
-msgid "remove"
-msgstr "eliminar"
-
-msgid "Order type"
-msgstr "Tipus de comanda"
-
-msgid "Order limit"
-msgstr "Límit de comanda"
-
-msgid "Order limit (km2)"
-msgstr "Límit de comanda (km2)"
-
-msgid "Planet API Key"
-msgstr "Clau de l'API de Planet"
-
-msgid "Your Planet API key"
-msgstr "La teva clau de l'API de Planet"
-
-msgid "Create order"
-msgstr "Crea una comanda"
-
-msgid "Created orders (Not confirmed)"
-msgstr "Comandes creades (no confirmades)"
-
-msgid "Running orders"
-msgstr "Comandes en execució"
-
-msgid "Finished orders"
-msgstr "Comandes acabades"
-
-msgid "Created at"
-msgstr "Creat a les"
-
-msgid "Confirmed at"
-msgstr "Confirmat a les"
-
 msgid "Size"
 msgstr "Mida"
 
-msgid "Status"
-msgstr "Estat"
-
-msgid "All input parameters"
-msgstr "Tots els paràmetres d'entrada"
-
-#, javascript-format
-msgid "Hide ${ property } values"
-msgstr "Amaga els valors de ${ propietat }"
-
-#, javascript-format
-msgid "Show ${ property } values"
-msgstr "Mostra els valors de ${ propietat }"
-
-msgid "Confirm"
-msgstr "Confirmar"
-
-msgid "Delete"
-msgstr "Esborrar"
-
-msgid "Show coverage"
-msgstr "Mostra cobertura"
-
-msgid "Show data"
-msgstr "Mostra dades"
-
-msgid "No orders found"
-msgstr "No s'han trobat comandes"
-
-msgid "Error confirming order"
-msgstr "Error en confirmar la comanda"
-
-msgid "Error deleting order"
-msgstr "Error en suprimir la comanda"
-
-msgid "Confirm order"
-msgstr "Confirm order"
-
-msgid "Are you sure you want to confirm this order?"
-msgstr "Esteu segur que voleu confirmar aquesta comanda?"
-
-msgid "Delete order"
-msgstr "Suprimeix la comanda"
-
-msgid "Are you sure you want to delete this order?"
-msgstr "Esteu segur que voleu suprimir aquesta comanda?"
-
-msgid "Refresh orders"
-msgstr "Actualitzar comandes"
-
-msgid "Creating order"
-msgstr "Creant commanda"
-
-msgid ""
-"Are you sure you want to create an order without a Collection ID?  \n"
-"When you confirm your order a new collection will be created automatically."
-msgstr ""
-"Esteu segur que voleu crear una comanda sense un identificador de "
-"col·lecció?\n"
-"Quan confirmeu la vostra comanda, es crearà automàticament una nova "
-"col·lecció."
-
-msgid "Order size (approx)"
-msgstr "Mida de la comanda (aprox.)"
-
-msgid "Create a new collection"
-msgstr "Crea una nova col·lecció"
-
-msgid "Manual Entry"
-msgstr "Entrada manual"
-
-msgid "Your collections"
-msgstr "Les teves col·leccions"
-
-msgid ""
-"Enter a Planet API key, that you received via email after purchasing a "
-"Planet PlanetScope Sentinel Hub Package"
-msgstr ""
-"Introduïu una clau API de Planet, que heu rebut per correu electrònic "
-"després de comprar un paquet Planet PlanetScope Sentinel Hub"
-
-msgid "Show preview"
-msgstr "Mostra la previsualització"
-
 msgid "Continue without logging in"
 msgstr "Continueu sense iniciar sessió"
-
-msgid "e.g.: My planet data"
-msgstr "ex.: dades del meu planeta"
 
 msgid "Settings"
 msgstr "Configuració"
@@ -3571,29 +3315,6 @@ msgstr "Amplada de la imatge [px]:"
 msgid "Image height [px]:"
 msgstr "Alçada de la imatge [px]:"
 
-msgid ""
-"Select the resampling kernel to use: \n"
-"- 4x4 cubic convolution (CC), \n"
-"- nearest neighbour (NN), \n"
-"- or the proprietary MTF kernel (MTF)"
-msgstr ""
-"Seleccioneu el nucli de remuestreig que voleu utilitzar:\n"
-"- 4x4 cubic convolution (CC), \n"
-"- nearest neighbour (NN), \n"
-"- o MTF kernel (MTF)"
-
-msgid "4x4 cubic convolution"
-msgstr "convolució cúbica 4x4"
-
-msgid "nearest neighbour"
-msgstr "nearest neighbour"
-
-msgid "proprietary MTF kernel"
-msgstr "MTF kernel"
-
-msgid "Resampling kernel"
-msgstr "Kernel de re-mostreig"
-
 msgid "Creating and editing a timelapse is not supported on mobile."
 msgstr "La creació i edició d'un timelapse no és compatible amb el mòbil."
 
@@ -3700,9 +3421,6 @@ msgstr "Durada de l'esvaïment"
 
 msgid "Fade duration relative to frame duration"
 msgstr "Durada de l'esvaïment relativa a la durada del fotograma"
-
-msgid "Item type"
-msgstr "Tipus d'element"
 
 msgid "ACCEPT"
 msgstr "ACEPTAR"
@@ -3813,25 +3531,6 @@ msgstr "HV - linear gamma0"
 msgid "HV - linear gamma0 - radiometric terrain corrected"
 msgstr "HV - gamma0 lineal - terreny radiomètric corregit"
 
-msgid ""
-"Sensing instrument whose values the data should be harmonized to. Supported "
-"values:\n"
-"- NONE to disable harmonization,\n"
-"- Sentinel-2 only for PSScene item type and surface reflectance product "
-"bundles,\n"
-"- PS2 only for PSScene4Band item type and top-of-atmosphere product bundles."
-msgstr ""
-"Instrument de detecció amb els valors del qual s'han d'harmonitzar les "
-"dades. Valors suportats:\n"
-"- CAP per desactivar l'harmonització,\n"
-"- Sentinel-2 només per al tipus d'element PSScene i paquets de productes de "
-"reflectància superficial,\n"
-"- PS2 només per al tipus d'article PSScene4Band i els paquets de productes "
-"d'alta atmosfera."
-
-msgid "Harmonize to"
-msgstr "Harmonitzar a"
-
 msgid "N/A"
 msgstr "N/A"
 
@@ -3874,98 +3573,8 @@ msgstr "S'ha produït un problema en analitzar el fitxer"
 msgid "Upload"
 msgstr "Carrega"
 
-msgid "My orders and subscriptions"
-msgstr "Les meves comandes i subscripcions"
-
-msgid "Created subscriptions (Not confirmed)"
-msgstr "Subscripcions creades (no confirmades)"
-
-msgid "Running subscriptions"
-msgstr "Subscripcions en funcionament"
-
-msgid "Finished subscriptions"
-msgstr "Subscripcions acabades"
-
-msgid "Deleted subscriptions"
-msgstr "Subscripcions suprimides"
-
-msgid "No subscriptions found"
-msgstr "No s'han trobat subscripcions"
-
-msgid "Error confirming subscription"
-msgstr "S'ha produït un error en confirmar la subscripció"
-
-msgid "Error deleting subscription"
-msgstr "S'ha produït un error en suprimir la subscripció"
-
-msgid "Confirm subscription"
-msgstr "Confirmeu la subscripció"
-
-msgid "Are you sure you want to confirm this subscription?"
-msgstr "Esteu segur que voleu confirmar aquesta subscripció?"
-
-msgid "Delete subscription"
-msgstr "Suprimeix la subscripció"
-
-msgid "Are you sure you want to delete this subscription?"
-msgstr "Esteu segur que voleu suprimir aquesta subscripció?"
-
-msgid "ID"
-msgstr "ID"
-
-msgid "Refresh subscriptions"
-msgstr "Actualitza les subscripcions"
-
-msgid "Creating subscription"
-msgstr "S'està creant la subscripció"
-
-msgid ""
-"Are you sure you want to create an subscription without a Collection ID?  \n"
-"When you confirm your subscription a new collection will be created "
-"automatically."
-msgstr ""
-"Esteu segur que voleu crear una subscripció sense un identificador de "
-"col·lecció?\n"
-"Quan confirmeu la vostra subscripció, es crearà automàticament una nova "
-"col·lecció."
-
-msgid "Subscription name"
-msgstr "Nom de la subscripció"
-
-msgid "Create subscription"
-msgstr "Crea una subscripció"
-
 msgid "Order"
 msgstr "Comanda"
-
-msgid "Subscription"
-msgid_plural "Subscriptions"
-msgstr[0] "Subscripció"
-msgstr[1] "Subscripcions"
-
-msgid "Error cancelling subscription"
-msgstr "Error en cancel·lar la subscripció"
-
-msgid "Cancel subscription"
-msgstr "Cancel·la la subscripció"
-
-msgid "Are you sure you want to cancel this subscription?"
-msgstr "Esteu segur que voleu cancel·lar aquesta subscripció?"
-
-msgid "No products found"
-msgstr "No s'han trobat productes"
-
-msgid "Query"
-msgstr "Consulta"
-
-msgid "Products"
-msgstr "Productes"
-
-msgid "Create order/subscription"
-msgstr "Crea una comanda/subscripció"
-
-msgid "Show products on map"
-msgstr "Mostra els productes al mapa"
 
 msgid "Show tutorial"
 msgstr "Mostra el tutorial"
@@ -4008,13 +3617,6 @@ msgstr "Vista prèvia"
 msgid "Delay last frame"
 msgstr "Retarda l'últim fotograma"
 
-msgid ""
-"The minimum area for ordering SkySat data is 25 km². This means that you "
-"will be charged 25 km² even for AOIs smaller than 25 km²!"
-msgstr ""
-"L'àrea mínima per demanar dades SkySat és de 25 km². Això vol dir que se us "
-"cobrarà 25 km² fins i tot per AOI de menys de 25 km²!"
-
 msgid "Image width and height must be between 1px and 2500px"
 msgstr "L'amplada i l'alçada de la imatge ha de ser d'entre 1 i 2500 píxels"
 
@@ -4044,12 +3646,6 @@ msgstr ""
 "Més informació sobre la correcció atmosfèrica "
 "[aquí](https://www.sentinel-hub.com/develop/api/ogc/custom-parameters/"
 "atmospheric-correction/)."
-
-msgid "Step By Step Guide"
-msgstr "Guia Pas a Pas"
-
-msgid "Data transfer instructions"
-msgstr "Instruccions de transferència de dades"
 
 msgid "Effects and advanced options"
 msgstr "Efectes i opcions avançades"
@@ -4161,9 +3757,6 @@ msgstr "Ordre per defecte"
 
 msgid "Effect:"
 msgstr "Efecte:"
-
-msgid "MultiPolygons not supported by Geocento"
-msgstr "Els multipolígons no són compatibles amb Geocento"
 
 msgid "Compare Panel"
 msgstr "Panell de comparació"
@@ -6159,12 +5752,6 @@ msgstr ""
 msgid "Welcome To Copernicus Browser!"
 msgstr "Benvinguts al navegador Copernicus!"
 
-msgid ""
-"Note that it is technically possible to order more PlanetScope data than "
-"your purchased quota. Make sure your order is in line with the Hectares "
-"under Management (HUM) model to avoid overage fees."
-msgstr ""
-
 msgid "Data take id"
 msgstr ""
 
@@ -6500,30 +6087,6 @@ msgid "The .zip file is missing content. The .prj and .shp files are required"
 msgstr ""
 
 msgid "Drop a zipped SHP, KML/KMZ, GPX, WKT (in EPSG:4326) or GEOJSON/JSON file."
-msgstr ""
-
-#, javascript-format
-msgid ""
-"Browse, visualise and analyse Very High Resolution (VHR) data directly in "
-"Browser, tapping into global archives of Planet [PlanetScope](${ "
-"links.planetScope }) and [SkySat](${ links.planetSkySat }), Airbus "
-"[Pleiades](${ links.airbusPleiades }) and [SPOT](${ links.airbusSpot }) as "
-"well as [Maxar WorldView](${ links.maxarWorldView }).  \n"
-"\n"
-"Observe the planet at resolutions starting at 3 meters and all the way up "
-"to 0.5 meters for a cost down to 0.9 EUR per km².\n"
-"\n"
-"![High resolution imagery example.](${ highResImgUrl })\n"
-"\n"
-"&copy CNES (2020), Distribution AIRBUS DS, contains Pleiades data processed "
-"by Sentinel Hub\n"
-"\n"
-"What you need: \n"
-"- An active Sentinel Hub subscription to search the metadata. If you don't "
-"have an account yet: [Sign up](${ links.signUp }).\n"
-"- Pre-purchased quota for any of the constellations. Go to [Dashboard](${ "
-"links.dashboard }) to establish a subscription and purchase commercial data "
-"plans."
 msgstr ""
 
 msgid ""
@@ -9877,57 +9440,6 @@ msgstr ""
 msgid "Histogram not available for edited OpenEO process graph"
 msgstr ""
 
-msgid ""
-"**General**  \n"
-"The \"Commercial data\" tab allows you to search, purchase, and visualise "
-"Commercial Third-Party data.\n"
-"\n"
-"**Available constellations**  \n"
-"We currently offer data from 3 different commercial data providers offering "
-"data from 5 different constellations:\n"
-"- Planet [Planet "
-"scope](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"planetscope) (4/8 bands, 3m resolution)\n"
-"- Planet "
-"[SkySat](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"optical-missions) (4 bands, 0.5m resolution)\n"
-"- Airbus "
-"[Pleiades](https://documentation.dataspace.copernicus.eu/Data/Others/CCM."
-"html#pleiades) (5 bands, 0.5m - 2m resolution)\n"
-"- Airbus "
-"[SPOT](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"spot-6-7) (5 bands, 1.5m - 6m resolution)\n"
-"- Maxar "
-"[WorldView](https://documentation.dataspace.copernicus.eu/Data/Others/CCM."
-"html#worldview-2-3) (5 bands, 0.5m - 2m resolution)\n"
-"\n"
-"As the term \"commercial\" implies, the data comes at a cost, which means "
-"**in addition to your existing Sentinel Hub subscription, you will need to "
-"purchase quota** for the data you are interested in.\n"
-"\n"
-"**Quota**  \n"
-"Check *My quota* to see how much quota you have for each of the "
-"constellations. You can purchase quota through the [Sentinel Hub "
-"Dashboard](https://apps.sentinel-hub.com/dashboard/#/account/billing).\n"
-"\n"
-"**Purchase**  \n"
-"To purchase commercial data, you must:\n"
-"- search for the data (*Search options*),\n"
-"- select a product from the results (*Results*),\n"
-"- add the product to your order,\n"
-"- specify where to save the order (*Order options*),\n"
-"- review the order and confirm it (*Created orders (not confirmed)* in *My "
-"orders*). Your order will now be listed under *Running orders* and move to "
-"*Finished orders* once the data has been purchased and ingested.\n"
-"\n"
-"**More information**  \n"
-"For more information on ordering commercial data ( Third Party Data Import "
-"), please see the [Sentinel Hub Documentation "
-"Page](https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/"
-"Overview/ProcessingUnit.html#data-ordering-and-delivery---applicable-to-"
-"orders-api-subscriptions-api-and-third-party-data-import-api)."
-msgstr ""
-
 msgid "Error loading process graph. Check your URL."
 msgstr ""
 
@@ -10121,9 +9633,6 @@ msgid ""
 msgstr ""
 
 msgid "This data product was processed by EUMETSAT."
-msgstr ""
-
-msgid "Scene id"
 msgstr ""
 
 msgid "Cell id"
@@ -12772,4 +12281,21 @@ msgid "Blue band"
 msgstr ""
 
 msgid "Grey band"
+msgstr ""
+
+msgid "Scene ID"
+msgstr ""
+
+msgid "Projection"
+msgstr ""
+
+msgid "GSD"
+msgstr ""
+
+msgid ""
+"No products were found for one of your selected data sources.\n"
+"\n"
+"The filters you've applied might be limiting the results for that source. "
+"You could try extending the time range, selecting a larger area on the map, "
+"or reviewing your additional filters."
 msgstr ""

@@ -133,7 +133,10 @@ const RRDProductInfoModal = ({ selectedResult, params, lng, lat, previewImageUrl
               <div className="column previews">
                 <SectionGroup className="preview" title={t`Preview`}>
                   {previewImageUrl ? (
-                    <ProductPreview product={{ ...selectedResult, previewUrl: previewImageUrl }} />
+                    <ProductPreview
+                      product={{ ...selectedResult, previewUrl: previewImageUrl }}
+                      skipNormalization
+                    />
                   ) : (
                     <div className="error-message">{t`No preview available`}</div>
                   )}

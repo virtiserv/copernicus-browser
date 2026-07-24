@@ -4,13 +4,24 @@ import { t } from 'ttag';
 import './ProductPreview.scss';
 import { AttributeNames, AttributeOrbitDirectionValues } from '../../../api/OData/assets/attributes';
 import Loader from '../../../Loader/Loader';
+import { ResultType, getPlatformShortName, getResultType, normalizeResult } from '../Results.utils';
 
 const getTransformationClass = (product) => {
   //previews for SENTINEL-1 are flipped
-  if (product?.platformShortName === 'SENTINEL-1') {
-    const orbitDirection = product.attributes.find((attr) => attr.Name === AttributeNames.orbitDirection);
-    if (orbitDirection?.Value === AttributeOrbitDirectionValues.ASCENDING.value) {
-      return 'rotate-flip-horizontal';
+  const platformShortName = getPlatformShortName(product);
+  if (platformShortName === 'SENTINEL-1') {
+    const resultType = getResultType(product);
+    if (resultType === ResultType.ODATA) {
+      const orbitDirection = product.attributes.find((attr) => attr.Name === AttributeNames.orbitDirection);
+      if (orbitDirection?.Value === AttributeOrbitDirectionValues.ASCENDING.value) {
+        return 'rotate-flip-horizontal';
+      }
+    } else {
+      // Handle STAC format - orbit direction might be in properties
+      const orbitDirection = product.properties?.['sat:orbit_state'];
+      if (orbitDirection === 'ascending') {
+        return 'rotate-flip-horizontal';
+      }
     }
 
     return 'flip-horizontal';
@@ -32,13 +43,18 @@ const shouldShowPreview = ({ previewUrl, product, previewError, validate }) => {
   return true;
 };
 
-const ProductPreview = ({ product = {}, validate = false, isLoading = false }) => {
-  const { name, previewUrl, className } = product;
+const ProductPreview = ({ product = {}, validate = false, isLoading = false, skipNormalization = false }) => {
+  // Normalize the product to ensure consistent format. Skipped for callers (e.g. RRD)
+  // whose result objects aren't genuine Copernicus OData/STAC search results but can
+  // still structurally resemble one (e.g. have a plain `properties` object), which
+  // would otherwise cause them to be misclassified and mangled by normalizeSTACResult.
+  const normalizedProduct = skipNormalization ? product : normalizeResult(product);
+  const { name, previewUrl, className } = normalizedProduct;
   const [previewError, setPreviewError] = useState(false);
 
   const showPreview = shouldShowPreview({
     previewUrl,
-    product,
+    product: normalizedProduct,
     previewError,
     validate: validate,
   });
@@ -54,7 +70,7 @@ const ProductPreview = ({ product = {}, validate = false, isLoading = false }) =
             alt={name}
             loading="lazy"
             onError={() => setPreviewError(true)}
-            className={getTransformationClass(product)}
+            className={getTransformationClass(normalizedProduct)}
           />
         </div>
       ) : (

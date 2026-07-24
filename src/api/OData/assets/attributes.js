@@ -54,6 +54,8 @@ export const AttributeNames = {
   verticalTileNumber: 'verticalTileNumber',
   projectionName: 'projectionName',
   missionShortName: 'missionShortName',
+  projection: 'projection',
+  gsd: 'gsd',
   countryCode: 'countryCode',
 };
 
@@ -174,7 +176,7 @@ export const FormatedAttributeNames = {
   'proj:epsg': () => t`Projection EPSG code`,
   projShape: () => t`Projection shape`,
   projTransform: () => t`Projection transform`,
-  sceneId: () => t`Scene id`,
+  sceneId: () => t`Scene ID`,
   'view:sun_azimuth': () => t`View sun azimuth`,
   'view:sun_elevation': () => t`View sun elevation`,
   wrsPath: () => t`WRS path`,
@@ -198,6 +200,8 @@ export const FormatedAttributeNames = {
   horizontalTileNumber: () => t`Horizontal tile number`,
   verticalTileNumber: () => t`Vertical tile number`,
   projectionName: () => t`Projection name`,
+  projection: () => t`Projection`,
+  gsd: () => t`GSD`,
 };
 
 export const AttributesDescriptions = {

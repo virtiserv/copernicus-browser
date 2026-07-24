@@ -36,11 +36,9 @@ describe('RRD Search Query builder - Archive', () => {
 
   let advancedSection = {
     aoiCoverage: 0.3,
-    satelliteAzimuth: [0, 360],
     azimuth: [0, 360],
     sunAzimuth: [0, 360],
     sunElevation: [0, 90],
-    productType: [],
     incidenceAngle: [0, 90],
   };
 

@@ -22,6 +22,17 @@ import RecursiveCollectionItem from './RecursiveCollectionItem';
 
 const CLOUD_COVER_PERCENT = 100;
 
+// Recursively auto-selects all children of a config item (used when a collection/item has
+// hideChildren set), building the nested selection object in place on parentObj.
+const addAllChildrenToSelection = (items, parentObj) => {
+  items.forEach((item) => {
+    parentObj[item.id] = { type: item.type };
+    if (Array.isArray(item.items) && item.items.length > 0) {
+      addAllChildrenToSelection(item.items, parentObj[item.id]);
+    }
+  });
+};
+
 export const createCollectionFormFromDatasetId = (datasetId, params) => {
   const oDataCollectionInfo = getODataCollectionInfoFromDatasetId(datasetId, params);
 
@@ -87,7 +98,6 @@ function RecursiveCollectionForm({
   useEffect(() => {
     if (!!userToken !== !!prevUserToken) {
       const formConfig = getCollectionFormConfig(recursiveCollections, { userToken });
-
       const initialState = getCollectionFormInitialState(
         formConfig,
         {
@@ -126,7 +136,6 @@ function RecursiveCollectionForm({
 
   const handleCollectionToggle = (collectionId, collection) => {
     const mustRemove = !!selectedCollections[collectionId];
-
     if (mustRemove) {
       const newSelectedOptionsObj = cloneDeep(selectedCollections);
       delete newSelectedOptionsObj[collectionId];
@@ -138,14 +147,18 @@ function RecursiveCollectionForm({
         setMaxCc(newMaxCc);
       }
     } else {
-      // Add collection
-      setSelectedCollections({
+      // Build the complete new selectedCollections state
+      const newSelectedCollections = {
         ...selectedCollections,
-        [collectionId]: {},
-      });
+        [collectionId]: { platform: collection.platform },
+      };
 
-      // Auto-select default instruments from items array
-      if (Array.isArray(collection.items)) {
+      // If hideChildren is true, auto-select all children recursively
+      if (collection.hideChildren && Array.isArray(collection.items)) {
+        addAllChildrenToSelection(collection.items, newSelectedCollections[collectionId]);
+      }
+      // Auto-select default instruments from items array (existing behavior for non-hideChildren)
+      else if (Array.isArray(collection.items)) {
         let selectedInstruments = collection.items.filter(
           (item) => item.type === 'instrument' && item.selected,
         );
@@ -159,41 +172,46 @@ function RecursiveCollectionForm({
           selectedInstruments = [collection.items[0]];
         }
 
-        // Apply selected instruments
+        // Build cloud cover state for instruments
+        const newMaxCc = { ...maxCc };
+
+        // Add selected instruments to the state object
         selectedInstruments.forEach((instrument) => {
-          setSelectedCollections({
-            ...selectedCollections,
-            [collectionId]: {
-              ...selectedCollections?.[collectionId],
-              [instrument.id]: {
-                type: instrument.type,
-              },
+          newSelectedCollections[collectionId] = {
+            ...newSelectedCollections[collectionId],
+            [instrument.id]: {
+              type: instrument.type,
             },
-          });
+          };
 
           // Set cloud cover for instrument if supported
           if (instrument.supportsCloudCover) {
-            setMaxCc({
-              ...maxCc,
-              [collectionId]: {
-                ...maxCc?.[collectionId],
-                [instrument.id]: CLOUD_COVER_PERCENT,
-              },
-            });
+            if (!newMaxCc[collectionId]) {
+              newMaxCc[collectionId] = {};
+            }
+            newMaxCc[collectionId][instrument.id] = CLOUD_COVER_PERCENT;
           }
         });
+
+        // Update maxCc state if any instruments support cloud cover
+        if (selectedInstruments.some((instrument) => instrument.supportsCloudCover)) {
+          setMaxCc(newMaxCc);
+        }
       }
+
+      // Set cloud cover at collection level if supported
+      if (collection.supportsCloudCover) {
+        setMaxCc({ ...maxCc, [collectionId]: CLOUD_COVER_PERCENT });
+      }
+
+      // Call setSelectedCollections only once with the complete state
+      setSelectedCollections(newSelectedCollections);
 
       // Set default filters
       if (collection?.additionalFilters) {
         collection?.additionalFilters
           .filter((af) => af.defaultValue)
           .forEach((af) => setSelectedFilters(collectionId, af.id, af.defaultValue));
-      }
-
-      // Set cloud cover at collection level if supported
-      if (collection.supportsCloudCover) {
-        setMaxCc({ ...maxCc, [collectionId]: CLOUD_COVER_PERCENT });
       }
     }
   };
@@ -281,15 +299,26 @@ function RecursiveCollectionForm({
       const newSelectedCollections = cloneDeep(selectedCollections);
       let current = newSelectedCollections;
 
-      // Ensure the path exists and navigate
+      // Ensure the path exists and navigate. When this creates the top-level group entry
+      // (i.e. a nested child is toggled before the group itself), carry over the group's
+      // `platform` the same way handleCollectionToggle does - otherwise extractPlatforms()
+      // in STACSearchPayloadBuilder.ts (which only reads the top-level entry) would silently
+      // build no platform filter for a STAC-enabled collection nested inside a group that
+      // needs one - see MR review F3.
       for (let i = 0; i < path.length - 1; i++) {
         if (!current[path[i]]) {
-          current[path[i]] = {};
+          current[path[i]] = i === 0 ? { platform: collection.platform } : {};
         }
         current = current[path[i]];
       }
 
       current[path[path.length - 1]] = { type: toggledItem.type };
+
+      // If hideChildren is true, auto-select all children recursively
+      if (toggledItem.hideChildren && Array.isArray(toggledItem.items)) {
+        addAllChildrenToSelection(toggledItem.items, current[path[path.length - 1]]);
+      }
+
       setSelectedCollections(newSelectedCollections);
 
       // Handle cloud cover if needed

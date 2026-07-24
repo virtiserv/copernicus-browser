@@ -9,9 +9,6 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n%10==1 && (n%100>19 || n%100<11) ? 0 : "
 "(n%10>=2 && n%10<=9) && (n%100>19 || n%100<11) ? 1 : n%1!=0 ? 2: 3);\n"
 
-msgid "Education"
-msgstr "Ugdymas"
-
 msgid "Normal"
 msgstr "Normalus"
 
@@ -3120,59 +3117,8 @@ msgstr "Parodyti detales"
 msgid "Max. cloud coverage:"
 msgstr "Didžiausia debesų danga:"
 
-msgid "Order name"
-msgstr "Užsakymo pavadinimas"
-
-msgid ""
-"ORDER USING PRODUCTS IDS\n"
-"\n"
-"Search for data and add products to you order by clicking on \"Add to "
-"Order\" buttons. This will add product IDs to your Order Options under "
-"\"Added Products (by ID).\"\n"
-"\n"
-"ORDER USING QUERY\n"
-"\n"
-"Your order will be based on your AOI and time range, without searching for "
-"data and adding products to your order. Especially useful for ordering "
-"time-series data.\n"
-"It's possible for some products to be partially covered by clouds, despite "
-"the cloud coverage % information being 0."
-msgstr ""
-"UŽSAKYMAS NAUDOJANT PRODUKTŲ ID\n"
-"\n"
-"Ieškokite duomenų ir pridėkite produktus prie užsakymo spustelėdami "
-"mygtukus „Pridėti prie užsakymo“. Taip produktų ID bus įtraukti į užsakymo "
-"parinktis skiltyje „Pridėti produktai (pagal ID)“.\n"
-"\n"
-"UŽSAKYMAS NAUDOJANT UŽKLAUSĄ\n"
-"\n"
-"Jūsų užsakymas bus sudarytas pagal jūsų AOI ir laiko intervalą, neieškant "
-"duomenų ir nepridedant produktų į užsakymą. Ypač naudinga užsakant laiko "
-"eilučių duomenis.\n"
-"Gali būti, kad kai kuriuos produktus iš dalies dengia debesys, nepaisant "
-"to, kad debesų padengimo % informacija yra 0."
-
 msgid "Collection ID"
 msgstr "Kolekcijos ID"
-
-msgid "Ordered products will be clipped to the selected area."
-msgstr "Užsakyti produktai bus pritvirtinti prie pasirinktos srities."
-
-msgid "Set an approximate order limit to prevent undesired large area requests."
-msgstr ""
-"Nustatykite apytikslę užsakymo ribą, kad išvengtumėte nepageidaujamų "
-"didelio ploto užklausų."
-
-msgid ""
-"When you click \"Create Order\", your order will be created. At this stage, "
-"the order will not go through and no quota will be substracted. This will "
-"happen when you confirm the order. Before you do, you will be able to "
-"review the requested quota and decide if you would like to proceed."
-msgstr ""
-"Spustelėję „Sukurti užsakymą“, užsakymas bus sukurtas. Šiame etape "
-"užsakymas nebus vykdomas ir kvota nebus išskaičiuota. Tai įvyks, kai "
-"patvirtinsite užsakymą. Prieš tai galėsite peržiūrėti prašomą kvotą ir "
-"nuspręsti, ar norite tęsti užsakymą."
 
 msgid "Layer default"
 msgstr "Numatytasis sluoksnis"
@@ -3208,9 +3154,6 @@ msgstr ""
 "Nubraižykite daugiakampę dominančią sritį vaizdų atsisiuntimui ir laikui "
 "bėgant"
 
-msgid "My quotas"
-msgstr "Mano kvotos"
-
 msgid "Use current display area"
 msgstr "Naudoti esamą rodymo sritį"
 
@@ -3229,220 +3172,23 @@ msgstr "Žvaigždynas"
 msgid "Processing level"
 msgstr "Apdorojimo lygis"
 
-msgid "Snow cover"
-msgstr "Sniego danga"
-
 msgid "Incidence angle"
 msgstr "Kritimo kampas"
 
 msgid "Coverage"
 msgstr "Aprėptis"
 
-msgid "Shadow percent"
-msgstr "Šešėlių procentas"
-
-msgid "Pixel resolution"
-msgstr "Pikselių raiška"
-
 msgid "Hide details"
 msgstr "Paslėpti detales"
-
-msgid "Product id"
-msgstr "Produkto ID"
-
-msgid "Acquisition date"
-msgstr "Įsigijimo data"
-
-msgid "Prepare order"
-msgstr "Parengti užsakymą"
-
-msgid "From"
-msgstr "Nuo"
-
-msgid "To"
-msgstr "Iki"
 
 msgid "Provider"
 msgstr "Teikėjas"
 
-msgid "Used km"
-msgstr "Sunaudota km"
-
-msgid "No quotas available"
-msgstr "Kvotų nėra"
-
-#, javascript-format
-msgid "Unable to get quotas: ${ err.message }"
-msgstr "Nepavyko gauti kvotų: ${ err.message }"
-
-msgid "Refresh quotas"
-msgstr "Atnaujinti kvotas"
-
-msgid "Purchased km"
-msgstr "Nupirktas km"
-
-msgid "Advanced options"
-msgstr "Išplėstiniai nustatymai"
-
-msgid "Product bundle"
-msgstr "Produktų rinkinys"
-
-msgid "Max. Cloud Coverage"
-msgstr "Didžiausia Debesų aprėptis"
-
-msgid "Min. Off Nadir"
-msgstr "Min. nuo žemiausio lygio"
-
-msgid "Max. Off Nadir"
-msgstr "Max. nuo žemiausio lygio"
-
-msgid "Min. Sun Elevation"
-msgstr "Min. Saulės aukštis"
-
-msgid "Max. Sun Elevation"
-msgstr "Max. Saulės aukštis"
-
-msgid "Sensor"
-msgstr "Jutiklis"
-
-msgid "Processing Level"
-msgstr "Apdorojimo lygis"
-
-msgid "Snow Coverage"
-msgstr "Sniego danga"
-
-msgid "Incidence Angle"
-msgstr "Kritimo kampas"
-
-msgid "add"
-msgstr "pridėti"
-
-msgid "remove"
-msgstr "pašalinti"
-
-msgid "Order type"
-msgstr "Užsakymo tipas"
-
-msgid "Order limit"
-msgstr "Užsakymo limitas"
-
-msgid "Order limit (km2)"
-msgstr "Užsakymo limitas (km2)"
-
-msgid "Planet API Key"
-msgstr "Planet API raktas"
-
-msgid "Your Planet API key"
-msgstr "Jūsų Planet API raktas"
-
-msgid "Create order"
-msgstr "Sukurti užsakymą"
-
-msgid "Created orders (Not confirmed)"
-msgstr "Sukurti užsakymai (Nepatvirtinti)"
-
-msgid "Running orders"
-msgstr "Vykdomi užsakymai"
-
-msgid "Finished orders"
-msgstr "Baigti užsakymai"
-
-msgid "Created at"
-msgstr "Sukurta"
-
-msgid "Confirmed at"
-msgstr "Patvirtinta"
-
 msgid "Size"
 msgstr "Dydis"
 
-msgid "Status"
-msgstr "Statusas"
-
-msgid "All input parameters"
-msgstr "Visi įvesties parametrai"
-
-#, javascript-format
-msgid "Hide ${ property } values"
-msgstr "Paslėpti ${ nuosavybė } reikšmes"
-
-#, javascript-format
-msgid "Show ${ property } values"
-msgstr "Rodyti ${ nuosavybė } reikšmes"
-
-msgid "Confirm"
-msgstr "Patvirtinti"
-
-msgid "Delete"
-msgstr "Ištrinti"
-
-msgid "Show coverage"
-msgstr "Rodyti aprėptį"
-
-msgid "Show data"
-msgstr "Rodyti duomenis"
-
-msgid "No orders found"
-msgstr "Užsakymų nerasta"
-
-msgid "Error confirming order"
-msgstr "Įvyko klaida, patvirtinant užsakymą"
-
-msgid "Error deleting order"
-msgstr "Įvyko klaida, pašalinant užsakymą"
-
-msgid "Confirm order"
-msgstr "Patvirtinti užsakymą"
-
-msgid "Are you sure you want to confirm this order?"
-msgstr "Ar tikrai norite patvirtinti šį užsakymą?"
-
-msgid "Delete order"
-msgstr "Ištrinti užsakymą"
-
-msgid "Are you sure you want to delete this order?"
-msgstr "Ar tikrai norite ištrinti šį užsakymą?"
-
-msgid "Refresh orders"
-msgstr "Atnaujinti užsakymus"
-
-msgid "Creating order"
-msgstr "Užsakymo kūrimas"
-
-msgid ""
-"Are you sure you want to create an order without a Collection ID?  \n"
-"When you confirm your order a new collection will be created automatically."
-msgstr ""
-"Ar tikrai norite sukurti užsakymą be Kolekcija ID?\n"
-"Kai patvirtinsite užsakymą, nauja kolekcija bus sukurta automatiškai."
-
-msgid "Order size (approx)"
-msgstr "Užsakymo dydis (apytiksliai)"
-
-msgid "Create a new collection"
-msgstr "Sukurti naują kolekciją"
-
-msgid "Manual Entry"
-msgstr "Rankinis įvedimas"
-
-msgid "Your collections"
-msgstr "Jūsų kolekcijos"
-
-msgid ""
-"Enter a Planet API key, that you received via email after purchasing a "
-"Planet PlanetScope Sentinel Hub Package"
-msgstr ""
-"Įveskite Planet API raktą, kurį gavote el. paštu įsigiję Planet PlanetScope "
-"Sentinel Hub paketą"
-
-msgid "Show preview"
-msgstr "Rodyti peržiūrą"
-
 msgid "Continue without logging in"
 msgstr "Tęskite neprisijungę"
-
-msgid "e.g.: My planet data"
-msgstr "pvz.: Mano planetos duomenys"
 
 msgid "Settings"
 msgstr "Nustatymai"
@@ -3590,29 +3336,6 @@ msgstr "Vaizdo plotis [px]:"
 msgid "Image height [px]:"
 msgstr "Vaizdo aukštis [px]:"
 
-msgid ""
-"Select the resampling kernel to use: \n"
-"- 4x4 cubic convolution (CC), \n"
-"- nearest neighbour (NN), \n"
-"- or the proprietary MTF kernel (MTF)"
-msgstr ""
-"Pasirinkite naudojamą perrinkimo branduolį: \n"
-"- Pasirinkite 4x4 kubinę konvulsiją (CC), \n"
-"- artimiausio kaimyno (NN), \n"
-"- arba patentuotą MTF branduolį (MTF)"
-
-msgid "4x4 cubic convolution"
-msgstr "4x4 kubinė konvoliucija"
-
-msgid "nearest neighbour"
-msgstr "artimiausias kaimynas"
-
-msgid "proprietary MTF kernel"
-msgstr "patentuotas MTF branduolys"
-
-msgid "Resampling kernel"
-msgstr "Perrinkimo branduolys"
-
 msgid "Creating and editing a timelapse is not supported on mobile."
 msgstr ""
 "Laiko intervalų kūrimas ir redagavimas nepalaikomas mobiliuosiuose "
@@ -3724,9 +3447,6 @@ msgstr "Išblukimo trukmė"
 msgid "Fade duration relative to frame duration"
 msgstr "Išnykimo trukmė, palyginti su kadro trukme"
 
-msgid "Item type"
-msgstr "Elemento tipas"
-
 msgid "ACCEPT"
 msgstr "PRIIMTI"
 
@@ -3836,25 +3556,6 @@ msgstr "HV - linear gamma0"
 msgid "HV - linear gamma0 - radiometric terrain corrected"
 msgstr "HV - linear gamma0 - radiometriškai pakoreguotas reljefas"
 
-msgid ""
-"Sensing instrument whose values the data should be harmonized to. Supported "
-"values:\n"
-"- NONE to disable harmonization,\n"
-"- Sentinel-2 only for PSScene item type and surface reflectance product "
-"bundles,\n"
-"- PS2 only for PSScene4Band item type and top-of-atmosphere product bundles."
-msgstr ""
-"Jutimo prietaisas, su kurio vertėmis turėtų būti suderinti duomenys. "
-"Palaikomos reikšmės:\n"
-"- NONE, kad būtų išjungtas derinimas,\n"
-"- Sentinel-2 tik PSScene elemento tipo ir paviršiaus atspindžio produktų "
-"paketams,\n"
-"- PS2 tik PSScene4Band elementų tipui ir atmosferos viršaus atspindžio "
-"produktų paketams."
-
-msgid "Harmonize to"
-msgstr "Suderinti prie"
-
 msgid "N/A"
 msgstr "N/A"
 
@@ -3898,98 +3599,8 @@ msgstr "Iškilo problema, analizuojant failą"
 msgid "Upload"
 msgstr "Įkelti"
 
-msgid "My orders and subscriptions"
-msgstr "Mano užsakymai ir prenumeratos"
-
-msgid "Created subscriptions (Not confirmed)"
-msgstr "Sukurtos prenumeratos (Nepatvirtintos)"
-
-msgid "Running subscriptions"
-msgstr "Vykdomos prenumeratos"
-
-msgid "Finished subscriptions"
-msgstr "Baigtos prenumeratos"
-
-msgid "Deleted subscriptions"
-msgstr "Pašalintos prenumeratos"
-
-msgid "No subscriptions found"
-msgstr "Prenumeratų nerasta"
-
-msgid "Error confirming subscription"
-msgstr "Įvyko klaida, patvirtinant prenumeratą"
-
-msgid "Error deleting subscription"
-msgstr "Įvyko klaida, pašalinant prenumeratą"
-
-msgid "Confirm subscription"
-msgstr "Patvirtinti prenumeratą"
-
-msgid "Are you sure you want to confirm this subscription?"
-msgstr "Ar tikrai norite patvirtinti šią prenumeratą?"
-
-msgid "Delete subscription"
-msgstr "Ištrinti prenumeratą"
-
-msgid "Are you sure you want to delete this subscription?"
-msgstr "Ar tikrai norite ištrinti šią prenumeratą?"
-
-msgid "ID"
-msgstr "ID"
-
-msgid "Refresh subscriptions"
-msgstr "Atnaujinti prenumeratas"
-
-msgid "Creating subscription"
-msgstr "Prenumeratos kūrimas"
-
-msgid ""
-"Are you sure you want to create an subscription without a Collection ID?  \n"
-"When you confirm your subscription a new collection will be created "
-"automatically."
-msgstr ""
-"Ar tikrai norite sukurti prenumeratą be Kolekcija ID?\n"
-"Kai patvirtinsite prenumeratą, bus automatiškai sukurta nauja kolekcija."
-
-msgid "Subscription name"
-msgstr "Prenumeratos pavadinimas"
-
-msgid "Create subscription"
-msgstr "Sukurti prenumeratą"
-
 msgid "Order"
 msgstr "Užsakymas"
-
-msgid "Subscription"
-msgid_plural "Subscriptions"
-msgstr[0] "Prenumerata"
-msgstr[1] "Prenumeratos"
-msgstr[2] "Prenumeratų"
-msgstr[3] "Prenumeratos"
-
-msgid "Error cancelling subscription"
-msgstr "Įvyko klaida, atšaukiant prenumeratą"
-
-msgid "Cancel subscription"
-msgstr "Atšaukti prenumeratą"
-
-msgid "Are you sure you want to cancel this subscription?"
-msgstr "Ar tikrai norite atšaukti šią prenumeratą?"
-
-msgid "No products found"
-msgstr "Produktų nerasta"
-
-msgid "Query"
-msgstr "Užklausa"
-
-msgid "Products"
-msgstr "Produktai"
-
-msgid "Create order/subscription"
-msgstr "Sukurti užsakymą/prenumeratą"
-
-msgid "Show products on map"
-msgstr "Rodyti produktus žemėlapyje"
 
 msgid "Show tutorial"
 msgstr "Rodyti mokymą"
@@ -4034,14 +3645,6 @@ msgstr "Peržiūra"
 msgid "Delay last frame"
 msgstr "Atidėti paskutinį kadrą"
 
-msgid ""
-"The minimum area for ordering SkySat data is 25 km². This means that you "
-"will be charged 25 km² even for AOIs smaller than 25 km²!"
-msgstr ""
-"Mažiausias plotas, kuriame galima užsisakyti \"SkySat\" duomenis, yra 25 "
-"km². Tai reiškia, kad už 25 km² reikės mokėti net už mažesnes nei 25 km² "
-"AOI!"
-
 msgid "Image width and height must be between 1px and 2500px"
 msgstr "Paveikslėlio plotis ir aukštis turi būti nuo 1px iki 2500px"
 
@@ -4071,12 +3674,6 @@ msgstr ""
 "Daugiau informacijos apie atmosferos korekciją [čia] "
 "(https://www.sentinel-hub.com/develop/api/ogc/custom-parameters/atmospheric-"
 "correction/)."
-
-msgid "Step By Step Guide"
-msgstr "Žingsnis po žingsnio vadovas"
-
-msgid "Data transfer instructions"
-msgstr "Duomenų perdavimo instrukcijos"
 
 msgid "Effects and advanced options"
 msgstr "Efektai ir išplėstinės parinktys"
@@ -4190,9 +3787,6 @@ msgstr "Numatytasis užsakymas"
 
 msgid "Effect:"
 msgstr "Efektas:"
-
-msgid "MultiPolygons not supported by Geocento"
-msgstr "\"Geocento\" nepalaiko \"MultiPolygons"
 
 msgid "Compare Panel"
 msgstr "Palyginti skydelį"
@@ -5896,12 +5490,6 @@ msgstr ""
 msgid "Welcome To Copernicus Browser!"
 msgstr ""
 
-msgid ""
-"Note that it is technically possible to order more PlanetScope data than "
-"your purchased quota. Make sure your order is in line with the Hectares "
-"under Management (HUM) model to avoid overage fees."
-msgstr ""
-
 msgid "Data take id"
 msgstr ""
 
@@ -6224,30 +5812,6 @@ msgid "The .zip file is missing content. The .prj and .shp files are required"
 msgstr ""
 
 msgid "Drop a zipped SHP, KML/KMZ, GPX, WKT (in EPSG:4326) or GEOJSON/JSON file."
-msgstr ""
-
-#, javascript-format
-msgid ""
-"Browse, visualise and analyse Very High Resolution (VHR) data directly in "
-"Browser, tapping into global archives of Planet [PlanetScope](${ "
-"links.planetScope }) and [SkySat](${ links.planetSkySat }), Airbus "
-"[Pleiades](${ links.airbusPleiades }) and [SPOT](${ links.airbusSpot }) as "
-"well as [Maxar WorldView](${ links.maxarWorldView }).  \n"
-"\n"
-"Observe the planet at resolutions starting at 3 meters and all the way up "
-"to 0.5 meters for a cost down to 0.9 EUR per km².\n"
-"\n"
-"![High resolution imagery example.](${ highResImgUrl })\n"
-"\n"
-"&copy CNES (2020), Distribution AIRBUS DS, contains Pleiades data processed "
-"by Sentinel Hub\n"
-"\n"
-"What you need: \n"
-"- An active Sentinel Hub subscription to search the metadata. If you don't "
-"have an account yet: [Sign up](${ links.signUp }).\n"
-"- Pre-purchased quota for any of the constellations. Go to [Dashboard](${ "
-"links.dashboard }) to establish a subscription and purchase commercial data "
-"plans."
 msgstr ""
 
 msgid ""
@@ -9564,57 +9128,6 @@ msgstr ""
 msgid "Histogram not available for edited OpenEO process graph"
 msgstr ""
 
-msgid ""
-"**General**  \n"
-"The \"Commercial data\" tab allows you to search, purchase, and visualise "
-"Commercial Third-Party data.\n"
-"\n"
-"**Available constellations**  \n"
-"We currently offer data from 3 different commercial data providers offering "
-"data from 5 different constellations:\n"
-"- Planet [Planet "
-"scope](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"planetscope) (4/8 bands, 3m resolution)\n"
-"- Planet "
-"[SkySat](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"optical-missions) (4 bands, 0.5m resolution)\n"
-"- Airbus "
-"[Pleiades](https://documentation.dataspace.copernicus.eu/Data/Others/CCM."
-"html#pleiades) (5 bands, 0.5m - 2m resolution)\n"
-"- Airbus "
-"[SPOT](https://documentation.dataspace.copernicus.eu/Data/Others/CCM.html#"
-"spot-6-7) (5 bands, 1.5m - 6m resolution)\n"
-"- Maxar "
-"[WorldView](https://documentation.dataspace.copernicus.eu/Data/Others/CCM."
-"html#worldview-2-3) (5 bands, 0.5m - 2m resolution)\n"
-"\n"
-"As the term \"commercial\" implies, the data comes at a cost, which means "
-"**in addition to your existing Sentinel Hub subscription, you will need to "
-"purchase quota** for the data you are interested in.\n"
-"\n"
-"**Quota**  \n"
-"Check *My quota* to see how much quota you have for each of the "
-"constellations. You can purchase quota through the [Sentinel Hub "
-"Dashboard](https://apps.sentinel-hub.com/dashboard/#/account/billing).\n"
-"\n"
-"**Purchase**  \n"
-"To purchase commercial data, you must:\n"
-"- search for the data (*Search options*),\n"
-"- select a product from the results (*Results*),\n"
-"- add the product to your order,\n"
-"- specify where to save the order (*Order options*),\n"
-"- review the order and confirm it (*Created orders (not confirmed)* in *My "
-"orders*). Your order will now be listed under *Running orders* and move to "
-"*Finished orders* once the data has been purchased and ingested.\n"
-"\n"
-"**More information**  \n"
-"For more information on ordering commercial data ( Third Party Data Import "
-"), please see the [Sentinel Hub Documentation "
-"Page](https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/"
-"Overview/ProcessingUnit.html#data-ordering-and-delivery---applicable-to-"
-"orders-api-subscriptions-api-and-third-party-data-import-api)."
-msgstr ""
-
 msgid "Error loading process graph. Check your URL."
 msgstr ""
 
@@ -9808,9 +9321,6 @@ msgid ""
 msgstr ""
 
 msgid "This data product was processed by EUMETSAT."
-msgstr ""
-
-msgid "Scene id"
 msgstr ""
 
 msgid "Cell id"
@@ -12459,4 +11969,21 @@ msgid "Blue band"
 msgstr ""
 
 msgid "Grey band"
+msgstr ""
+
+msgid "Scene ID"
+msgstr ""
+
+msgid "Projection"
+msgstr ""
+
+msgid "GSD"
+msgstr ""
+
+msgid ""
+"No products were found for one of your selected data sources.\n"
+"\n"
+"The filters you've applied might be limiting the results for that source. "
+"You could try extending the time range, selecting a larger area on the map, "
+"or reviewing your additional filters."
 msgstr ""

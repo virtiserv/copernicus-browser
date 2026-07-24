@@ -13,7 +13,7 @@ export interface VisualizationState {
   layerId?: string;
   customSelected: boolean;
   evalscript?: string;
-  evalscriptUrl?: string;
+  evalscriptUrl?: string | null;
   dataFusion: Record<string, unknown>[];
   gainEffect: number;
   gammaEffect: number;
@@ -35,7 +35,7 @@ export interface VisualizationState {
   dateMode: string;
   selectedProcessing: string;
   processGraph?: string;
-  processGraphUrl?: string;
+  processGraphUrl?: string | null;
   isProcessGraphModified: boolean;
 }
 

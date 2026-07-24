@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { GeoJSON, MapContainer, TileLayer, useMap } from 'react-leaflet';
 
-import { getBoundsAndLatLng } from '../../CommercialDataPanel/commercialData.utils';
+import { getBoundsAndLatLng } from '../../../utils/coords';
 
 import './Footprint.scss';
 

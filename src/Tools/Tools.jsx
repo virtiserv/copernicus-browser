@@ -22,18 +22,14 @@ import './Tools.scss';
 import { TABS } from '../const';
 import { getVisualizationEffectsFromStore } from '../utils/effectsUtils';
 import { USE_PINS_BACKEND } from './Pins/const';
-import { checkUserAccount } from './CommercialDataPanel/commercialData.utils';
 import RapidResponseDesk from './RapidResponseDesk/RapidResponseDesk';
 import { isInGroup } from '../Auth/authHelpers';
 import { RRD_GROUP } from '../api/RRD/assets/rrd.utils';
-
-// const COMMERCIAL_DATA_ENABLED = false;
 
 class Tools extends Component {
   state = {
     selectedPin: null,
     selectedResult: null,
-    userAccountInfo: null,
   };
 
   setTimeSpanExpanded = (isExpanded) => {
@@ -95,23 +91,6 @@ class Tools extends Component {
       prevProps.selectedThemeId !== this.props.selectedThemeId
     ) {
       this.resetSearch();
-    }
-    if (this.props?.user?.access_token && !prevProps.user?.access_token) {
-      let userAccountInfo;
-      try {
-        userAccountInfo = await checkUserAccount(this.props.user);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        this.setState({ userAccountInfo: userAccountInfo });
-      }
-    }
-
-    if (!this.props?.user?.access_token && prevProps.user?.access_token) {
-      this.setState({ userAccountInfo: null });
-      if (this.props.selectedTabIndex === TABS.COMMERCIAL_TAB) {
-        store.dispatch(tabsSlice.actions.setTabIndex(TABS.VISUALIZE_TAB));
-      }
     }
   }
 
@@ -304,15 +283,8 @@ class Tools extends Component {
                 />
               </div>
             </Tab>
-            {/*This check disabled for now. Waiting on role check response from API*/}
             {isInGroup(RRD_GROUP) && (
-              <Tab
-                id="rapid-response-desk-tab"
-                title={t`Order`}
-                /*This check disabled for now. Waiting on role check response from API*/
-                // enabled={userAccountInfo?.payingAccount}
-                renderKey={TABS.RAPID_RESPONSE_DESK}
-              >
+              <Tab id="rapid-response-desk-tab" title={t`Order`} renderKey={TABS.RAPID_RESPONSE_DESK}>
                 <div className="rapid-response-desk-wrapper">
                   <RapidResponseDesk />
                 </div>

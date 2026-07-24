@@ -24,8 +24,7 @@ import {
   ccmProductLabels,
 } from './stac.utils';
 
-const STAC_BASEURL =
-  global.window?.API_ENDPOINT_CONFIG?.STAC_BASEURL || 'https://stac.dataspace.copernicus.eu';
+const STAC_BASEURL = global.window.API_ENDPOINT_CONFIG.STAC_BASEURL;
 
 const stacCollectionInfoCache = new Map();
 const stacCollectionInfoInFlight = new Map();
@@ -597,6 +596,61 @@ const getStacCollectionInfo = async (collectionId, authToken) => {
 // Matches a processing/timeliness mode tag at the end of a STAC collection title, e.g. "(OFFL)" or "(NRT)"
 const MODE_TAG_REGEX = /\s*\((NRTI|OFFL|RPRO|NRT|NTC|STC)\)$/;
 
+// Creates a deduplicating accumulator for { label, extent } availability entries.
+// Returns the accumulated `availabilities` array plus an `addAvailability` function
+// that skips entries whose label+extent combination was already added.
+const createAvailabilityAccumulator = () => {
+  const availabilities = []; // { label: string, extent: string | null }[]
+  const addedKeys = new Set();
+
+  const addAvailability = (label, extent = null) => {
+    if (!label) {
+      return;
+    }
+    const key = `${label}::${extent ?? ''}`;
+    if (!addedKeys.has(key)) {
+      addedKeys.add(key);
+      availabilities.push({ label, extent });
+    }
+  };
+
+  return { availabilities, addAvailability };
+};
+
+// Resolves temporal extent labels for a list of STAC collection ids, preferring the
+// pre-fetched `allCollections` map and falling back to individual lookups (with auth
+// fallback) via getStacCollectionInfo for any ids missing from that map.
+const resolveExtentsForStacIds = async (stacIds, allCollections, authToken, addAvailability) => {
+  const fallbackIds = [];
+
+  for (const stacId of stacIds) {
+    const collection = allCollections?.get(stacId);
+    if (collection) {
+      const interval = collection?.extent?.temporal?.interval?.[0];
+      if (interval) {
+        const [start, end] = interval;
+        const startDate = formatStacDate(start, t`unknown`);
+        const endDate = formatStacDate(end, t`ongoing`);
+        const title = collection.title || stacId;
+        addAvailability(title, `${startDate} to ${endDate}`);
+        continue;
+      }
+    }
+    fallbackIds.push(stacId);
+  }
+
+  if (fallbackIds.length > 0) {
+    const fallbackInfos = await Promise.all(fallbackIds.map((id) => getStacCollectionInfo(id, authToken)));
+    for (const [index, id] of fallbackIds.entries()) {
+      const info = fallbackInfos[index];
+      if (info?.extent) {
+        const displayName = info.title || id;
+        addAvailability(displayName, info.extent);
+      }
+    }
+  }
+};
+
 const formatAvailabilityMessage = (availabilities) => {
   // Collapse processing/timeliness mode variants into one line per base product+date combination
   const modeGroups = new Map();
@@ -632,6 +686,25 @@ const formatAvailabilityMessage = (availabilities) => {
   return `\n**${header}**\n\n${sections.join('\n\n')}`;
 };
 
+// Get availability info for an explicit array of STAC collection IDs (used by STAC search)
+export const getAvailabilityInfoForStacIds = async (stacIds, authToken) => {
+  if (!stacIds || !stacIds.length) {
+    return null;
+  }
+
+  const { availabilities, addAvailability } = createAvailabilityAccumulator();
+
+  const allCollections = await getAllStacCollections(authToken);
+
+  await resolveExtentsForStacIds(stacIds, allCollections, authToken, addAvailability);
+
+  if (availabilities.length === 0) {
+    return null;
+  }
+
+  return formatAvailabilityMessage(availabilities);
+};
+
 // Get availability info for collections in the query
 export const getAvailabilityInfo = async (filterString, authToken) => {
   const stacCollections = getStacCollectionsFromFilter(filterString);
@@ -644,19 +717,7 @@ export const getAvailabilityInfo = async (filterString, authToken) => {
   }
 
   const datasetFullValues = getDatasetFullValues(filterString);
-  const availabilities = []; // { label: string, extent: string | null }[]
-  const addedKeys = new Set();
-
-  const addAvailability = (label, extent = null) => {
-    if (!label) {
-      return;
-    }
-    const key = `${label}::${extent ?? ''}`;
-    if (!addedKeys.has(key)) {
-      addedKeys.add(key);
-      availabilities.push({ label, extent });
-    }
-  };
+  const { availabilities, addAvailability } = createAvailabilityAccumulator();
 
   const stacCollectionsSet = new Set(stacCollections);
   const hasCcmOptical = stacCollectionsSet.delete(STAC_COLLECTIONS.CCM_OPTICAL);
@@ -699,34 +760,7 @@ export const getAvailabilityInfo = async (filterString, authToken) => {
 
   if (stacIds.length > 0) {
     const allCollections = await getAllStacCollections(authToken);
-    const fallbackIds = [];
-
-    for (const stacId of stacIds) {
-      const collection = allCollections?.get(stacId);
-      if (collection) {
-        const interval = collection?.extent?.temporal?.interval?.[0];
-        if (interval) {
-          const [start, end] = interval;
-          const startDate = formatStacDate(start, t`unknown`);
-          const endDate = formatStacDate(end, t`ongoing`);
-          const title = collection.title || stacId;
-          addAvailability(title, `${startDate} to ${endDate}`);
-          continue;
-        }
-      }
-      fallbackIds.push(stacId);
-    }
-
-    if (fallbackIds.length > 0) {
-      const fallbackInfos = await Promise.all(fallbackIds.map((id) => getStacCollectionInfo(id, authToken)));
-      for (const [index, id] of fallbackIds.entries()) {
-        const info = fallbackInfos[index];
-        if (info?.extent) {
-          const displayName = info.title || id;
-          addAvailability(displayName, info.extent);
-        }
-      }
-    }
+    await resolveExtentsForStacIds(stacIds, allCollections, authToken, addAvailability);
   }
 
   if (availabilities.length === 0) {

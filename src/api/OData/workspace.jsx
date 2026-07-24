@@ -15,7 +15,7 @@ const getAttributes = (attributes, name) => attributes.find((attribute) => attri
 export function createAddProductsToWorkspacePayload(products) {
   return products.map((product) => ({
     name: product.name,
-    productId: product.id,
+    productId: product.oDataProductId ?? product.id,
     cloudCover: getAttributes(product.attributes, AttributeNames.cloudCover)?.Value ?? 100,
     platformShortName: product.platformShortName,
     platformSerialIdentifier:

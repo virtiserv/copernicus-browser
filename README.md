@@ -70,7 +70,7 @@ The app relies on some values being provided as environment variables. The detai
   - `VITE_CDAS_ODATA_DOWNLOAD_URL`: `https://zipper.dataspace.copernicus.eu/odata/v1/` (documentation [here](https://documentation.dataspace.copernicus.eu/APIs/OData.html))
 
 Application supports usage with user login or anonymously (without having to log in).
-In case of anonymous usage, the instance ids in `default_themes.js` and `education_themes.js` need to be set.
+In case of anonymous usage, the instance ids in `default_themes.js` need to be set.
 The service endpoint that provides access tokens to anonymous users needs to be implemented and run on your own.
 In a nutshell this endpoint:
 

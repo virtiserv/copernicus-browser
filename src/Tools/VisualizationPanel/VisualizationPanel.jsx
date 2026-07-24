@@ -18,7 +18,6 @@ import ThemeSelect from './ThemeSelect/ThemeSelect';
 
 import { haveEffectsChangedFromDefault } from './VisualizationPanel.utils';
 import store, {
-  commercialDataSlice,
   visualizationSlice,
   compareLayersSlice,
   pinsSlice,
@@ -124,6 +123,7 @@ function VisualizationPanel({
   visibleOnMap,
   authToken,
   dataSourcesInitialized,
+  dataSourcesLoading,
   compareShare,
   selectedTabIndex,
   customSelected,
@@ -176,9 +176,6 @@ function VisualizationPanel({
   useEffect(() => {
     if (is3D && shouldShowTPDI) {
       setShouldShowTPDI(false);
-    }
-    if (!shouldShowTPDI) {
-      store.dispatch(commercialDataSlice.actions.reset());
     }
   }, [is3D, shouldShowTPDI]);
 
@@ -273,7 +270,7 @@ function VisualizationPanel({
     selectedTimeRef.current = toTime;
   }, [toTime]);
 
-  if (!dataSourcesInitialized) {
+  if (!dataSourcesInitialized && !dataSourcesLoading) {
     return null;
   }
 
@@ -402,6 +399,7 @@ const mapStoreToProps = (store) => ({
   newPinsCount: store.pins.newPinsCount,
   authToken: getAppropriateAuthToken(store.auth, store.themes.selectedThemeId),
   dataSourcesInitialized: store.themes.dataSourcesInitialized,
+  dataSourcesLoading: store.themes.dataSourcesLoading,
   selectedTabIndex: store.tabs.selectedTabIndex,
 });
 

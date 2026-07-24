@@ -27,6 +27,7 @@ class Results extends Component {
     checkedResults: [],
     savedWorkspaceProductsMap: new Map(),
     warningDismissed: false,
+    partialResultsWarningDismissed: false,
   };
 
   loadWorkspaceProductsMap = () => {
@@ -77,10 +78,22 @@ class Results extends Component {
     ) {
       this.setState({ warningDismissed: false });
     }
+
+    // Reset partial-results warning dismissed state when a new one comes in
+    if (
+      this.props.partialResultsWarning &&
+      prevProps.partialResultsWarning !== this.props.partialResultsWarning
+    ) {
+      this.setState({ partialResultsWarningDismissed: false });
+    }
   }
 
   dismissWarning = () => {
     this.setState({ warningDismissed: true });
+  };
+
+  dismissPartialResultsWarning = () => {
+    this.setState({ partialResultsWarningDismissed: true });
   };
 
   loadMore = async () => {
@@ -195,15 +208,32 @@ class Results extends Component {
       totalCount,
       isAuthenticated,
       geometrySimplifiedWarning,
+      partialResultsWarning,
     } = this.props;
-    const { savedWorkspaceProductsMap, checkedResults, loadingMore, displayModal, warningDismissed } =
-      this.state;
+    const {
+      savedWorkspaceProductsMap,
+      checkedResults,
+      loadingMore,
+      displayModal,
+      warningDismissed,
+      partialResultsWarningDismissed,
+    } = this.state;
     const showWarning = geometrySimplifiedWarning && !warningDismissed;
+    const showPartialResultsWarning = partialResultsWarning && !partialResultsWarningDismissed;
 
     return (
       products && (
         <div className="results">
           <div className="results-heading">
+            {showPartialResultsWarning && (
+              <MessagePanel
+                variant="boxed"
+                icon="exclamation-triangle"
+                onClose={this.dismissPartialResultsWarning}
+              >
+                <NotificationPanel type="nothing" msg={partialResultsWarning} />
+              </MessagePanel>
+            )}
             {showWarning && (
               <MessagePanel variant="boxed" icon="exclamation-triangle" onClose={this.dismissWarning}>
                 <NotificationPanel type="nothing" msg={geometrySimplifiedWarning} />

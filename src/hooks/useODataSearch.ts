@@ -7,6 +7,7 @@ import { formatSearchResults } from '../api/OData/searchResults.utils';
 import type { ODataSearchResultItem, ODataSearchResult } from '../api/OData/searchResults.utils';
 import { ODataEntity } from '../api/OData/ODataTypes';
 import type { ODataQueryBuilder } from '../api/OData/ODataQueryBuilder';
+import { normalizeResults } from '../Tools/Results/Results.utils';
 import { getAvailabilityInfo } from './stacAvailability';
 
 export const ODATA_SEARCH_ERROR_MESSAGE = {
@@ -116,7 +117,10 @@ export const useODataSearch = () => {
           throw error;
         }
         const formattedResults = formatSearchResults(data.value) ?? [];
-        const allResults = [...results, ...formattedResults];
+        // OData items never take the STAC branch inside normalizeResults, so the result is
+        // always shape-compatible with ODataSearchResultItem despite the wider return type.
+        const normalizedFormattedResults = normalizeResults(formattedResults) as ODataSearchResultItem[];
+        const allResults = [...results, ...normalizedFormattedResults];
 
         /*ODataSearch result has
         - allResults: array of products

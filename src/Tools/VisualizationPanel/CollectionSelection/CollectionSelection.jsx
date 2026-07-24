@@ -19,7 +19,6 @@ import { EOBButton } from '../../../junk/EOBCommon/EOBButton/EOBButton';
 
 import { SearchableSelect } from '../../../components/SearchableSelect/SearchableSelect';
 
-import Loader from '../../../Loader/Loader';
 import CheckmarkSvg from './checkmark.svg?react';
 
 import './CollectionSelection.scss';
@@ -93,7 +92,14 @@ const renderCollectionsList = ({ collections, selectedCollection, onSelect }) =>
   </>
 );
 
-const renderCollections = (collectionGroups, selectedCollection, onSelect, isExpanded, user) => {
+const renderCollections = (
+  collectionGroups,
+  selectedCollection,
+  onSelect,
+  isExpanded,
+  user,
+  dataSourcesLoading,
+) => {
   if (isExpanded) {
     const selectedCollectionGroup = collectionGroups.find(
       (d) => d.datasource === selectedCollection.datasource,
@@ -192,6 +198,7 @@ const renderCollections = (collectionGroups, selectedCollection, onSelect, isExp
             className="collection-select-dropdown"
             classNamePrefix="collection-select"
             filterOption={filterOption}
+            isLoading={dataSourcesLoading}
           />
 
           {!!selectedCollectionGroup?.getDescription && (
@@ -216,6 +223,8 @@ const renderCollections = (collectionGroups, selectedCollection, onSelect, isExp
 const CollectionSelection = ({
   selectedThemeId,
   dataSourcesInitialized,
+  dataSourcesReadyVersion,
+  dataSourcesLoading,
   datasetId,
   visualizationDate,
   bounds,
@@ -294,7 +303,7 @@ const CollectionSelection = ({
   };
 
   useEffect(() => {
-    if (dataSourcesInitialized) {
+    if (dataSourcesInitialized || dataSourcesReadyVersion > 0) {
       const collectionGroupsFromDsh = createCollectionGroupsFromDataSourceHandlers(filter);
       setCollectionGroups(collectionGroupsFromDsh);
       const preSelected = collectionGroupsFromDsh.find((collectionGroup) => {
@@ -306,7 +315,7 @@ const CollectionSelection = ({
         store.dispatch(clmsSlice.actions.setSelected(preSelected.datasource === DATASOURCES.CLMS));
       }
     }
-  }, [filter, selectedThemeId, dataSourcesInitialized, datasetId]);
+  }, [filter, selectedThemeId, dataSourcesInitialized, dataSourcesReadyVersion, datasetId]);
 
   useEffect(() => {
     if (!previousVisualizationDate && visualizationDate) {
@@ -316,11 +325,18 @@ const CollectionSelection = ({
   }, [visualizationDate]);
 
   const renderCollectionSelectionContent = (isExpanded) => {
-    if (!dataSourcesInitialized) {
-      return isExpanded && <Loader />;
-    }
-
-    return <>{renderCollections(collectionGroups, selectedCollection, onSelect, isExpanded, user)}</>;
+    return (
+      <>
+        {renderCollections(
+          collectionGroups,
+          selectedCollection,
+          onSelect,
+          isExpanded,
+          user,
+          dataSourcesLoading,
+        )}
+      </>
+    );
   };
 
   const renderCollectionSelectionTitle = (collectionGroups, selectedCollection) => {
@@ -423,6 +439,8 @@ const CollectionSelection = ({
 const mapStoreToProps = (store) => ({
   selectedThemeId: store.themes.selectedThemeId,
   dataSourcesInitialized: store.themes.dataSourcesInitialized,
+  dataSourcesReadyVersion: store.themes.dataSourcesReadyVersion,
+  dataSourcesLoading: store.themes.dataSourcesLoading,
   datasetId: store.visualization.datasetId,
   visualizationDate: store.visualization.toTime,
   bounds: store.mainMap.bounds,

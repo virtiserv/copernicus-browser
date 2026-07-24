@@ -57,7 +57,12 @@ const defaultStore = {
     orbitDirection: [] as string[],
     error: null as unknown,
   },
-  themes: { dataSourcesInitialized: true, selectedThemeId: 'default', selectedModeId: null as unknown },
+  themes: {
+    dataSourcesInitialized: true,
+    dataSourcesReadyVersion: 3,
+    selectedThemeId: 'default',
+    selectedModeId: null as unknown,
+  },
   tabs: { selectedTabIndex: 1, selectedTabSearchPanelIndex: 0 },
   language: { selectedLanguage: 'en' },
   compare: {
@@ -66,12 +71,6 @@ const defaultStore = {
     comparedClipping: [] as unknown[],
   },
   auth: { user: null as unknown, token: null as unknown },
-  commercialData: {
-    searchResults: [] as unknown[],
-    highlightedResult: null as unknown,
-    displaySearchResults: false,
-    selectedOrder: null as unknown,
-  },
   elevationProfile: { highlightedPoint: null as unknown },
 } as const;
 
@@ -179,15 +178,6 @@ describe('mapStoreToProps', () => {
     expect(props.orbitDirection).toBeNull();
   });
 
-  it('maps commercialData fields correctly', () => {
-    const store = makeStore();
-    const props = mapStoreToProps(store);
-    expect(props.commercialDataSearchResults).toEqual([]);
-    expect(props.commercialDataHighlightedResult).toBeNull();
-    expect(props.commercialDataDisplaySearchResults).toBe(false);
-    expect(props.commercialDataSelectedOrder).toBeNull();
-  });
-
   it('maps remaining slices correctly', () => {
     const store = makeStore();
     const props = mapStoreToProps(store);
@@ -210,6 +200,7 @@ describe('mapStoreToProps', () => {
 
     // themes
     expect(props.dataSourcesInitialized).toBe(true);
+    expect(props.dataSourcesReadyVersion).toBe(3);
     expect(props.selectedThemeId).toBe('default');
     expect(props.selectedModeId).toBeNull();
 

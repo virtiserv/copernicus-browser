@@ -221,7 +221,7 @@ const RapidResponseDesk = ({
         }
       }
 
-      return { ...timeSpan, from: correctedFrom, to: correctedTo };
+      return { ...timeSpan, from: correctedFrom.toISOString(), to: correctedTo.toISOString() };
     });
 
     store.dispatch(areaAndTimeSectionSlice.actions.setTimespanArray(correctedTimespanArray));

@@ -167,8 +167,8 @@ class PinPreviewImage extends React.Component {
       // 1600 m/px), compute the preview bbox at a higher zoom until the resolution is within
       // the threshold where the collection can serve data without errors.
       let bboxZoom = zoom;
-      if (dsh && dsh.supportsLowResolutionAlternativeCollection(datasetId)) {
-        const threshold = dsh.getLowResolutionMetersPerPixelThreshold(datasetId);
+      if (dsh && dsh.supportsLowResolutionAlternativeCollection(layer.collectionId)) {
+        const threshold = dsh.getLowResolutionMetersPerPixelThreshold(layer.collectionId);
         let testBbox = this.computeBBox(lat, lng, bboxZoom);
         while (metersPerPixel(testBbox, PIN_PREVIEW_DIMENSIONS.WIDTH) > threshold && bboxZoom < 16) {
           bboxZoom++;
@@ -239,9 +239,11 @@ class PinPreviewImage extends React.Component {
         };
 
         let collectionId;
-        if (dsh.supportsLowResolutionAlternativeCollection(datasetId)) {
-          const lowResolutionCollectionId = dsh.getLowResolutionCollectionId(datasetId);
-          const lowResolutionMetersPerPixelThreshold = dsh.getLowResolutionMetersPerPixelThreshold(datasetId);
+        if (dsh.supportsLowResolutionAlternativeCollection(layer.collectionId)) {
+          const lowResolutionCollectionId = dsh.getLowResolutionCollectionId(layer.collectionId);
+          const lowResolutionMetersPerPixelThreshold = dsh.getLowResolutionMetersPerPixelThreshold(
+            layer.collectionId,
+          );
           const mPerPixel = metersPerPixel(getMapParams.bbox, getMapParams.width);
           if (mPerPixel > lowResolutionMetersPerPixelThreshold) {
             collectionId = `byoc-${lowResolutionCollectionId}`;

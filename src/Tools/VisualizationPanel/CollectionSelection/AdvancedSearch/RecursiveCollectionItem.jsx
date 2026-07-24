@@ -96,7 +96,7 @@ const RecursiveCollectionItem = ({
 
       {renderCloudCover()}
 
-      {isSelected && item.items?.length > 0 && (
+      {isSelected && item.items?.length > 0 && !item.hideChildren && (
         <div className="item-nested">
           {item.items.map((item) => (
             <RecursiveCollectionItem

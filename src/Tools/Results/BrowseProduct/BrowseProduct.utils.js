@@ -53,7 +53,10 @@ export const useListNodes = () => {
 };
 
 export const getRootNodeUri = (product) => {
-  const queryString = new ODataQueryBuilder(ODataEntity.Products).id(product.id).nodes().getQueryString();
+  const queryString = new ODataQueryBuilder(ODataEntity.Products)
+    .id(product.oDataProductId ?? product.id)
+    .nodes()
+    .getQueryString();
   return `${ODataEndpoints.listNodes}${queryString}`;
 };
 

@@ -26,7 +26,11 @@ export const getAllProductAttributes = (product) => {
   const allAttributes = [
     ...commonProductAttributes
       .map((key) => ({ key: key, value: product[key] }))
-      .filter((attr) => !(attr.key === 'size' && attr.value === '0MB')),
+      // Hide the size row for zero-byte products, regardless of which formatter (OData's
+      // MB-only '< 1MB'/'NMB' or STAC's Bytes-TB range) produced the displayed string —
+      // check the underlying byte value rather than string-matching the formatted output.
+      .filter((attr) => !(attr.key === 'size' && !product.contentLength))
+      .filter((attr) => attr.value !== undefined && attr.value !== null),
     ...(product?.attributes ?? []).map((attr) => ({
       key: attr.Name,
       value: attr.Value,

@@ -28,6 +28,7 @@ import { S2QuarterlyCloudlessMosaicsBaseLayerTheme } from '../assets/default_the
 import {
   getDatasetLabel,
   getDataSourceHandler,
+  isDataSourceReadyForDataset,
 } from '../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import { getAppropriateAuthToken, getGetMapAuthToken } from '../App';
 import { handleError } from '../utils';
@@ -51,7 +52,6 @@ import {
   getTileSizeConfiguration,
   getZoomConfiguration,
 } from '../Tools/SearchPanel/dataSourceHandlers/helper';
-// import { checkUserAccount } from '../Tools/CommercialDataPanel/commercialData.utils';
 import { SpeckleFilterType } from '@sentinel-hub/sentinelhub-js';
 import { isTimespanModeSelected } from '../Tools/VisualizationPanel/VisualizationPanel.utils';
 import {
@@ -73,7 +73,6 @@ import { processRRDResults } from '../hooks/useRRDProcessResults';
 import { saveToLocalStorage } from '../utils/localStorage.utils';
 import DatasetLocationPreview from './components/DatasetLocationPreview';
 import MapPanes from './components/MapPanes';
-import CommercialDataOverlay from './components/CommercialDataOverlay';
 import MapOverlays from './components/MapOverlays';
 
 // Defaults to WebP when dsh is null; only falls back to PNG if the handler explicitly opts out.
@@ -358,6 +357,9 @@ class Map extends React.Component {
       evalscriptUrl,
       dataFusion,
       dataSourcesInitialized,
+      // eslint-disable-next-line no-unused-vars -- not read directly; forces a re-render whenever a
+      // data source handler's `datasets` array (mutated in place) resolves a new dataset
+      dataSourcesReadyVersion,
       selectedThemeId,
       selectedTabIndex,
       displayingSearchResults,
@@ -433,9 +435,15 @@ class Map extends React.Component {
       constellationProp = datasetParams?.constellation;
     }
 
+    // Lets the single SH layer render for a dataset whose own handler has resolved, without
+    // waiting for every other dataset in the theme (dataSourcesInitialized) to finish loading.
+    // Excludes the S2 Quarterly Mosaic base layer (S2QMosaicReady below), which is out of scope.
+    const singleShLayerDataSourcesReady =
+      dataSourcesInitialized || isDataSourceReadyForDataset(datasetId);
+
     const showSingleShLayer = shouldShowSingleShLayer({
       authenticated,
-      dataSourcesInitialized,
+      dataSourcesInitialized: singleShLayerDataSourcesReady,
       selectedTabIndex,
       displayingSearchResults,
       showComparePanel,
@@ -845,12 +853,6 @@ class Map extends React.Component {
           filteredQuicklookOverlays={filteredQuicklookOverlays}
         />
 
-        <CommercialDataOverlay
-          displaySearchResults={this.props.commercialDataDisplaySearchResults}
-          highlightedResult={this.props.commercialDataHighlightedResult}
-          searchResults={this.props.commercialDataSearchResults}
-          selectedOrder={this.props.commercialDataSelectedOrder}
-        />
         {selectedTabIndex === TABS.VISUALIZE_TAB && <DatasetLocationPreview />}
 
         <LeafletControls key={selectedLanguage} />

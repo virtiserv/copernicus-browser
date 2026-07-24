@@ -73,7 +73,7 @@ const ProductInfo = ({ product, onDownload, downloadInProgress, onClose, userTok
 
   useEffect(() => {
     (async () => {
-      const workflows = await getAvailableProcesorsForProducts([product.id]);
+      const workflows = await getAvailableProcesorsForProducts([product.oDataProductId ?? product.id]);
       setAvailableProcessors(workflows);
     })();
   }, [product]);

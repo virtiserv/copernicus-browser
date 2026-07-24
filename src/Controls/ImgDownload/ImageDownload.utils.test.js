@@ -2,6 +2,7 @@ import moment from 'moment';
 import {
   addImageOverlays,
   constructRawBandEvalscript,
+  fetchImage,
   getImageDimensionFromBoundsWithCap,
   getNicename,
   getPixelCoordinates,
@@ -21,12 +22,45 @@ import {
 import { reprojectGeometry } from '../../utils/reproject';
 import { IMAGE_FORMATS } from './consts';
 import { getEvalscriptSetup, setEvalscriptOutputScale } from '../../utils/parseEvalscript';
+import { getDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
+import { isOpenEoSupported, getProcessGraph } from '../../api/openEO/openEOHelpers';
+import openEOApi from '../../api/openEO/openEO.api';
+import { metersPerPixel } from '../../utils/coords';
 
 jest.mock('../../utils/parseEvalscript', () => ({
   ...jest.requireActual('../../utils/parseEvalscript'),
   getEvalscriptSetup: jest.fn(),
   setEvalscriptSampleType: jest.fn((evalscript) => evalscript),
   setEvalscriptOutputScale: jest.fn((evalscript) => evalscript),
+}));
+
+// getDataSourceHandler's default implementation delegates to the real (unmocked) function so
+// existing tests relying on real data-source lookups (e.g. getImageDimensionFromBoundsWithCap)
+// keep working; individual tests below override the return value only for their fake datasetId.
+const actualDataSourceHandlers = jest.requireActual(
+  '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers',
+);
+jest.mock('../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers', () => ({
+  ...jest.requireActual('../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers'),
+  getDataSourceHandler: jest.fn(
+    jest.requireActual('../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers').getDataSourceHandler,
+  ),
+}));
+
+jest.mock('../../api/openEO/openEOHelpers', () => ({
+  ...jest.requireActual('../../api/openEO/openEOHelpers'),
+  isOpenEoSupported: jest.fn(),
+  getProcessGraph: jest.fn(),
+}));
+
+jest.mock('../../api/openEO/openEO.api', () => ({
+  __esModule: true,
+  default: { getResult: jest.fn() },
+}));
+
+jest.mock('../../utils/coords', () => ({
+  ...jest.requireActual('../../utils/coords'),
+  metersPerPixel: jest.fn(),
 }));
 
 describe('Test getRawBandsScalingFactor function', () => {
@@ -626,5 +660,94 @@ describe('overrideEvalscriptIfNeeded', () => {
 
     expect(setEvalscriptOutputScale).toHaveBeenCalledTimes(1);
     expect(setEvalscriptOutputScale).toHaveBeenCalledWith(expect.anything(), 65536);
+  });
+});
+
+describe('fetchImage — low-resolution BYOC collection swap (regression #1154)', () => {
+  // Mirrors real CLMS VLCC/byLayer datasets where the layer's collectionId differs from the
+  // dataset id — the low-resolution helpers must be keyed by collectionId, not datasetId.
+  const collectionId = 'byoc-collection-uuid-123';
+  const datasetId = 'COPERNICUS_CLMS_SOME_DATASET_ID';
+  const lowResolutionCollectionId = 'low-res-collection-uuid-456';
+  const lowResolutionThreshold = 300;
+
+  const processGraphFixture = () => ({
+    load_collection: { process_id: 'load_collection', arguments: {} },
+    save_result: { process_id: 'save_result', arguments: {} },
+  });
+
+  let dsh;
+
+  beforeEach(() => {
+    dsh = {
+      supportsTimeRange: jest.fn(() => true),
+      supportsLowResolutionAlternativeCollection: jest.fn((id) => id === collectionId),
+      getLowResolutionCollectionId: jest.fn((id) =>
+        id === collectionId ? lowResolutionCollectionId : undefined,
+      ),
+      getLowResolutionMetersPerPixelThreshold: jest.fn((id) =>
+        id === collectionId ? lowResolutionThreshold : undefined,
+      ),
+    };
+    getDataSourceHandler.mockImplementation((id) =>
+      id === datasetId ? dsh : actualDataSourceHandlers.getDataSourceHandler(id),
+    );
+    isOpenEoSupported.mockReturnValue(true);
+    getProcessGraph.mockImplementation(() => processGraphFixture());
+    openEOApi.getResult.mockResolvedValue(new Blob(['result'], { type: 'image/png' }));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const buildLayer = () => ({
+    instanceId: 'instance-1',
+    layerId: 'LAYER_1',
+    collectionId,
+  });
+
+  const buildOptions = () => ({
+    datasetId,
+    bounds: latLngBounds([45, 14], [46, 15]),
+    fromTime: null,
+    toTime: null,
+    width: 100,
+    height: 100,
+    imageFormat: IMAGE_FORMATS.PNG,
+    apiType: ApiType.PROCESSING,
+    mimeType: 'image/png',
+    customSelected: false,
+    selectedProcessing: undefined,
+    processGraph: undefined,
+  });
+
+  test('calls the low-resolution collection helpers with the layer collectionId (not the dataset id) and swaps to the low-res BYOC collection when resolution is coarser than the threshold', async () => {
+    metersPerPixel.mockReturnValue(lowResolutionThreshold + 100); // coarser than threshold -> triggers swap
+
+    await fetchImage(buildLayer(), buildOptions());
+
+    expect(dsh.supportsLowResolutionAlternativeCollection).toHaveBeenCalledWith(collectionId);
+    expect(dsh.supportsLowResolutionAlternativeCollection).not.toHaveBeenCalledWith(datasetId);
+    expect(dsh.getLowResolutionCollectionId).toHaveBeenCalledWith(collectionId);
+    expect(dsh.getLowResolutionCollectionId).not.toHaveBeenCalledWith(datasetId);
+    expect(dsh.getLowResolutionMetersPerPixelThreshold).toHaveBeenCalledWith(collectionId);
+    expect(dsh.getLowResolutionMetersPerPixelThreshold).not.toHaveBeenCalledWith(datasetId);
+
+    expect(openEOApi.getResult).toHaveBeenCalledTimes(1);
+    const [sentProcessGraph] = openEOApi.getResult.mock.calls[0];
+    expect(sentProcessGraph.load_collection.arguments.id).toBe(`byoc-${lowResolutionCollectionId}`);
+  });
+
+  test('does not swap to the low-resolution collection when resolution is finer than the threshold', async () => {
+    metersPerPixel.mockReturnValue(lowResolutionThreshold - 100); // finer than threshold -> no swap
+
+    await fetchImage(buildLayer(), buildOptions());
+
+    expect(dsh.getLowResolutionCollectionId).toHaveBeenCalledWith(collectionId);
+
+    expect(openEOApi.getResult).toHaveBeenCalledTimes(1);
+    const [sentProcessGraph] = openEOApi.getResult.mock.calls[0];
+    expect(sentProcessGraph.load_collection.arguments.id).toBeUndefined();
   });
 });

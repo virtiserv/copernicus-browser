@@ -93,6 +93,8 @@ class OpenEoLayer extends L.TileLayer {
 
     let collectionId;
 
+    // datasetId (not collectionId) is used here, same bug as the other low-res call sites (see #1154),
+    // but CLMS visualization isn't currently supported through OpenEO, so this is unreachable.
     if (this.dsh?.supportsLowResolutionAlternativeCollection(this.options.datasetId)) {
       const lowResolutionCollectionId = this.dsh.getLowResolutionCollectionId(this.options.datasetId);
       const lowResolutionMetersPerPixelThreshold = this.dsh.getLowResolutionMetersPerPixelThreshold(

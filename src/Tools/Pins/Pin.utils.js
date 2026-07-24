@@ -298,9 +298,11 @@ export async function layerFromPin(pin, reqConfig) {
         layer.evalscript = evalscript;
         layer.evalscriptUrl = evalscriptUrl;
       }
-      if (dsh && dsh.supportsLowResolutionAlternativeCollection(datasetId)) {
-        layer.lowResolutionCollectionId = dsh.getLowResolutionCollectionId(datasetId);
-        layer.lowResolutionMetersPerPixelThreshold = dsh.getLowResolutionMetersPerPixelThreshold(datasetId);
+      if (dsh && dsh.supportsLowResolutionAlternativeCollection(layer.collectionId)) {
+        layer.lowResolutionCollectionId = dsh.getLowResolutionCollectionId(layer.collectionId);
+        layer.lowResolutionMetersPerPixelThreshold = dsh.getLowResolutionMetersPerPixelThreshold(
+          layer.collectionId,
+        );
       }
     } else if ((evalscript || evalscriptUrl) && Object.keys(dataFusion || {}).length === 0) {
       // layerId not found in WMS layers but a custom script is present — fall back to layers[0]

@@ -550,16 +550,21 @@ const checkKnownCollections = (collectionId) => {
 
 const xmlParser = new XMLParser(XmlParserOptions);
 
-async function prepareThemeDataSourceHandlers(theme) {
-  const allLayers = await Promise.all(
-    theme.content.map(async (dataSource) => {
-      let dataSourceUrl = dataSource.url.replace(
+/**
+ * @private (Not intended for public API, only exported for testing.)
+ */
+export async function prepareThemeDataSourceHandlers(theme, myVersion, { bumpVersion = true } = {}) {
+  const failedThemeParts = [];
+  await Promise.all(
+    theme.content.map(async ({ service, url, name, preselected, baseLayer }) => {
+      let dataSourceUrl = url.replace(
         'https://services-uswest2.sentinel-hub.com/',
         'https://services.sentinel-hub.com/',
       );
 
+      let layers;
       try {
-        const layers = await LayersFactory.makeLayers(dataSourceUrl, null, null, {
+        layers = await LayersFactory.makeLayers(dataSourceUrl, null, null, {
           timeout: 30000,
           responseType: 'json',
           cache: {
@@ -567,49 +572,57 @@ async function prepareThemeDataSourceHandlers(theme) {
           },
         });
         await updateLayersFromServiceIfNeeded(layers);
-        return layers;
       } catch (e) {
         if (isQuotaError({ status: e.status, code: e.code })) {
           store.dispatch(notificationSlice.actions.displayPanelError(QUOTA_ERROR_MESSAGE));
-          return;
-        }
+          layers = undefined;
+        } else {
+          if (e?.response?.status === 403 && e?.response?.headers['content-type'] === 'application/xml') {
+            const responseData = xmlParser.parse(e.response.data);
 
-        if (e?.response?.status === 403 && e?.response?.headers['content-type'] === 'application/xml') {
-          const responseData = xmlParser.parse(e.response.data);
-
-          const serviceException = responseData?.ServiceExceptionReport?.ServiceException;
-          const responseText = serviceException[0]?.trim();
-          store.dispatch(notificationSlice.actions.displayPanelError({ message: responseText }));
+            const serviceException = responseData?.ServiceExceptionReport?.ServiceException;
+            const responseText = serviceException[0]?.trim();
+            store.dispatch(notificationSlice.actions.displayPanelError({ message: responseText }));
+          }
+          console.warn(e);
+          layers = null;
         }
-        console.warn(e);
-        return null;
+      }
+
+      // Guard against a stale in-flight call (from a rapid theme switch) registering its parts
+      // into a handler registry that a newer call has already reset via initializeDataSourceHandlers().
+      if (myVersion === prepareDataSourceHandlersVersion) {
+        if (layers === null) {
+          const errorText = !!baseLayer
+            ? `Error retrieving additional data for ${service} service at ${url}, named ${name} in theme ${theme.name} used for base layer.`
+            : `Error retrieving additional data for ${service} service at ${url} which is included in theme part ${name}, skipping.`;
+          console.error(errorText);
+          failedThemeParts.push(name);
+        } else {
+          const isHandled = registerHandlers(
+            service,
+            url,
+            name ? name : theme.name,
+            layers,
+            preselected,
+            baseLayer,
+          );
+          if (!isHandled) {
+            console.error(
+              `Ignoring entry, unsupported service: ${service} (only 'WMS' and 'WMTS' are currently supported) or url: ${url}`,
+            );
+          }
+        }
+      }
+
+      // Bump for every settled part (success or failure) so the counter reflects progress accurately.
+      // The base-layer preparation phase is excluded (bumpVersion: false) since it isn't part of the
+      // theme being displayed and shouldn't trigger CollectionSelection's recompute early.
+      if (bumpVersion && myVersion === prepareDataSourceHandlersVersion) {
+        store.dispatch(themesSlice.actions.bumpDataSourcesReadyVersion());
       }
     }),
   );
-  let failedThemeParts = [];
-  theme.content.forEach(({ service, url, name, preselected, baseLayer }, i) => {
-    if (allLayers[i] === null) {
-      const errorText = !!baseLayer
-        ? `Error retrieving additional data for ${service} service at ${url}, named ${name} in theme ${theme.name} used for base layer.`
-        : `Error retrieving additional data for ${service} service at ${url} which is included in theme part ${name}, skipping.`;
-      console.error(errorText);
-      failedThemeParts.push(name);
-      return;
-    }
-    const isHandled = registerHandlers(
-      service,
-      url,
-      name ? name : theme.name,
-      allLayers[i],
-      preselected,
-      baseLayer,
-    );
-    if (!isHandled) {
-      console.error(
-        `Ignoring entry, unsupported service: ${service} (only 'WMS' and 'WMTS' are currently supported) or url: ${url}`,
-      );
-    }
-  });
   return failedThemeParts;
 }
 
@@ -622,10 +635,13 @@ let prepareDataSourceHandlersVersion = 0;
 export async function prepareDataSourceHandlers(theme) {
   const myVersion = ++prepareDataSourceHandlersVersion;
   initializeDataSourceHandlers();
+  store.dispatch(themesSlice.actions.setDataSourcesLoading(true));
 
   // for S2 Quarterly Mosaics base layer
   const failedS2QuarterlyMosaicParts = await prepareThemeDataSourceHandlers(
     S2QuarterlyCloudlessMosaicsBaseLayerTheme,
+    myVersion,
+    { bumpVersion: false },
   );
 
   if (myVersion !== prepareDataSourceHandlersVersion) {
@@ -636,7 +652,7 @@ export async function prepareDataSourceHandlers(theme) {
     console.error(`Could not retrieve data for base layer: ${failedS2QuarterlyMosaicParts.toString()}`);
   }
 
-  const failedThemeParts = await prepareThemeDataSourceHandlers(theme);
+  const failedThemeParts = await prepareThemeDataSourceHandlers(theme, myVersion);
 
   if (myVersion !== prepareDataSourceHandlersVersion) {
     return [];
@@ -646,6 +662,7 @@ export async function prepareDataSourceHandlers(theme) {
     console.error(`Could not retrieve data for theme: ${failedThemeParts.toString()}`);
   }
   store.dispatch(themesSlice.actions.setDataSourcesInitialized(true));
+  store.dispatch(themesSlice.actions.setDataSourcesLoading(false));
   return failedThemeParts;
 }
 
@@ -966,6 +983,10 @@ export function getDataSourceHandler(datasetId) {
   } else {
     return checkIfCustom(datasetId);
   }
+}
+
+export function isDataSourceReadyForDataset(datasetId) {
+  return !!getDataSourceHandler(datasetId)?.datasets.includes(datasetId);
 }
 
 export function checkIfCustom(datasetId) {

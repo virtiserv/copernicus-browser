@@ -4,6 +4,7 @@ import {
   getCollectionFormConfig,
   getCollectionFormInitialState,
 } from './collectionFormConfig.utils';
+import { recursiveCollections, complementaryDataGroup } from './collectionFormConfig';
 
 describe('checkFormElementAccess', () => {
   test.each([
@@ -550,5 +551,23 @@ describe('getCollectionFormInitialState', () => {
     ],
   ])('getCollectionFormInitialState %p %p %p', (formConfig, defaultState, options, expected) => {
     expect(getCollectionFormInitialState(formConfig, defaultState, options)).toStrictEqual(expected);
+  });
+});
+
+describe('recursiveCollections nesting - complementaryDataGroup', () => {
+  // Documents the real structure that caused MR !748's review to twice mistake Landsat
+  // Mosaic for a top-level formConfig entry: it's nested one level inside the single
+  // COMPLEMENTARY_DATA group node, not a sibling of `collections`' top-level entries.
+  test('complementaryDataGroup is pushed as a single node into recursiveCollections, not spread', () => {
+    const topLevelMatch = recursiveCollections.find((c) => c.id === complementaryDataGroup.id);
+    expect(topLevelMatch).toBe(complementaryDataGroup);
+  });
+
+  test('Landsat Mosaic is nested inside complementaryDataGroup.items, not a top-level entry', () => {
+    expect(recursiveCollections.find((c) => c.id === 'landsat_mosaic')).toBeUndefined();
+
+    const landsatMosaic = complementaryDataGroup.items.find((item) => item.id === 'landsat_mosaic');
+    expect(landsatMosaic).toBeDefined();
+    expect(landsatMosaic.supportsStacSearch).toBe(true);
   });
 });

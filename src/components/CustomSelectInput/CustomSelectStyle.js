@@ -148,6 +148,11 @@ export const customSelectStyle = {
     padding: 0,
   }),
 
+  loadingIndicator: (css) => ({
+    ...css,
+    color: `${primaryColor}`,
+  }),
+
   menu: (css) => ({
     ...css,
     borderRadius: 0,

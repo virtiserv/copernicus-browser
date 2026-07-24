@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { t } from 'ttag';
 import { ODATA_SEARCH_ERROR_MESSAGE, useODataSearch } from '../../hooks/useODataSearch';
+import { useSTACSearch, STAC_SEARCH_ERROR_MESSAGE } from '../../hooks/useSTACSearch';
 import oDataHelpers from '../../api/OData/ODataHelpers';
 import { connect } from 'react-redux';
 import { boundsToPolygon } from '../../utils/geojson.utils';
@@ -13,6 +14,16 @@ import {
   ErrorMessage,
 } from '../../Tools/VisualizationPanel/CollectionSelection/AdvancedSearch/const';
 import { getDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
+import { recursiveCollections } from '../../Tools/VisualizationPanel/CollectionSelection/AdvancedSearch/collectionFormConfig';
+import {
+  CollectionFormInitialState,
+  getSTACConfigForDatasetId,
+} from '../../Tools/VisualizationPanel/CollectionSelection/AdvancedSearch/collectionFormConfig.utils';
+import {
+  createDatetimeInterval,
+  createGeometryFilters,
+  combineFilters,
+} from '../../api/STAC/STACSearchPayloadBuilder';
 
 const FindProductsButton = ({
   enabled,
@@ -30,6 +41,12 @@ const FindProductsButton = ({
 }) => {
   const [{ searchInProgress, searchError, oDataSearchResult }, productSearch, setODataSearchAuthToken] =
     useODataSearch();
+
+  const [
+    { searchInProgress: stacInProgress, searchError: stacSearchError, stacSearchResult },
+    stacSearch,
+    setSTACAuthToken,
+  ] = useSTACSearch();
 
   function getFromTimeToTime(datasetId) {
     if (fromTime && toTime) {
@@ -62,24 +79,43 @@ const FindProductsButton = ({
     return { fromTime: newFromTime.startOf('day'), toTime: moment.utc().endOf('day') };
   }
 
+  function dispatchSearchResult(result, collectionForm) {
+    store.dispatch(searchResultsSlice.actions.setSearchResult(result));
+    store.dispatch(tabsSlice.actions.setTabIndex(TABS.SEARCH_TAB));
+
+    const { fromTime: fromMoment, toTime: toMoment } = getFromTimeToTime(datasetId);
+
+    store.dispatch(
+      searchResultsSlice.actions.setSearchFormData({
+        fromMoment,
+        toMoment,
+        collectionForm,
+      }),
+    );
+  }
+
   useEffect(() => {
     if (oDataSearchResult && oDataSearchResult.allResults.length) {
-      store.dispatch(searchResultsSlice.actions.setSearchResult(oDataSearchResult));
-      store.dispatch(tabsSlice.actions.setTabIndex(TABS.SEARCH_TAB));
-
-      const { fromTime: fromMoment, toTime: toMoment } = getFromTimeToTime(datasetId);
-
-      store.dispatch(
-        searchResultsSlice.actions.setSearchFormData({
-          fromMoment,
-          toMoment,
-          collectionForm: createCollectionFormFromDatasetId(datasetId, { orbitDirection, maxCC, layerId }),
-        }),
+      dispatchSearchResult(
+        oDataSearchResult,
+        createCollectionFormFromDatasetId(datasetId, { orbitDirection, maxCC, layerId }),
       );
     }
-    // linter is disabled here on purpose as this hook is supposed be executed only when oDataSearchResult is changed
     // eslint-disable-next-line
   }, [oDataSearchResult]);
+
+  useEffect(() => {
+    if (stacSearchResult && stacSearchResult.allResults.length) {
+      const stacConfig = getSTACConfigForDatasetId(datasetId, recursiveCollections);
+      dispatchSearchResult(
+        stacSearchResult,
+        stacConfig
+          ? { ...CollectionFormInitialState, selectedCollections: { [stacConfig.collectionId]: {} } }
+          : null,
+      );
+    }
+    // eslint-disable-next-line
+  }, [stacSearchResult]);
 
   useEffect(() => {
     if (searchError?.message?.startsWith(ODATA_SEARCH_ERROR_MESSAGE.NO_PRODUCTS_FOUND)) {
@@ -92,14 +128,29 @@ const FindProductsButton = ({
   }, [searchError, setLoading]);
 
   useEffect(() => {
+    if (stacSearchError?.message?.startsWith(STAC_SEARCH_ERROR_MESSAGE.NO_PRODUCTS_FOUND)) {
+      store.dispatch(
+        notificationSlice.actions.displayPanelError({ message: ErrorMessage[ErrorCode.noResults]() }),
+      );
+      setLoading(false);
+    }
+  }, [stacSearchError, setLoading]);
+
+  useEffect(() => {
     setLoading(searchInProgress);
     if (searchInProgress) {
-      //remove displayed error messages (if any) when starting new search
       store.dispatch(notificationSlice.actions.displayPanelError(null));
     }
   }, [searchInProgress, setLoading]);
 
-  const getQueryParams = () => {
+  useEffect(() => {
+    setLoading(stacInProgress);
+    if (stacInProgress) {
+      store.dispatch(notificationSlice.actions.displayPanelError(null));
+    }
+  }, [stacInProgress, setLoading]);
+
+  const getODataQueryParams = () => {
     const { fromTime, toTime } = getFromTimeToTime(datasetId);
     const dsh = getDataSourceHandler(datasetId);
 
@@ -131,6 +182,43 @@ const FindProductsButton = ({
     return params;
   };
 
+  const buildSTACPayload = (stacConfig) => {
+    const payload = { collections: [stacConfig.collectionName], limit: 50 };
+
+    const dsh = getDataSourceHandler(datasetId);
+    const { fromTime: fromMoment, toTime: toMoment } = getFromTimeToTime(datasetId);
+
+    if (!dsh?.isTimeless() && fromMoment && toMoment) {
+      const datetimeInterval = createDatetimeInterval({
+        fromTime: fromMoment.toISOString(),
+        toTime: toMoment.toISOString(),
+      });
+      if (datetimeInterval) {
+        payload.datetime = datetimeInterval;
+      }
+    }
+
+    const geometry = boundsToPolygon(aoiBounds ?? mapBounds);
+    const geometryFilters = createGeometryFilters(geometry);
+    const filter = combineFilters(geometryFilters);
+    if (filter) {
+      payload.filter = filter;
+    }
+
+    return payload;
+  };
+
+  const handleClick = () => {
+    const stacConfig = getSTACConfigForDatasetId(datasetId, recursiveCollections);
+    if (stacConfig) {
+      setSTACAuthToken(userToken);
+      stacSearch(buildSTACPayload(stacConfig));
+    } else {
+      setODataSearchAuthToken(userToken);
+      productSearch(oDataHelpers.createBasicSearchQuery(getODataQueryParams()));
+    }
+  };
+
   const isEnabled = enabled && datasetId;
 
   const dsh = getDataSourceHandler(datasetId);
@@ -141,13 +229,7 @@ const FindProductsButton = ({
 
   return (
     <div className={`secondary ${isEnabled ? '' : 'disabled'}`}>
-      <div
-        className={`action-button-text secondary ${isEnabled ? '' : 'disabled'}`}
-        onClick={() => {
-          setODataSearchAuthToken(userToken);
-          productSearch(oDataHelpers.createBasicSearchQuery(getQueryParams()));
-        }}
-      >
+      <div className={`action-button-text secondary ${isEnabled ? '' : 'disabled'}`} onClick={handleClick}>
         {hasProductsWithinSelectedRange
           ? t`Find products within selected time range`
           : t`Find products for current view`}

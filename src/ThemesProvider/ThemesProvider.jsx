@@ -389,7 +389,6 @@ class ThemesProvider extends React.Component {
     const isThemeFromUrl = !!this.props.urlThemesList.find((t) => t.id === themeId);
     const isThemeFromRRD = !!rrdInstancesList.find((t) => t.id === themeId);
     if (isThemeFromUrl || isThemeFromRRD) {
-      // themesUrl aren't supported in Education mode
       return DEFAULT_MODE;
     }
     for (let mode of MODES) {

@@ -12,7 +12,7 @@ import store, { aoiSlice, mainMapSlice } from '../../store';
 import { EOBUploadGeoFile } from '../../junk/EOBUploadGeoFile/EOBUploadGeoFile';
 import { AOI_SHAPE } from '../../const';
 import { UPLOAD_GEOMETRY_TYPE } from '../../junk/EOBUploadGeoFile/EOBUploadGeoFile.utils';
-import { getBoundsAndLatLng } from '../../Tools/CommercialDataPanel/commercialData.utils';
+import { getBoundsAndLatLng } from '../../utils/coords';
 import HelpTooltip from '../../Tools/SearchPanel/dataSourceHandlers/DatasourceRenderingComponents/HelpTooltip';
 import { REACT_MARKDOWN_REHYPE_PLUGINS } from '../../rehypeConfig';
 import { getUtmZoneLabel } from '../../utils/utm';

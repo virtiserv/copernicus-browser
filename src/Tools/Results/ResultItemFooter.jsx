@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { t } from 'ttag';
 
-import { getBoundsAndLatLng } from '../CommercialDataPanel/commercialData.utils';
+import { getBoundsAndLatLng } from '../../utils/coords';
 import { ModalId } from '../../const';
 import store, {
   mainMapSlice,
@@ -18,7 +18,7 @@ import {
   ODataProductFileExtension,
   ODataProductTypeExtension,
 } from '../../api/OData/ODataTypes';
-import { AttributeNames } from '../../api/OData/assets/attributes';
+import { getPlatformShortName, getDownloadUrlFromAssets } from './Results.utils';
 
 export const ResultItemLabels = {
   productInfo: () => t`Product info`,
@@ -60,13 +60,13 @@ const openProductDetailsModal = ({ tile, downloadInProgress, onDownload }) => {
   );
 };
 
-const getFileNameWithExtensionForProductType = ({ name, productType, attributes }) => {
+const getFileNameWithExtensionForProductType = (tile) => {
+  const { name, productType } = tile;
   const extension = ODataProductTypeExtension[productType];
-
   // Explanation for this hack: https://hello.planet.com/code/sentinel-hub/sentinel-frontend/cdse/copernicus-browser/-/issues/256
   // download shouldn't be zipped in this case for S5P (https://jira.cloudferro.com/browse/CDSE-1655)
-  const platformShortName = attributes.find((attr) => attr.Name === AttributeNames.platformShortName);
-  if (platformShortName !== undefined && platformShortName.Value === ODataCollections.S5P.label) {
+  const platformShortName = getPlatformShortName(tile);
+  if (platformShortName === ODataCollections.S5P.label) {
     return name;
   }
 
@@ -114,13 +114,14 @@ export const ResultItemFooter = ({
     if (downloadInProgress) {
       return null;
     }
-
+    const stacDownloadUrl = getDownloadUrlFromAssets(tile.assets);
     downloadProduct({
       id: tile.id,
       name: getFileNameWithExtensionForProductType(tile),
       token: userToken,
       cancelToken: cancelToken,
       setProgress: setProgress,
+      ...(stacDownloadUrl ? { nodeUri: stacDownloadUrl } : {}),
     });
     // eslint-disable-next-line
   }, [downloadInProgress, cancelToken, downloadProduct, tile, userToken]);

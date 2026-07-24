@@ -82,7 +82,7 @@ function DateSelection({
 
   async function getLayerAndBBoxSetup() {
     const bbox = generateAppropriateSearchBBox(mapBounds);
-    const shJsDataset = dsh.getSentinelHubDataset(datasetId);
+    const shJsDataset = dsh?.getSentinelHubDataset(datasetId);
     const layers = await LayersFactory.makeLayers(
       visualizationUrl,
       (layer, dataset) => {
@@ -116,6 +116,9 @@ function DateSelection({
   }
 
   async function onFetchAvailableDates(fromMoment, toMoment) {
+    if (!dsh) {
+      return [];
+    }
     const bbox = generateAppropriateSearchBBox(mapBounds);
     const dates = await dsh.findDates({
       datasetId: datasetId,

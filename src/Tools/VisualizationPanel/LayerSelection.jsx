@@ -11,7 +11,10 @@ import {
   CUSTOM_INDEX_ROUTE,
   CUSTOM_SCRIPT_ROUTE,
 } from '../../junk/EOBAdvancedHolder/EOBAdvancedHolder';
-import { getDataSourceHandler } from '../SearchPanel/dataSourceHandlers/dataSourceHandlers';
+import {
+  getDataSourceHandler,
+  isDataSourceReadyForDataset,
+} from '../SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import { sortLayers } from './VisualizationPanel.utils';
 import {
   generateFallbackEvalscript,
@@ -70,6 +73,7 @@ const LayerSelection = ({
   const previousDatasetId = usePrevious(datasetId);
 
   const datasourceHandler = getDataSourceHandler(datasetId);
+  const datasetReady = dataSourcesInitialized || isDataSourceReadyForDataset(datasetId);
 
   const saveCustomState = useCallback(() => {
     setSavedCustomState({
@@ -120,6 +124,9 @@ const LayerSelection = ({
           selectedProcessing: supportsOpenEO ? PROCESSING_OPTIONS.OPENEO : PROCESSING_OPTIONS.PROCESS_API,
           processGraph: processGraphValue,
           isProcessGraphModified: false,
+          evalscript: '',
+          evalscriptUrl: null,
+          processGraphUrl: null,
         }),
       );
       setUseEvalscriptUrl(false);
@@ -128,16 +135,31 @@ const LayerSelection = ({
     [customSelected, selectedLayerId, visualizationUrl, saveCustomState, setLocationHash],
   );
 
+  const hasLoadedLayersRef = React.useRef(false);
+  const loadedDatasetIdRef = React.useRef(datasetId);
+  if (loadedDatasetIdRef.current !== datasetId) {
+    // Reset synchronously during render (rather than in a useEffect) so the render gate below never
+    // reads a stale `true` from the previous dataset — a useEffect-based reset would only run after
+    // this render already committed, letting a stale-dataset frame flash through first.
+    loadedDatasetIdRef.current = datasetId;
+    hasLoadedLayersRef.current = false;
+  }
+
   useEffect(() => {
-    if (!datasetId || !dataSourcesInitialized || !datasourceHandler) {
+    if (!datasetId || !datasetReady || !datasourceHandler) {
       return;
     }
 
     let cancelled = false;
 
     const loadLayers = async () => {
-      setLayers([]);
-      setLoadingLayersInProgress(true);
+      // Data source handlers can be rebuilt (e.g. a redundant theme reload) while this dataset
+      // was already showing layers. Only reset to the loading state on the first load for this
+      // dataset, so a redundant reload refreshes silently instead of flickering the Loader.
+      if (!hasLoadedLayersRef.current) {
+        setLayers([]);
+        setLoadingLayersInProgress(true);
+      }
       try {
         const selectedTheme = themesLists[selectedThemesListId].find((t) => t.id === selectedThemeId);
         const urls = datasourceHandler.getUrlsForDataset(datasetId);
@@ -190,6 +212,7 @@ const LayerSelection = ({
         allLayers = sortLayers(allLayers);
         if (!cancelled) {
           setLayers(allLayers);
+          hasLoadedLayersRef.current = true;
         }
       } catch (error) {
         console.error('Failed to load layers:', error);
@@ -205,14 +228,7 @@ const LayerSelection = ({
     return () => {
       cancelled = true;
     };
-  }, [
-    dataSourcesInitialized,
-    datasetId,
-    datasourceHandler,
-    themesLists,
-    selectedThemesListId,
-    selectedThemeId,
-  ]);
+  }, [datasetReady, datasetId, datasourceHandler, themesLists, selectedThemesListId, selectedThemeId]);
 
   useEffect(() => {
     if (layers.length === 0 || customSelected) {
@@ -632,7 +648,7 @@ const LayerSelection = ({
     [processGraph, processGraphUrl, useProcessGraphUrl],
   );
 
-  if (!dataSourcesInitialized || displayEffects) {
+  if ((!datasetReady && !hasLoadedLayersRef.current) || displayEffects) {
     return null;
   }
 
@@ -698,6 +714,7 @@ const mapStoreToProps = (store) => ({
   selectedThemesListId: store.themes.selectedThemesListId,
   themesLists: store.themes.themesLists,
   dataSourcesInitialized: store.themes.dataSourcesInitialized,
+  dataSourcesReadyVersion: store.themes.dataSourcesReadyVersion,
   selectedLanguage: store.language.selectedLanguage,
   effects: getVisualizationEffectsFromStore(store),
   selectedProcessing: store.visualization.selectedProcessing,
