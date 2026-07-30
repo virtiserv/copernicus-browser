@@ -36,13 +36,12 @@ export default class BasicForm extends React.Component {
   handleBackgroundLayerChange = () => {
     const { updateFormData, showOSMBackgroundLayer, imageFormat } = this.props;
     const newShowOSMBackgroundLayer = !showOSMBackgroundLayer;
-    // The OSM base is composited under the layer, which must keep transparency for it to show
-    // through. JPEG has no alpha, so when enabling OSM switch a JPG selection to PNG; PNG and WEBP
-    // both support transparency and stay available.
-    const newImageFormat =
-      newShowOSMBackgroundLayer && imageFormat === IMAGE_FORMATS.JPG ? IMAGE_FORMATS.PNG : imageFormat;
+    // Enabling OSM forces PNG (JPG can't carry the transparent base). Disabling OSM intentionally
+    // leaves the format on PNG rather than restoring JPG — the user re-selects JPG if they want it.
+    if (newShowOSMBackgroundLayer && imageFormat === IMAGE_FORMATS.JPG) {
+      updateFormData('imageFormat', IMAGE_FORMATS.PNG);
+    }
     updateFormData('showOSMBackgroundLayer', newShowOSMBackgroundLayer);
-    updateFormData('imageFormat', newImageFormat);
   };
 
   render() {
@@ -62,6 +61,7 @@ export default class BasicForm extends React.Component {
       cropToAoi,
       drawGeoToImg,
       showOSMBackgroundLayer,
+      isExternalLayer,
     } = this.props;
 
     const drawingGeometryOnImageEnabled = hasAoi || hasLoi;
@@ -229,7 +229,9 @@ export default class BasicForm extends React.Component {
                 {IMAGE_FORMATS_INFO[IMAGE_FORMATS.JPG].text}
               </option>
               <option value={IMAGE_FORMATS.PNG}>{IMAGE_FORMATS_INFO[IMAGE_FORMATS.PNG].text}</option>
-              <option value={IMAGE_FORMATS.WEBP}>{IMAGE_FORMATS_INFO[IMAGE_FORMATS.WEBP].text}</option>
+              <option value={IMAGE_FORMATS.WEBP} disabled={isExternalLayer}>
+                {IMAGE_FORMATS_INFO[IMAGE_FORMATS.WEBP].text}
+              </option>
             </select>
           </div>
         </div>

@@ -20,6 +20,7 @@ import { runEffectFunctions } from '../../utils/effects/runEffectFuntions';
 import { DATASOURCES } from '../../const';
 import { TILE_REQUEST_DEBOUNCE_MS } from '../const';
 import { getCommonLayerOptions } from './commonLayerOptions';
+import { updateLayerClipping, updateLayerOpacity, bindClipOpacityOnMove } from './layerClipOpacity';
 
 class OpenEoLayer extends L.TileLayer {
   constructor(options) {
@@ -53,16 +54,7 @@ class OpenEoLayer extends L.TileLayer {
     this._initContainer();
     this._crs = this.options.crs || map.options.crs;
     L.TileLayer.prototype.onAdd.call(this, map);
-    map.on(
-      'move',
-      () => {
-        this.updateClipping();
-        this.updateOpacity();
-      },
-      this,
-    );
-    this.updateClipping();
-    this.updateOpacity();
+    bindClipOpacityOnMove(this, map);
   };
 
   createTile = (coords, done) => {
@@ -228,42 +220,15 @@ class OpenEoLayer extends L.TileLayer {
   };
 
   updateClipping = () => {
-    if (!this._map || !this.clipping) {
-      return this;
-    }
-
-    const [a, b] = this.clipping;
-    const { min, max } = this._map.getPixelBounds();
-    let p = { x: a * (max.x - min.x), y: 0 };
-    let q = { x: b * (max.x - min.x), y: max.y - min.y };
-
-    p = this._map.containerPointToLayerPoint(p);
-    q = this._map.containerPointToLayerPoint(q);
-
-    let e = this.getContainer();
-    e.style['overflow'] = 'hidden';
-    e.style['left'] = p.x + 'px';
-    e.style['top'] = p.y + 'px';
-    e.style['width'] = q.x - p.x + 'px';
-    e.style['height'] = q.y - p.y + 'px';
-    for (let f = e.firstChild; f; f = f.nextSibling) {
-      if (f.style) {
-        f.style['margin-top'] = -p.y + 'px';
-        f.style['margin-left'] = -p.x + 'px';
-      }
-    }
+    updateLayerClipping(this);
   };
 
   updateOpacity = () => {
-    if (!this._map || !this.opacity) {
-      return this;
-    }
-    let e = this.getContainer();
-    e.style['opacity'] = this.opacity;
+    updateLayerOpacity(this);
   };
 }
 
-function getOpenEoOptions(params) {
+export function getOpenEoOptions(params) {
   const options = getCommonLayerOptions(params);
 
   if (params.processGraph) {
@@ -320,6 +285,9 @@ const OpenEoLayerComponent = createLayerComponent(
     });
     instance.setClipping(params.clipping);
     instance.setOpacity(params.opacity);
+    if (params.zIndex != null) {
+      instance.setZIndex(params.zIndex);
+    }
     return { instance, context };
   },
   (instance, props, prevProps) => {
@@ -333,6 +301,9 @@ const OpenEoLayerComponent = createLayerComponent(
     }
     if (prevProps.clipping !== props.clipping) {
       instance.setClipping(props.clipping);
+    }
+    if (prevProps.zIndex !== props.zIndex) {
+      instance.setZIndex(props.zIndex);
     }
   },
 );

@@ -4,6 +4,7 @@ import {
   Pane,
   LayersControl,
   TileLayer,
+  WMSTileLayer,
   LayerGroup,
   useMapEvents,
   useMap,
@@ -22,6 +23,7 @@ import Controls from '../Controls/Controls';
 import LeafletControls from './LeafletControls/LeafletControls';
 import SentinelHubLayerComponent from './plugins/sentinelhubLeafletLayer';
 import OpenEoLayerComponent from './plugins/openEOLeafletLayer';
+import { ExternalWmsLayerComponent, ExternalTileLayerComponent } from './plugins/externalWmsLeafletLayer';
 import GlTileLayer from './plugins/GlTileLayer';
 import { baseLayers, overlayTileLayers, getDefaultBaseLayer } from './Layers';
 import { S2QuarterlyCloudlessMosaicsBaseLayerTheme } from '../assets/default_themes';
@@ -37,6 +39,8 @@ import {
   BASE_S2_MOSAIC_PANE_ID,
   SENTINELHUB_LAYER_PANE_ID,
   SENTINELHUB_LAYER_PANE_ZINDEX,
+  EXTERNAL_LAYER_PANE_ID,
+  COMPARE_LAYER_PANE_ID,
   DEFAULT_COMPARED_LAYERS_MAX_ZOOM,
   DEFAULT_COMPARED_LAYERS_OVERZOOM,
   S2_QUARTERLY_MOSAIC_DATASET_ID,
@@ -61,6 +65,7 @@ import {
   shouldShowCompareShLayers,
   shouldShowS2MosaicTransparency,
   getPinTimes,
+  getCompareLayerZIndex,
 } from './Map.utils';
 import { mapStoreToProps } from './Map.selectors';
 import { progressWithDelayedAction } from './progressWithDelayedAction';
@@ -338,6 +343,21 @@ class Map extends React.Component {
     store.dispatch(themesSlice.actions.setSelectedModeIdAndDefaultTheme(modeId));
   };
 
+  // Return a referentially stable { TIME } params object for the external WMS layer. A fresh object
+  // literal each render makes react-leaflet's WMSTileLayer call setParams() and reload all tiles, so
+  // the map "refreshed" on every unrelated re-render (e.g. while scrolling the layer list, which
+  // dispatches scroll-position to the store). Only rebuild when the time value actually changes.
+  getStableExternalWmsParams(time) {
+    if (!time) {
+      return undefined;
+    }
+    if (this._externalWmsTimeValue !== time) {
+      this._externalWmsTimeValue = time;
+      this._externalWmsParams = { TIME: time };
+    }
+    return this._externalWmsParams;
+  }
+
   render() {
     const {
       lat,
@@ -403,6 +423,8 @@ class Map extends React.Component {
       filteredQuicklookOverlays,
       selectedProcessing,
       processGraph,
+      activeExternalLayer,
+      wmsPanelOpen,
     } = this.props;
     const isCustomEvalscript = customSelected && !!(evalscript || evalscriptUrl);
     const shouldBlockOpenEoForEvalscriptUrl = !!evalscriptUrl && !evalscript;
@@ -438,8 +460,7 @@ class Map extends React.Component {
     // Lets the single SH layer render for a dataset whose own handler has resolved, without
     // waiting for every other dataset in the theme (dataSourcesInitialized) to finish loading.
     // Excludes the S2 Quarterly Mosaic base layer (S2QMosaicReady below), which is out of scope.
-    const singleShLayerDataSourcesReady =
-      dataSourcesInitialized || isDataSourceReadyForDataset(datasetId);
+    const singleShLayerDataSourcesReady = dataSourcesInitialized || isDataSourceReadyForDataset(datasetId);
 
     const showSingleShLayer = shouldShowSingleShLayer({
       authenticated,
@@ -451,6 +472,8 @@ class Map extends React.Component {
       customSelected,
       datasetId,
       visualizationUrl,
+      activeExternalLayer,
+      wmsPanelOpen,
     });
 
     const showCompareShLayers = shouldShowCompareShLayers({
@@ -660,6 +683,36 @@ class Map extends React.Component {
             </Overlay>
           )}
 
+          {/* Single-view external layer: plain react-leaflet components are enough here because
+              clipping/opacity are compare-mode features — the split slider and per-layer opacity are
+              handled by ExternalTileLayerComponent / ExternalWmsLayerComponent in the compare branch below.
+              Wrapped in an Overlay (unique key per server/layer) so it shows in the top-right layers
+              control and re-renders when the active layer changes. */}
+          {activeExternalLayer && !showCompareShLayers && selectedTabIndex === TABS.VISUALIZE_TAB && (
+            <Overlay
+              key={`external-overlay-${activeExternalLayer.server.id}-${activeExternalLayer.layerName}`}
+              name={activeExternalLayer.layerTitle || activeExternalLayer.layerName}
+              checked={true}
+            >
+              {activeExternalLayer.server.type === 'WMTS' ? (
+                <TileLayer
+                  url={activeExternalLayer.tileUrl || activeExternalLayer.server.url}
+                  pane={EXTERNAL_LAYER_PANE_ID}
+                />
+              ) : (
+                <WMSTileLayer
+                  url={activeExternalLayer.server.url}
+                  layers={activeExternalLayer.layerName}
+                  format={activeExternalLayer.server.format || 'image/png'}
+                  transparent={true}
+                  version="1.1.1"
+                  params={this.getStableExternalWmsParams(activeExternalLayer.time)}
+                  pane={EXTERNAL_LAYER_PANE_ID}
+                />
+              )}
+            </Overlay>
+          )}
+
           {showCompareShLayers &&
             comparedLayers
               .slice()
@@ -701,6 +754,36 @@ class Map extends React.Component {
 
                 const { pinTimeFrom, pinTimeTo } = getPinTimes(fromTime, toTime, supportsTimeRange);
                 const index = comparedLayers.length - 1 - i;
+                const zIndex = getCompareLayerZIndex(i);
+
+                if (p.externalWms) {
+                  const { url, layerName, type, tileUrl, format, time } = p.externalWms;
+                  return type === 'WMTS' ? (
+                    <ExternalTileLayerComponent
+                      key={p.id}
+                      url={tileUrl || url}
+                      opacity={comparedOpacity[index]}
+                      clipping={comparedClipping[index]}
+                      pane={COMPARE_LAYER_PANE_ID}
+                      zIndex={zIndex}
+                    />
+                  ) : (
+                    <ExternalWmsLayerComponent
+                      key={p.id}
+                      url={url}
+                      layers={layerName}
+                      format={format || 'image/png'}
+                      transparent={true}
+                      version="1.1.1"
+                      time={time}
+                      opacity={comparedOpacity[index]}
+                      clipping={comparedClipping[index]}
+                      pane={COMPARE_LAYER_PANE_ID}
+                      zIndex={zIndex}
+                    />
+                  );
+                }
+
                 const isCustomVisualisation =
                   (evalscript != null && evalscript.length > 0) || !!evalscriptUrl;
                 const supportsOpenEoComparedLayer =
@@ -719,7 +802,7 @@ class Map extends React.Component {
 
                   return (
                     <OpenEoLayerComponent
-                      key={i}
+                      key={p.id}
                       processGraph={processGraphToUse}
                       cachedProcessGraph={getProcessGraph(visualizationUrl, layerId)}
                       datasetId={datasetId}
@@ -729,9 +812,10 @@ class Map extends React.Component {
                       progress={this.progress}
                       onTileImageError={this.onTileError}
                       onTileImageLoad={this.onTileLoad}
-                      pane={SENTINELHUB_LAYER_PANE_ID}
+                      pane={COMPARE_LAYER_PANE_ID}
                       opacity={comparedOpacity[index]}
                       clipping={comparedClipping[index]}
+                      zIndex={zIndex}
                       minZoom={zoomConfig.min}
                       maxZoom={zoomConfig.max}
                       gainEffect={gainEffect}
@@ -752,7 +836,7 @@ class Map extends React.Component {
                 }
                 return (
                   <SentinelHubLayerComponent
-                    key={i}
+                    key={p.id}
                     datasetId={datasetId}
                     url={visualizationUrl}
                     layers={layerId}
@@ -769,6 +853,7 @@ class Map extends React.Component {
                     allowOverZoomBy={allowOverZoomBy}
                     opacity={comparedOpacity[index]}
                     clipping={comparedClipping[index]}
+                    zIndex={zIndex}
                     gainEffect={gainEffect}
                     gammaEffect={gammaEffect}
                     redRangeEffect={redRangeEffect}
@@ -781,7 +866,7 @@ class Map extends React.Component {
                     speckleFilter={speckleFilterProp}
                     orthorectification={orthorectification}
                     backscatterCoeff={backscatterCoeff}
-                    pane={SENTINELHUB_LAYER_PANE_ID}
+                    pane={COMPARE_LAYER_PANE_ID}
                     progress={this.progress}
                     accessToken={getAppropriateAuthToken(auth, themeId)}
                     getMapAuthToken={getGetMapAuthToken(auth)}

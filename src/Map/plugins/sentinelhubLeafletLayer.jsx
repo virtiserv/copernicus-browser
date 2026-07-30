@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import { createLayerComponent } from '@react-leaflet/core';
 import isEqual from 'fast-deep-equal';
+import { updateLayerClipping, updateLayerOpacity, bindClipOpacityOnMove } from './layerClipOpacity';
 import {
   LayersFactory,
   ApiType,
@@ -254,6 +255,9 @@ import {
   COPERNICUS_CLMS_WSI_SNOW_PHENOLOGY_S1_S2_EUROPE_UTM_60M_YEARLY_V1,
   COPERNICUS_CLMS_WSI_WATER_COVER_DURATION_EUROPE_UTM_10M_YEARLY_V1,
   COPERNICUS_CLMS_WSI_ICE_COVER_DURATION_EUROPE_UTM_20M_YEARLY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
   COPERNICUS_CLMS_VLCC_BROADLEAVED_COVER_DENSITY_EUROPE_100M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_CONIFEROUS_COVER_DENSITY_EUROPE_100M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_FOREST_TYPE_EUROPE_100M_3YEARLY_V1,
@@ -354,51 +358,15 @@ class SentinelHubLayer extends L.TileLayer {
     this._initContainer();
     this._crs = this.options.crs || map.options.crs;
     L.TileLayer.prototype.onAdd.call(this, map);
-    map.on(
-      'move',
-      () => {
-        this.updateClipping();
-        this.updateOpacity();
-      },
-      this,
-    );
-    this.updateClipping();
-    this.updateOpacity();
+    bindClipOpacityOnMove(this, map);
   };
 
   updateClipping = () => {
-    if (!this._map || !this.clipping) {
-      return this;
-    }
-
-    const [a, b] = this.clipping;
-    const { min, max } = this._map.getPixelBounds();
-    let p = { x: a * (max.x - min.x), y: 0 };
-    let q = { x: b * (max.x - min.x), y: max.y - min.y };
-
-    p = this._map.containerPointToLayerPoint(p);
-    q = this._map.containerPointToLayerPoint(q);
-
-    let e = this.getContainer();
-    e.style['overflow'] = 'hidden';
-    e.style['left'] = p.x + 'px';
-    e.style['top'] = p.y + 'px';
-    e.style['width'] = q.x - p.x + 'px';
-    e.style['height'] = q.y - p.y + 'px';
-    for (let f = e.firstChild; f; f = f.nextSibling) {
-      if (f.style) {
-        f.style['margin-top'] = -p.y + 'px';
-        f.style['margin-left'] = -p.x + 'px';
-      }
-    }
+    updateLayerClipping(this);
   };
 
   updateOpacity = () => {
-    if (!this._map || !this.opacity) {
-      return this;
-    }
-    let e = this.getContainer();
-    e.style['opacity'] = this.opacity;
+    updateLayerOpacity(this);
   };
 
   createTile = (coords, done) => {
@@ -1039,6 +1007,9 @@ class SentinelHubLayer extends L.TileLayer {
       case COPERNICUS_CLMS_WSI_SNOW_PHENOLOGY_S1_S2_EUROPE_UTM_60M_YEARLY_V1:
       case COPERNICUS_CLMS_WSI_WATER_COVER_DURATION_EUROPE_UTM_10M_YEARLY_V1:
       case COPERNICUS_CLMS_WSI_ICE_COVER_DURATION_EUROPE_UTM_20M_YEARLY_V1:
+      case COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1:
+      case COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1:
+      case COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1:
       case COPERNICUS_CLMS_UA_BUILDING_HEIGHT_EUROPE_10M_3YEARLY_V1_2021:
       case COPERNICUS_CLMS_VLCC_FOREST_TYPE_EUROPE_10M_3YEARLY_V1:
       case COPERNICUS_CLMS_VLCC_FOREST_ADDITIONAL_SUPPORT_LAYER_EUROPE_10M_3YEARLY_V1:
@@ -1208,7 +1179,7 @@ class SentinelHubLayer extends L.TileLayer {
   };
 }
 
-function getSentinelHubOptions(params) {
+export function getSentinelHubOptions(params) {
   const options = getCommonLayerOptions(params);
 
   if (params.url) {
@@ -1291,6 +1262,9 @@ const SentinelHubLayerComponent = createLayerComponent(
     });
     instance.setClipping(params.clipping);
     instance.setOpacity(params.opacity);
+    if (params.zIndex != null) {
+      instance.setZIndex(params.zIndex);
+    }
     return { instance, context };
   },
   (instance, props, prevProps) => {
@@ -1304,6 +1278,9 @@ const SentinelHubLayerComponent = createLayerComponent(
     }
     if (prevProps.clipping !== props.clipping) {
       instance.setClipping(props.clipping);
+    }
+    if (prevProps.zIndex !== props.zIndex) {
+      instance.setZIndex(props.zIndex);
     }
   },
 );

@@ -10,7 +10,14 @@ import { Tabs, Tab } from '../junk/Tabs/Tabs';
 import ToolsFooter from './ToolsFooter/ToolsFooter';
 import AdvancedSearch from './VisualizationPanel/CollectionSelection/AdvancedSearch/AdvancedSearch';
 import store, { notificationSlice, visualizationSlice, tabsSlice, pinsSlice, mainMapSlice } from '../store';
-import { savePinsToServer, savePinsToSessionStorage, constructPinFromProps } from './Pins/Pin.utils';
+import { selectActiveExternalLayer } from '../store/slices/externalLayersSlice';
+import {
+  savePinsToServer,
+  saveLocalPins,
+  constructPinFromProps,
+  buildExternalWmsPayload,
+  shouldUsePinsBackend,
+} from './Pins/Pin.utils';
 import { getOrbitDirectionFromList } from './VisualizationPanel/VisualizationPanel.utils';
 import { checkIfCustom } from './SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import {
@@ -21,12 +28,11 @@ import {
 import './Tools.scss';
 import { TABS } from '../const';
 import { getVisualizationEffectsFromStore } from '../utils/effectsUtils';
-import { USE_PINS_BACKEND } from './Pins/const';
 import RapidResponseDesk from './RapidResponseDesk/RapidResponseDesk';
 import { isInGroup } from '../Auth/authHelpers';
 import { RRD_GROUP } from '../api/RRD/assets/rrd.utils';
 
-class Tools extends Component {
+export class Tools extends Component {
   state = {
     selectedPin: null,
     selectedResult: null,
@@ -142,22 +148,47 @@ class Tools extends Component {
   };
 
   savePin = async () => {
+    const { zoom, lat, lng, selectedThemeId, newPinsCount } = this.props;
+    if (!import.meta.env.VITE_CDSE_BACKEND) {
+      store.dispatch(notificationSlice.actions.displayError(FUNCTIONALITY_TEMPORARILY_UNAVAILABLE_MSG));
+      return;
+    }
+
+    const activeExternalLayer = selectActiveExternalLayer(store.getState());
+    if (activeExternalLayer) {
+      const pin = {
+        title: activeExternalLayer.layerTitle,
+        lat,
+        lng,
+        zoom,
+        themeId: selectedThemeId,
+        datasetId: null,
+        visualizationUrl: null,
+        externalWms: buildExternalWmsPayload(activeExternalLayer),
+      };
+      // Logged-in users' WMS/WMTS pins are saved to the backend like native pins; anonymous users
+      // keep them in per-user localStorage. The externalWms field is a companion backend change
+      // (see #1076) that may not be deployed yet, so fall back to local storage on failure instead
+      // of losing the pin. WMS/WMTS pins were always-local before this change.
+      const uniqueId = await this.savePinToServerOrLocal(pin, { fallbackToLocalOnError: true });
+      if (!uniqueId) {
+        return;
+      }
+      this.setLastAddedPin(uniqueId);
+      store.dispatch(pinsSlice.actions.setNewPinsCount(newPinsCount + 1));
+      return;
+    }
+
     const {
       datasetId,
       layerId,
       visualizationUrl,
       evalscript,
       customSelected,
-      selectedThemeId,
-      newPinsCount,
       evalscriptUrl,
       processGraph,
       processGraphUrl,
     } = this.props;
-    if (!import.meta.env.VITE_CDSE_BACKEND) {
-      store.dispatch(notificationSlice.actions.displayError(FUNCTIONALITY_TEMPORARILY_UNAVAILABLE_MSG));
-      return;
-    }
     if (
       !(
         datasetId &&
@@ -169,14 +200,36 @@ class Tools extends Component {
       return null;
     }
     let pin = await constructPinFromProps(this.props);
-    if (USE_PINS_BACKEND && this.props.user.userdata) {
-      const { uniqueId } = await savePinsToServer([pin]);
-      this.setLastAddedPin(uniqueId);
-    } else {
-      const uniqueId = savePinsToSessionStorage([pin]);
-      this.setLastAddedPin(uniqueId);
+    const uniqueId = await this.savePinToServerOrLocal(pin);
+    if (!uniqueId) {
+      return;
     }
+    this.setLastAddedPin(uniqueId);
     store.dispatch(pinsSlice.actions.setNewPinsCount(newPinsCount + 1));
+  };
+
+  // Saves a pin to the backend for logged-in users (with USE_PINS_BACKEND on), or to per-user
+  // localStorage otherwise. On a backend failure, either falls back to local storage (used for
+  // WMS/WMTS pins, which were always-local before #1076) or surfaces an error notification and
+  // returns null so the caller can bail out without incrementing the pins count.
+  // shouldUsePinsBackend(user) is the same gate duplicated, without this fallback/notify safety, in
+  // PinTools.jsx (onImportPins), Highlights.jsx (savePin) and Pin.utils.js (importSharedPins) —
+  // intentionally left as-is, extending those sites is out of scope for #1076.
+  savePinToServerOrLocal = async (pin, { fallbackToLocalOnError = false } = {}) => {
+    if (shouldUsePinsBackend(this.props.user.userdata)) {
+      try {
+        const { uniqueId } = await savePinsToServer([pin]);
+        return uniqueId;
+      } catch (e) {
+        if (fallbackToLocalOnError) {
+          console.warn('Falling back to local pin storage after backend save failed:', e);
+          return saveLocalPins([pin]);
+        }
+        store.dispatch(notificationSlice.actions.displayError(t`Unable to save pin.`));
+        return null;
+      }
+    }
+    return saveLocalPins([pin]);
   };
 
   saveLocalPinsOnLogin = async (pins) => {

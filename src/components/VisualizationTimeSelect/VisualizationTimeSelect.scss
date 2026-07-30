@@ -176,6 +176,18 @@
               display: flex;
             }
 
+            button:disabled {
+              cursor: not-allowed;
+
+              .single-mode-svg,
+              .mosaic-mode-svg,
+              .time-range-mode-svg {
+                cursor: not-allowed;
+                opacity: 0.35;
+                filter: grayscale(100%);
+              }
+            }
+
             .single-mode-svg,
             .mosaic-mode-svg,
             .time-range-mode-svg {

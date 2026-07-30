@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { CODE_EDITOR_URLS } from './fixtures/urls';
 import { getSaveResultFormat } from './fixtures/helpers';
+import { LIVE_REQUEST_TIMEOUT, HEAVY_TEST_TIMEOUT } from './fixtures/timeouts';
 
 const OPENEO_RESULT_URL = 'openeosh.dataspace.copernicus.eu/1.2/result';
 
@@ -14,9 +15,17 @@ declare const monaco: {
 };
 
 test('NDVI layer → AOI → code editor process graph edit → download format routing', async ({ page }) => {
+  // Nav + Monaco edit + two download waits chained can exceed the default 30s budget.
+  test.setTimeout(HEAVY_TEST_TIMEOUT);
+
   // Navigate to the app and wait for initial tiles.
   // S2_L2A_CDAS True Color uses the openEO endpoint (confirmed by visualization-service-routing spec).
-  const initialTiles = page.waitForResponse((r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200);
+  const initialTiles = page.waitForResponse(
+    (r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200,
+    {
+      timeout: LIVE_REQUEST_TIMEOUT,
+    },
+  );
   await page.goto(CODE_EDITOR_URLS.s2l2aNDVI);
   await initialTiles;
 
@@ -27,7 +36,8 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
   await page.getByTitle('Create an area of interest', { exact: true }).click();
   await page.getByTitle('Draw rectangular area of interest for image downloads and timelapse').click();
 
-  // Draw a small rectangle by clicking two corners (Leaflet Geoman two-click style)
+  // Draw a small rectangle by clicking two corners (Leaflet Geoman two-click style).
+  // Offsets are clamped to the container size so this also works on small viewports.
   const map = page.locator('.leaflet-container');
   const box = await map.boundingBox();
   if (!box) {
@@ -35,10 +45,13 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
   }
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
-  await page.mouse.click(cx - 60, cy - 60);
-  await page.mouse.click(cx + 60, cy + 60);
+  const offsetX = Math.min(60, box.width / 4);
+  const offsetY = Math.min(60, box.height / 4);
+  await page.mouse.click(cx - offsetX, cy - offsetY);
+  await page.mouse.click(cx + offsetX, cy + offsetY);
 
-  // Verify AOI was drawn and Statistical Info button is enabled
+  // Verify AOI was drawn and Statistical Info button is enabled. This also polls for Leaflet
+  // Geoman to register the second click and finalize the rectangle, instead of a fixed sleep.
   await expect(page.getByTitle('Remove area of interest')).toBeVisible();
   await expect(page.getByTitle('Statistical Info chart')).toBeVisible();
 
@@ -76,7 +89,9 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
   expect(modifiedGraph).not.toContain('"B04"');
 
   // Apply changes and wait for new tiles to load
-  const newTiles = page.waitForResponse((r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200);
+  const newTiles = page.waitForResponse((r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200, {
+    timeout: LIVE_REQUEST_TIMEOUT,
+  });
   await page.getByRole('button', { name: 'Apply' }).click();
   await newTiles;
 
@@ -95,9 +110,16 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
     .filter({ has: page.locator('option', { hasText: 'TIFF (32-bit float)' }) });
 
   // --- TIFF 32-bit: analytical download should go to openEO /result ---
+  // Wait for the live preview thumbnail request triggered by the format change to settle,
+  // so it can't race the download request below.
+  const previewAfterTiff32 = page.waitForResponse(
+    (r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200,
+    {
+      timeout: LIVE_REQUEST_TIMEOUT,
+    },
+  );
   await formatSelect.selectOption('TIFF (32-bit float)');
-  // Wait for any preview requests triggered by the format change to settle
-  await page.waitForLoadState('networkidle');
+  await previewAfterTiff32;
 
   // Register listener and click together so we can't miss the request.
   // The download panel's live preview thumbnail always requests PNG via this same
@@ -109,6 +131,7 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
         r.method() === 'POST' &&
         r.url().includes(OPENEO_RESULT_URL) &&
         getSaveResultFormat(r.postDataJSON()?.process?.process_graph) === 'gtiff',
+      { timeout: LIVE_REQUEST_TIMEOUT },
     ),
     page.getByText('Download', { exact: true }).click(),
   ]);
@@ -119,12 +142,20 @@ test('NDVI layer → AOI → code editor process graph edit → download format 
   expect(getSaveResultFormat(body.process.process_graph)).toBe('gtiff');
 
   // --- TIFF 8-bit: should route to the SentinelHub process API, not openEO ---
+  const previewAfterTiff8 = page.waitForResponse(
+    (r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200,
+    {
+      timeout: LIVE_REQUEST_TIMEOUT,
+    },
+  );
   await formatSelect.selectOption('TIFF (8-bit)');
-  await page.waitForLoadState('networkidle');
+  await previewAfterTiff8;
 
   // TIFF 8-bit download must use the SentinelHub process API — never openEO
   const [tiff8] = await Promise.all([
-    page.waitForRequest((r) => r.method() === 'POST' && r.url().includes('/api/v1/process')),
+    page.waitForRequest((r) => r.method() === 'POST' && r.url().includes('/api/v1/process'), {
+      timeout: LIVE_REQUEST_TIMEOUT,
+    }),
     page.getByText('Download', { exact: true }).click(),
   ]);
 

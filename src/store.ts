@@ -1,4 +1,4 @@
-import { configureStore, combineReducers, createSlice } from '@reduxjs/toolkit';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { aoiSlice } from './store/slices/aoiSlice';
 import { notificationSlice } from './store/slices/notificationSlice';
 import { floatingPanelNotificationSlice } from './store/slices/floatingPanelNotificationSlice';
@@ -8,6 +8,7 @@ import { collapsiblePanelSlice } from './store/slices/collapsiblePanelSlice';
 import { mainMapSlice } from './store/slices/mainMapSlice';
 import { modalSlice } from './store/slices/modalSlice';
 import { authSlice } from './store/slices/authSlice';
+import { externalLayersSlice, externalLayersPersistenceMiddleware } from './store/slices/externalLayersSlice';
 import { poiSlice } from './store/slices/poiSlice';
 import { loiSlice } from './store/slices/loiSlice';
 import { compareLayersSlice } from './store/slices/compareLayersSlice';
@@ -27,11 +28,7 @@ import { themesSlice } from './store/slices/themesSlice';
 import { areaAndTimeSectionSlice } from './store/slices/areaAndTimeSectionSlice';
 import { imageQualityAndProviderSectionSlice } from './store/slices/imageQualityAndProviderSectionSlice';
 import { advancedSectionSlice } from './store/slices/advancedSectionSlice';
-
-import {
-  getResultsSectionFilterDefaultValue,
-  ResultsSectionSortProperties,
-} from './Tools/RapidResponseDesk/rapidResponseProperties';
+import { resultsSectionSlice } from './store/slices/resultsSectionSlice';
 
 export { poiSlice };
 
@@ -69,6 +66,8 @@ export { modalSlice };
 
 export { authSlice };
 
+export { externalLayersSlice };
+
 export { timelapseSlice };
 
 export { elevationProfileSlice };
@@ -89,46 +88,7 @@ export { areaAndTimeSectionSlice };
 
 export { advancedSectionSlice };
 
-export const resultsSectionSlice = createSlice({
-  name: 'resultsSection',
-  initialState: {
-    filtersForSearch: undefined,
-    sortState: ResultsSectionSortProperties[0].value,
-    filterState: getResultsSectionFilterDefaultValue(),
-    results: undefined,
-    highlightedResult: undefined,
-    cartResults: undefined,
-    currentPage: 1,
-    quicklookImages: {},
-  },
-  reducers: {
-    setFiltersForSearch: (state, action) => {
-      state.filtersForSearch = action.payload;
-    },
-    setSortState: (state, action) => {
-      state.sortState = action.payload;
-    },
-    setFilterState: (state, action) => {
-      state.filterState = action.payload;
-    },
-    setResults: (state, action) => {
-      state.results = action.payload;
-    },
-    setHighlightedResult: (state, action) => {
-      state.highlightedResult = action.payload;
-    },
-    setCartResults: (state, action) => {
-      state.cartResults = action.payload;
-    },
-    setCurrentPage: (state, action) => {
-      state.currentPage = action.payload;
-    },
-    addQuicklookImage: (state, action) => {
-      const { id, url } = action.payload;
-      state.quicklookImages[id] = url;
-    },
-  },
-});
+export { resultsSectionSlice };
 
 const reducers = combineReducers({
   aoi: aoiSlice.reducer,
@@ -159,11 +119,14 @@ const reducers = combineReducers({
   resultsSection: resultsSectionSlice.reducer,
   tools: toolsSlice.reducer,
   clms: clmsSlice.reducer,
+  externalLayers: externalLayersSlice.reducer,
   workspace: workspaceSlice.reducer,
 });
 
 const store = configureStore({
   reducer: reducers,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({ serializableCheck: false }).concat(externalLayersPersistenceMiddleware.middleware),
 }); // Due to "A non-serializable value was detected in an action" => https://github.com/rt2zz/redux-persist/issues/988
+
 export default store;

@@ -27,6 +27,13 @@ import { b64EncodeUnicode } from '../../utils/base64MDN';
 import { findMatchingLayerMetadata } from '../../Tools/VisualizationPanel/legendUtils';
 import { isTimespanModeSelected } from '../../Tools/VisualizationPanel/VisualizationPanel.utils';
 import { IMAGE_FORMATS, IMAGE_FORMATS_INFO } from './consts';
+import {
+  fetchExternalLayerBlob,
+  compositeWmtsImage,
+  applyGeometryClip,
+  applyGeometryDraw,
+  compositeOnWhite,
+} from './WmsDownload.utils';
 
 import { constructDataFusionLayer } from '../../junk/EOBCommon/utils/dataFusion';
 import { getMapDOMSize, wgs84ToMercator } from '../../junk/EOBCommon/utils/coords';
@@ -356,6 +363,8 @@ export async function fetchAndPatchImagesFromParams(params, setWarnings, setErro
     showCaptions,
     showLogo,
     addMapOverlays,
+    showOSMBackgroundLayer,
+    baseLayerUrl,
     userDescription,
     enabledOverlaysId,
     toTime,
@@ -379,56 +388,81 @@ export async function fetchAndPatchImagesFromParams(params, setWarnings, setErro
   let addLogos = false;
   const copyrightTexts = new Set();
 
+  // Draw the OSM (or selected) base once, full-canvas, under all compared layers so it shows
+  // through their transparent areas and both compare sides. Best-effort: a failed base must not
+  // abort the download. Only the composer draws it (the per-layer fetch below sets baseLayerUrl:
+  // null) so it isn't drawn once per layer.
+  if (baseLayerUrl) {
+    try {
+      const baseCanvas = await getMapOverlayXYZ(baseLayerUrl, bounds, zoom, width, height);
+      ctx.drawImage(baseCanvas, 0, 0, width, height);
+    } catch (e) {
+      console.warn('[ImgDownload] Could not add OSM background to compare download:', e);
+    }
+  }
+
   for (let idx = comparedLayers.length - 1; idx >= 0; idx--) {
     let cLayer = comparedLayers[idx];
     let image;
     let imgObjectUrl;
     try {
-      image = await fetchImageFromParams(
-        {
-          ...params,
-          ...cLayer,
-          imageFormat: IMAGE_FORMATS.PNG, // each of the compared layers has to be a PNG because of its transparent background
-          showCaptions: false,
-          showLegend: false,
-          showLogo: false,
-          addMapOverlays: false,
-        },
-        setWarnings,
-      );
-
-      const dsh = getDataSourceHandler(cLayer.datasetId);
-      if (dsh) {
-        drawCopernicusLogo = dsh.isCopernicus() || drawCopernicusLogo;
-        addLogos = drawCopernicusLogo || addLogos;
-      }
-
-      if (showLegend) {
-        const l = await getLayerFromParams(
-          { ...params, layerId: cLayer.layerId, visualizationUrl: cLayer.visualizationUrl },
-          cancelToken,
+      if (cLayer.externalWms) {
+        // Hybrid compare: an external WMS/WMTS layer alongside Sentinel Hub layers. Produce its
+        // image with the external helpers (no SH dataset/evalscript/legend) — the slicing,
+        // opacity and overlay steps below are shared. Request web mercator when an OSM base or
+        // map overlays are added, so it aligns with those (both EPSG:3857).
+        const useWebMercator = !!(showOSMBackgroundLayer || addMapOverlays);
+        const blob = await fetchExternalLayerBlob(cLayer.externalWms, bounds, width, height, useWebMercator);
+        image = { blob };
+        imageTitles.push(cLayer.externalWms.layerTitle || cLayer.externalWms.layerName);
+      } else {
+        image = await fetchImageFromParams(
+          {
+            ...params,
+            ...cLayer,
+            imageFormat: IMAGE_FORMATS.PNG, // each of the compared layers has to be a PNG because of its transparent background
+            showCaptions: false,
+            showLegend: false,
+            showLogo: false,
+            addMapOverlays: false,
+            baseLayerUrl: null, // the OSM base is drawn once by the composer above, not per layer
+          },
+          setWarnings,
         );
-        legendUrl = l.legendUrl;
-        const predefinedLayerMetadata = findMatchingLayerMetadata(
-          cLayer.datasetId,
-          cLayer.layerId,
-          cLayer.themeId,
-          toTime,
-        );
-        legendDefinition =
-          predefinedLayerMetadata && predefinedLayerMetadata.legend
-            ? predefinedLayerMetadata.legend
-            : l.legend;
-      }
-      if (showCaptions) {
-        let cText;
+
+        const dsh = getDataSourceHandler(cLayer.datasetId);
         if (dsh) {
-          cText = dsh.getCopyrightText(cLayer.datasetId);
-          copyrightTexts.add(cText);
+          drawCopernicusLogo = dsh.isCopernicus() || drawCopernicusLogo;
+          addLogos = drawCopernicusLogo || addLogos;
         }
-      }
 
-      imageTitles.push(cLayer.title);
+        if (showLegend) {
+          const l = await getLayerFromParams(
+            { ...params, layerId: cLayer.layerId, visualizationUrl: cLayer.visualizationUrl },
+            cancelToken,
+          );
+          legendUrl = l.legendUrl;
+          const predefinedLayerMetadata = findMatchingLayerMetadata(
+            cLayer.datasetId,
+            cLayer.layerId,
+            cLayer.themeId,
+            toTime,
+          );
+          legendDefinition =
+            predefinedLayerMetadata && predefinedLayerMetadata.legend
+              ? predefinedLayerMetadata.legend
+              : l.legend;
+        }
+        if (showCaptions) {
+          let cText;
+          if (dsh) {
+            cText = dsh.getCopyrightText(cLayer.datasetId);
+            copyrightTexts.add(cText);
+          }
+        }
+
+        imageTitles.push(cLayer.title);
+      }
 
       imgObjectUrl = window.URL.createObjectURL(image.blob);
       const imgDrawn = await new Promise((resolve, reject) => {
@@ -466,8 +500,17 @@ export async function fetchAndPatchImagesFromParams(params, setWarnings, setErro
   const title = `${imageTitles.slice().reverse().join(', ')}`;
   const copyrightText = [...copyrightTexts].join(', ');
   const geometriesToDraw = [aoiGeometry, loiGeometry].filter((geo) => !!geo);
+  let compositedBlob = await canvasToBlob(canvas, mimeType);
+  // External WMS compared layers are fetched at the AOI bounds (a rectangular crop) and never
+  // receive the AOI geometry, so they aren't clipped to a non-rectangular AOI. When one is present,
+  // clip the composite to the AOI polygon here, matching the single external-layer download which
+  // also clips via applyGeometryClip. Sentinel Hub layers are already clipped server-side from the
+  // geometry param, so an all-SH compare needs no extra clip.
+  if (cropToAoi && aoiGeometry && bounds && comparedLayers.some((l) => l.externalWms)) {
+    compositedBlob = await applyGeometryClip(compositedBlob, aoiGeometry, bounds, width, height, mimeType);
+  }
   const finalBlob = await addImageOverlays(
-    await canvasToBlob(canvas, mimeType),
+    compositedBlob,
     width,
     height,
     mimeType,
@@ -502,6 +545,94 @@ export async function fetchAndPatchImagesFromParams(params, setWarnings, setErro
       .reverse()
       .join('_'),
   };
+}
+
+// Shared post-processing for external WMS/WMTS image downloads (single layer and compare). Given a
+// rendered base image, it optionally draws an OSM/base tile layer underneath (for the single path,
+// whose imagery is transparent — the compare composite bakes its own base in), applies the AOI
+// clip/draw, then the map-overlay labels and captions via addImageOverlays. Keeps the single and
+// compare paths in sync. `addImageOverlays` already no-ops when no overlay toggle is on.
+export async function finalizeExternalDownloadImage(blob, opts) {
+  const {
+    bounds,
+    width,
+    height,
+    mimeType,
+    baseTileUrl, // OSM/base {z}/{x}/{y} template to draw under the imagery (single path only)
+    aoiGeometry,
+    cropToAoi,
+    drawGeoToImg,
+    lat,
+    lng,
+    zoom,
+    enabledOverlaysId,
+    showCaptions = false,
+    addMapOverlays = false,
+    showLegend = false,
+    legendUrl = null,
+    userDescription = '',
+    title = '',
+    copyrightText = '',
+    aoiWidthInMeters = null,
+    mapWidthInMeters = null,
+  } = opts;
+
+  let processed = false;
+
+  // Draw the transparent imagery over a stitched OSM/base layer so it shows through nodata areas.
+  if (baseTileUrl) {
+    const baseBlob = await compositeWmtsImage(baseTileUrl, bounds, width, height);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    await drawBlobOnCanvas(ctx, baseBlob, 0, 0);
+    await drawBlobOnCanvas(ctx, blob, 0, 0);
+    blob = await canvasToBlob(canvas, mimeType);
+    processed = true; // already opaque
+  }
+
+  if (cropToAoi && aoiGeometry && bounds) {
+    // External imagery is fetched in web mercator (EPSG:3857), so the AOI must be traced in mercator.
+    blob = await applyGeometryClip(blob, aoiGeometry, bounds, width, height, mimeType, true);
+    processed = true;
+  }
+  if (drawGeoToImg && aoiGeometry && bounds) {
+    blob = await applyGeometryDraw(blob, aoiGeometry, bounds, width, height, mimeType, true);
+    processed = true;
+  }
+  if (!processed) {
+    blob = await compositeOnWhite(blob, width, height, mimeType);
+  }
+
+  return addImageOverlays(
+    blob,
+    width,
+    height,
+    mimeType,
+    lat,
+    lng,
+    zoom,
+    showLegend,
+    showCaptions,
+    addMapOverlays,
+    false, // showLogo
+    userDescription,
+    enabledOverlaysId,
+    null, // legendDefinition (external layers have an image legendUrl, not a discrete colour map)
+    legendUrl,
+    copyrightText,
+    title,
+    true, // showScaleBar
+    true, // logos
+    false, // drawCopernicusLogo (external data is not Copernicus)
+    false, // drawGeoToImg (already applied above)
+    [],
+    bounds,
+    aoiWidthInMeters,
+    mapWidthInMeters,
+    cropToAoi,
+  );
 }
 
 export function isSimpleImageFormat(imageFormat) {
@@ -1142,8 +1273,14 @@ export async function addImageOverlays(
         ? legendUrl
         : null;
     if (legendImageUrl !== null) {
-      const legendImage = await loadImage(legendImageUrl);
-      drawLegendImage(ctx, legendImage, true, showCaptions);
+      // Best-effort: a legend image that fails to load (e.g. an external server without CORS
+      // headers, which would taint the canvas) must not abort the whole download.
+      try {
+        const legendImage = await loadImage(legendImageUrl);
+        drawLegendImage(ctx, legendImage, true, showCaptions);
+      } catch (e) {
+        console.warn('[ImgDownload] Could not load legend image:', e);
+      }
     }
   }
   if (showLogo) {

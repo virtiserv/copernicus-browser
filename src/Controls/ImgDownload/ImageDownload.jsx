@@ -1,15 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { connect } from 'react-redux';
-import Modal from '../../components/Modal/Modal';
-import { t } from 'ttag';
-import FileSaver from 'file-saver';
 import { CancelToken, CRS_EPSG3857, CRS_EPSG4326 } from '@sentinel-hub/sentinelhub-js';
+import FileSaver from 'file-saver';
 import JSZip from 'jszip';
 import moment from 'moment';
+import { t } from 'ttag';
 
-import store, { modalSlice, notificationSlice } from '../../store';
-import { ImageDownloadForms, TABS } from './ImageDownloadForms';
+import { getGetMapAuthToken } from '../../App';
+import { isOpenEoSupported } from '../../api/openEO/openEOHelpers';
+import Modal from '../../components/Modal/Modal';
+import { MAX_SH_IMAGE_SIZE, PROCESSING_OPTIONS, STICKER_URL_PARAM_VALUE } from '../../const';
 import { EOBButton } from '../../junk/EOBCommon/EOBButton/EOBButton';
+import {
+  getAnalyticalExportNotSupportedMsg,
+  getLoggedInErrorMsg,
+  getOnlyBasicImgDownloadAvailableMsg,
+  getOnlyBasicImgDownloadForExternalWmsMsg,
+} from '../../junk/ConstMessages';
+import { getDefaultBaseLayer } from '../../Map/Layers';
+import store, { modalSlice, notificationSlice } from '../../store';
+import { selectActiveExternalLayer } from '../../store/slices/externalLayersSlice';
+import { getTerrainViewerImage } from '../../TerrainViewer/TerrainViewer.utils';
+import { BAND_UNIT } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceConstants';
+import { getDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
+import { findMatchingLayerMetadata } from '../../Tools/VisualizationPanel/legendUtils';
+import {
+  getOrbitDirectionFromList,
+  isTimespanModeSelected,
+} from '../../Tools/VisualizationPanel/VisualizationPanel.utils';
+import { isDataFusionEnabled, getUrlParams } from '../../utils';
+import {
+  constructGetMapParamsEffects,
+  getVisualizationEffectsFromStore,
+  isNullOrUndefined,
+} from '../../utils/effectsUtils';
+import { CUSTOM_TAG } from './AnalyticalForm';
+import { IMAGE_FORMATS, IMAGE_FORMATS_INFO, RESOLUTION_DIVISORS, RESOLUTION_OPTIONS } from './consts';
 import {
   getMapDimensions,
   getAllBands,
@@ -32,36 +58,18 @@ import {
   addStickerOverlays,
   STICKER_WIDTH_PX,
   STICKER_HEIGHT_PX,
+  finalizeExternalDownloadImage,
 } from './ImageDownload.utils';
-import { BAND_UNIT } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceConstants';
-import { findMatchingLayerMetadata } from '../../Tools/VisualizationPanel/legendUtils';
-import { IMAGE_FORMATS, IMAGE_FORMATS_INFO, RESOLUTION_DIVISORS, RESOLUTION_OPTIONS } from './consts';
-import {
-  getOrbitDirectionFromList,
-  isTimespanModeSelected,
-} from '../../Tools/VisualizationPanel/VisualizationPanel.utils';
 import ImageDownloadErrorPanel from './ImageDownloadErrorPanel';
+import { ImageDownloadForms, TABS } from './ImageDownloadForms';
 import { ImageDownloadWarningPanel } from './ImageDownloadWarningPanel';
-import { getDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import {
-  getAnalyticalExportNotSupportedMsg,
-  getLoggedInErrorMsg,
-  getOnlyBasicImgDownloadAvailableMsg,
-} from '../../junk/ConstMessages';
-import { isDataFusionEnabled, getUrlParams } from '../../utils';
-import {
-  constructGetMapParamsEffects,
-  getVisualizationEffectsFromStore,
-  isNullOrUndefined,
-} from '../../utils/effectsUtils';
-import { getGetMapAuthToken } from '../../App';
-import { getTerrainViewerImage } from '../../TerrainViewer/TerrainViewer.utils';
+  fetchExternalLayerBlob,
+  isAllExternalCompare,
+  getExternalWmsCropDimensions,
+} from './WmsDownload.utils';
 
 import './ImageDownload.scss';
-import { MAX_SH_IMAGE_SIZE, PROCESSING_OPTIONS, STICKER_URL_PARAM_VALUE } from '../../const';
-import { CUSTOM_TAG } from './AnalyticalForm';
-import { getDefaultBaseLayer } from '../../Map/Layers';
-import { isOpenEoSupported } from '../../api/openEO/openEOHelpers';
 
 function checkZoomLevel(datasetId, zoom, layerId) {
   const dsh = getDataSourceHandler(datasetId);
@@ -93,6 +101,7 @@ function ImageDownload(props) {
     showCaptions: true,
     userDescription: '',
     addMapOverlays: true,
+    showOSMBackgroundLayer: false,
     cropToAoi: hasAoi,
     drawGeoToImg: false,
     imageFormat: IMAGE_FORMATS.JPG,
@@ -221,13 +230,122 @@ function ImageDownload(props) {
     setWarnings(null);
   }, [selectedTab]);
 
+  useEffect(() => {
+    if (props.activeExternalLayer && basicFormState.imageFormat === IMAGE_FORMATS.WEBP) {
+      setBasicFormState((prev) => ({ ...prev, imageFormat: IMAGE_FORMATS.PNG }));
+    }
+  }, [props.activeExternalLayer]);
+
   async function downloadBasic(formData) {
     setError(null);
     setWarnings(null);
     const { pixelBounds, aoiGeometry, showComparePanel } = props;
-    const { imageFormat, cropToAoi } = formData;
+    // JPG is disabled in the dropdown when OSM background is on, but coerce here too in case the
+    // user enabled OSM while JPG was already selected (state can briefly be JPG + OSM active).
+    const imageFormat =
+      formData.showOSMBackgroundLayer && formData.imageFormat === IMAGE_FORMATS.JPG
+        ? IMAGE_FORMATS.PNG
+        : formData.imageFormat;
+    const { cropToAoi } = formData;
 
     setLoadingImages(true);
+
+    if (props.activeExternalLayer && !showComparePanel) {
+      const {
+        drawGeoToImg,
+        addMapOverlays,
+        showOSMBackgroundLayer,
+        showCaptions,
+        showLegend,
+        userDescription,
+      } = formData;
+      const basePixelDims = getMapDimensions(pixelBounds);
+      const { mimeType, ext } = IMAGE_FORMATS_INFO[imageFormat] ?? IMAGE_FORMATS_INFO[IMAGE_FORMATS.PNG];
+      // When only drawing geometry on image, fetch full viewport so polygon appears in context.
+      // When cropping (with or without draw), use the AOI bounds so the image is cropped.
+      const bounds = cropToAoi && props.aoiBounds ? props.aoiBounds : props.mapBounds;
+      if (!bounds) {
+        store.dispatch(
+          notificationSlice.actions.displayError(
+            t`Map bounds are not available. Try again after the map has loaded.`,
+          ),
+        );
+        setLoadingImages(false);
+        return;
+      }
+      // Scale the request to the AOI's on-screen size so the WMS renders at the same scale as the
+      // map (full-map pixels over the small AOI bbox would render a finer, ~one-zoom-off scale).
+      const { width, height } =
+        cropToAoi && props.aoiBounds && props.mapBounds
+          ? getExternalWmsCropDimensions(
+              basePixelDims.width,
+              basePixelDims.height,
+              props.mapBounds,
+              props.aoiBounds,
+            )
+          : basePixelDims;
+      // Always request web mercator (EPSG:3857) so the WMS renders the same scale-dependent labels
+      // as the on-screen map (web mercator). A default EPSG:4326 request comes out ~one zoom off.
+      // WMTS tiles are already mercator, so this is a no-op for them.
+      const useWebMercator = true;
+      // Always request PNG to avoid black nodata pixels (WMS transparent areas turn black in JPEG)
+      try {
+        const blob = await fetchExternalLayerBlob(
+          {
+            url: props.activeExternalLayer.server.url,
+            layerName: props.activeExternalLayer.layerName,
+            type: props.activeExternalLayer.server.type,
+            tileUrl: props.activeExternalLayer.tileUrl,
+            time: props.activeExternalLayer.time,
+          },
+          bounds,
+          width,
+          height,
+          useWebMercator,
+          mimeType,
+        );
+        // Shared post-processing: OSM base under the imagery, AOI clip/draw and map-overlay labels.
+        const finalized = await finalizeExternalDownloadImage(blob, {
+          bounds,
+          width,
+          height,
+          mimeType,
+          baseTileUrl: showOSMBackgroundLayer ? getDefaultBaseLayer()?.url : undefined,
+          aoiGeometry,
+          cropToAoi,
+          drawGeoToImg,
+          lat: props.lat,
+          lng: props.lng,
+          zoom: props.zoom,
+          enabledOverlaysId: props.enabledOverlaysId,
+          addMapOverlays,
+          showCaptions,
+          showLegend,
+          legendUrl: props.activeExternalLayer.legendUrl,
+          userDescription,
+          title: props.activeExternalLayer.layerTitle || props.activeExternalLayer.layerName,
+          aoiWidthInMeters: props.aoiBounds ? getDimensionsInMeters(props.aoiBounds).width : null,
+          mapWidthInMeters:
+            props.aoiBounds && props.mapBounds ? getDimensionsInMeters(props.mapBounds).width : null,
+        });
+        const name = props.activeExternalLayer.layerTitle || props.activeExternalLayer.layerName;
+        FileSaver.saveAs(finalized, `${name}.${ext}`);
+      } catch (err) {
+        console.error('External layer download failed', err);
+        const isWmts = props.activeExternalLayer?.server?.type === 'WMTS';
+        store.dispatch(
+          notificationSlice.actions.displayError(
+            isWmts
+              ? t`Could not download this layer. The WMTS server may not support image download.`
+              : t`Failed to download image.`,
+          ),
+        );
+      } finally {
+        setLoadingImages(false);
+      }
+      return;
+    }
+
     cancelTokenRef.current = new CancelToken();
 
     let { width, height } = getMapDimensions(pixelBounds);
@@ -259,9 +377,9 @@ function ImageDownload(props) {
     }
 
     if (showComparePanel) {
-      await executeDownloadBasicCompared(props, formData, baseParams);
+      await executeDownloadBasicCompared(props, { ...formData, imageFormat }, baseParams);
     } else {
-      await executeDownloadBasicVisualization(props, formData, baseParams);
+      await executeDownloadBasicVisualization(props, { ...formData, imageFormat }, baseParams);
     }
   }
 
@@ -276,7 +394,7 @@ function ImageDownload(props) {
       ? adjustClippingForAoi(comparedClipping, aoiBounds, mapBounds)
       : comparedClipping;
 
-    const { finalImage, finalFileName } = await fetchAndPatchImagesFromParams(
+    const result = await fetchAndPatchImagesFromParams(
       {
         ...props,
         ...formData,
@@ -291,6 +409,7 @@ function ImageDownload(props) {
           return newCLayer;
         }),
         selectedCrs: correctProjection,
+        baseLayerUrl: showOSMBackgroundLayer ? getDefaultBaseLayer()?.url : null,
         aoiWidthInMeters: props.aoiBounds ? getDimensionsInMeters(props.aoiBounds).width : null,
         mapWidthInMeters: props.aoiBounds ? getDimensionsInMeters(props.mapBounds).width : null,
       },
@@ -298,6 +417,15 @@ function ImageDownload(props) {
       setError,
       setLoadingImages,
     );
+
+    // fetchAndPatchImagesFromParams surfaces failures via setError and returns undefined; bail out
+    // before destructuring so a failed (e.g. WMTS) compare download doesn't throw.
+    if (!result) {
+      setLoadingImages(false);
+      return;
+    }
+
+    const { finalImage, finalFileName } = result;
 
     const { ext: imageExt } = IMAGE_FORMATS_INFO[imageFormat];
     FileSaver.saveAs(finalImage, `Comparison_${finalFileName}.${imageExt}`);
@@ -748,6 +876,10 @@ function ImageDownload(props) {
 
   function checkIfCurrentLayerHasLegend() {
     const { layerId, datasetId, selectedThemeId, toTime } = props;
+    // External WMS/WMTS layers carry their legend URL from the capabilities document.
+    if (props.activeExternalLayer?.legendUrl) {
+      return true;
+    }
     if (layerId) {
       const layer = allLayers.find((l) => l.layerId === layerId);
       if (layer) {
@@ -778,6 +910,10 @@ function ImageDownload(props) {
 
   function displayAnalyticalModeNotSupportedByDatasource() {
     store.dispatch(notificationSlice.actions.displayError(getAnalyticalExportNotSupportedMsg()));
+  }
+
+  function displayOnlyBasicDownloadForExternalWmsMessage() {
+    store.dispatch(notificationSlice.actions.displayError(getOnlyBasicImgDownloadForExternalWmsMsg()));
   }
 
   function addWarning(warningType, layerName) {
@@ -863,6 +999,10 @@ function ImageDownload(props) {
       imageHeight >= 1);
 
   const isZoomLevelOK =
+    !!props.activeExternalLayer ||
+    // All-external compare has no Sentinel Hub datasource, so there's no zoom limit; without this it
+    // would fall through to checkZoomLevel(stale datasetId) and disable the download/preview at low zoom.
+    (props.showComparePanel && isAllExternalCompare(props.comparedLayers)) ||
     checkZoomLevel(props.datasetId, props.zoom, props.layerId) ||
     selectedTab === TABS.PRINT ||
     selectedTab === TABS.STICKER;
@@ -873,6 +1013,7 @@ function ImageDownload(props) {
   const isStickerMode = getUrlParams().sticker === STICKER_URL_PARAM_VALUE;
   const dsh = getDataSourceHandler(props.datasetId);
   const supportsAnalyticalImgExport = dsh && dsh.supportsAnalyticalImgExport();
+
   return (
     <Modal
       animation="slideUp"
@@ -905,13 +1046,20 @@ function ImageDownload(props) {
                   text={t`Analytical`}
                   className={selectedTab === TABS.ANALYTICAL ? 'selected' : ''}
                   onClick={() => setSelectedTab(TABS.ANALYTICAL)}
-                  disabled={!isUserLoggedIn || isOnCompareTab || !supportsAnalyticalImgExport}
+                  disabled={
+                    !!props.activeExternalLayer ||
+                    !isUserLoggedIn ||
+                    isOnCompareTab ||
+                    !supportsAnalyticalImgExport
+                  }
                   onDisabledClick={
-                    isOnCompareTab
-                      ? displayOnlyBasicDownloadPossibleMessage
-                      : !supportsAnalyticalImgExport
-                        ? displayAnalyticalModeNotSupportedByDatasource
-                        : displayLogInToAccessMessage
+                    props.activeExternalLayer
+                      ? displayOnlyBasicDownloadForExternalWmsMessage
+                      : isOnCompareTab
+                        ? displayOnlyBasicDownloadPossibleMessage
+                        : !supportsAnalyticalImgExport
+                          ? displayAnalyticalModeNotSupportedByDatasource
+                          : displayLogInToAccessMessage
                   }
                 />
 
@@ -919,12 +1067,16 @@ function ImageDownload(props) {
                   text={t`High-res print`}
                   className={selectedTab === TABS.PRINT ? 'selected' : ''}
                   onClick={() => setSelectedTab(TABS.PRINT)}
-                  disabled={!isUserLoggedIn || isOnCompareTab}
+                  disabled={!!props.activeExternalLayer || !isUserLoggedIn || isOnCompareTab}
                   onDisabledClick={
-                    isOnCompareTab ? displayOnlyBasicDownloadPossibleMessage : displayLogInToAccessMessage
+                    props.activeExternalLayer
+                      ? displayOnlyBasicDownloadForExternalWmsMessage
+                      : isOnCompareTab
+                        ? displayOnlyBasicDownloadPossibleMessage
+                        : displayLogInToAccessMessage
                   }
                 />
-                {isStickerMode && (
+                {isStickerMode && !props.activeExternalLayer && (
                   <EOBButton
                     text={t`Sticker`}
                     className={selectedTab === TABS.STICKER ? 'selected' : ''}
@@ -976,7 +1128,7 @@ function ImageDownload(props) {
             defaultWidth={defaultWidth}
             defaultHeight={defaultHeight}
             supportedImageFormats={supportedImageFormats}
-            addingMapOverlaysPossible={!props.aoiGeometry} // applying map overlays currently relies on lat, lng and zoom, which aren't used when geometry is present
+            addingMapOverlaysPossible={!props.aoiGeometry} // applying map overlays relies on lat, lng and zoom, which aren't used when geometry is present
             aoiBounds={props.aoiBounds}
             mapBounds={props.mapBounds}
             allowShowLogoAnalytical={true}
@@ -1005,6 +1157,7 @@ function ImageDownload(props) {
             hasActiveEffects={hasActiveEffects}
             isZoomLevelOK={isZoomLevelOK}
             areImageDimensionsValid={areImageDimensionsValid}
+            activeExternalLayer={props.activeExternalLayer}
           />
           <ImageDownloadErrorPanel error={error} />
         </div>
@@ -1050,6 +1203,7 @@ const mapStoreToProps = (store) => ({
   is3D: store.mainMap.is3D,
   terrainViewerSettings: store.terrainViewer.settings,
   terrainViewerId: store.terrainViewer.id,
+  activeExternalLayer: selectActiveExternalLayer(store),
 });
 
 export default connect(mapStoreToProps, null)(ImageDownload);

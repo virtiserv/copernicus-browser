@@ -11,6 +11,8 @@ import {
 } from './handelAntimeridianCoord.utils';
 
 export const EQUATOR_RADIUS = 6378137.0;
+// Approximate metres per degree of latitude (and of longitude at the equator).
+export const METERS_PER_DEGREE = 111320;
 
 export function isCoordsEmpty(geojsonFeature) {
   let coordsEmpty = false;

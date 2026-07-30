@@ -34,9 +34,7 @@ jest.mock('./Visualizations', () => (props) => (
   </div>
 ));
 
-jest.mock('./VisualizationLayer/CustomVisualizationLayer', () => () => (
-  <div>CustomVisualizationLayer</div>
-));
+jest.mock('./VisualizationLayer/CustomVisualizationLayer', () => () => <div>CustomVisualizationLayer</div>);
 
 jest.mock('../../Loader/Loader', () => () => <div>Loader</div>);
 

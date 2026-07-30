@@ -1,7 +1,9 @@
 import { CancelToken } from '@sentinel-hub/sentinelhub-js';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { connect } from 'react-redux';
 import { t } from 'ttag';
+import { selectActiveExternalLayer } from '../../store/slices/externalLayersSlice';
+import { SvgAoiClip, fetchExternalLayerBlob, getExternalWmsCropDimensions } from './WmsDownload.utils';
 import moment from 'moment';
 import { IMAGE_FORMATS, IMAGE_FORMATS_INFO } from './consts';
 import {
@@ -11,6 +13,7 @@ import {
   fetchImageFromParams,
   getMapDimensions,
   capDimensionsToResolutionLimit,
+  finalizeExternalDownloadImage,
 } from './ImageDownload.utils';
 import { getOrbitDirectionFromList } from '../../Tools/VisualizationPanel/VisualizationPanel.utils';
 import { getGetMapAuthToken } from '../../App';
@@ -24,7 +27,52 @@ import { PROCESSING_OPTIONS } from '../../const';
 import ImageDownloadErrorPanel from './ImageDownloadErrorPanel';
 
 async function fetchPreviewImage(props) {
-  // setFetchingPreviewImage(true);
+  if (props.activeExternalLayer) {
+    const baseDims = getMapDimensions(props.pixelBounds);
+    // When cropping (with or without draw), fetch the AOI bounds so the preview is cropped.
+    // When only drawing, fetch the full viewport so the polygon appears in context.
+    const bounds = props.cropToAoi && props.aoiBounds ? props.aoiBounds : props.mapBounds;
+    if (!bounds) {
+      return null;
+    }
+    // Scale to the AOI's on-screen size so the WMS renders at the same scale as the map.
+    const { width, height } =
+      props.cropToAoi && props.aoiBounds && props.mapBounds
+        ? getExternalWmsCropDimensions(baseDims.width, baseDims.height, props.mapBounds, props.aoiBounds)
+        : baseDims;
+    const blob = await fetchExternalLayerBlob(
+      {
+        url: props.activeExternalLayer.server.url,
+        layerName: props.activeExternalLayer.layerName,
+        type: props.activeExternalLayer.server.type,
+        tileUrl: props.activeExternalLayer.tileUrl,
+        time: props.activeExternalLayer.time,
+      },
+      bounds,
+      width,
+      height,
+      // Always fetch PNG from the WMS — the preview never uses OSM or map overlays so
+      // transparent nodata areas are safe, and WMS servers don't support WebP.
+      true,
+      'image/png',
+    );
+    return finalizeExternalDownloadImage(blob, {
+      bounds,
+      width,
+      height,
+      mimeType: 'image/png',
+      baseTileUrl: undefined,
+      aoiGeometry: props.aoiGeometry,
+      cropToAoi: props.cropToAoi,
+      drawGeoToImg: props.drawGeoToImg,
+      lat: props.lat,
+      lng: props.lng,
+      zoom: props.zoom,
+      enabledOverlaysId: props.enabledOverlaysId,
+      addMapOverlays: false,
+    });
+  }
+
   const cancelToken = new CancelToken();
   const effectsParams = constructGetMapParamsEffects(props);
   const getMapAuthToken = getGetMapAuthToken(props.auth);
@@ -91,6 +139,7 @@ const ImageDownloadPreview = (props) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [fetchingPreviewImage, setFetchingPreviewImage] = useState(false);
   const [previewError, setPreviewError] = useState(null);
+  const aoiClipId = useId();
 
   const {
     analyticalFormLayers,
@@ -160,6 +209,10 @@ const ImageDownloadPreview = (props) => {
     };
 
     runPreviewFetch();
+    // The SH preview path reads many values off `props` (selectedTab, layerId, evalscript,
+    // processGraph, selectedProcessing, overlayVariant, showStickerText, auth, analyticalFormLayers)
+    // via the `options` spread, so `props` must stay in the deps or the preview freezes after open.
+    // The external-WMS path's cropToAoi/drawGeoToImg are covered by the same `props` identity change.
   }, [
     analyticalFormLayers,
     auth,
@@ -187,7 +240,24 @@ const ImageDownloadPreview = (props) => {
       ) : previewError ? (
         <ImageDownloadErrorPanel error={previewError} />
       ) : previewUrl ? (
-        <img alt="download preview" className="image-download-preview" src={previewUrl} />
+        props.activeExternalLayer && props.cropToAoi && props.aoiGeometry && props.aoiBounds ? (
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <SvgAoiClip
+              geometry={props.aoiGeometry}
+              bounds={props.aoiBounds}
+              clipId={aoiClipId}
+              webMercator={true}
+            />
+            <img
+              alt="download preview"
+              className="image-download-preview"
+              src={previewUrl}
+              style={{ clipPath: `url(#${aoiClipId})` }}
+            />
+          </div>
+        ) : (
+          <img alt="download preview" className="image-download-preview" src={previewUrl} />
+        )
       ) : null}
     </div>
   );
@@ -225,6 +295,7 @@ const mapStoreToProps = (store) => ({
   aoiBounds: store.aoi.bounds,
   mapBounds: store.mainMap.bounds,
   is3D: store.mainMap.is3D,
+  activeExternalLayer: selectActiveExternalLayer(store),
 });
 
 export default connect(mapStoreToProps, null)(ImageDownloadPreview);

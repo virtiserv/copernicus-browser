@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { LIVE_REQUEST_TIMEOUT, HEAVY_TEST_TIMEOUT } from './fixtures/timeouts';
 
 // visualizationUrl is AES-encrypted (VITE_CDAS_ENCRYPT_SECRET) and points to the
 // Sentinel Hub BYOC process API base URL. Decrypt with the app's secret to update.
@@ -10,6 +11,9 @@ const LANDSAT_MOSAIC_EUROPE_URL =
   '&demSource3D=%22MAPZEN%22&cloudCoverage=30&dateMode=SINGLE';
 
 test('Landsat Mosaic find products uses STAC and returns results', async ({ page }) => {
+  // Nav + Keycloak SSO settle + STAC request/response chain can exceed the default 30s budget.
+  test.setTimeout(HEAVY_TEST_TIMEOUT);
+
   await page.goto(LANDSAT_MOSAIC_EUROPE_URL);
   // The app performs a real Keycloak check-sso redirect through identity.dataspace.copernicus.eu
   // before anything renders, which combined with BYOC dataset bootstrap can exceed the default
@@ -21,18 +25,23 @@ test('Landsat Mosaic find products uses STAC and returns results', async ({ page
   });
 
   // The date panel is collapsed by default; expand it to reveal the Find Products button.
-  await page.locator('.visualization-time-select .title-arrow-wrapper').click();
+  // Best-effort: under some viewport/CI timing the panel may already be expanded, in which
+  // case the toggle arrow isn't visible — only click it when it legitimately is.
+  const dateToggle = page.locator('.visualization-time-select .title-arrow-wrapper');
+  if (await dateToggle.isVisible().catch(() => false)) {
+    await dateToggle.click();
+  }
 
   // Register interceptors before the action that triggers the request.
   const stacRequest = page.waitForRequest(
     (req) =>
-      req.method() === 'POST' &&
-      req.url().includes('stac.opensearch.dataspace.copernicus.eu/v1/search'),
+      req.method() === 'POST' && req.url().includes('stac.opensearch.dataspace.copernicus.eu/v1/search'),
+    { timeout: LIVE_REQUEST_TIMEOUT },
   );
   const stacResponse = page.waitForResponse(
     (resp) =>
-      resp.url().includes('stac.opensearch.dataspace.copernicus.eu/v1/search') &&
-      resp.status() === 200,
+      resp.url().includes('stac.opensearch.dataspace.copernicus.eu/v1/search') && resp.status() === 200,
+    { timeout: LIVE_REQUEST_TIMEOUT },
   );
 
   await page.getByText('Find products for current view').click();

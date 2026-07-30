@@ -12,6 +12,7 @@ import {
   getLoggedInErrorMsg,
   getHowToConfigLayersStatInfoMsg,
   getStatisticalInfoMsg,
+  getStatInfoNotAvailableInPanelMsg,
 } from './ConstMessages';
 
 import StatisticalInfoIcon from '../icons/statistical_info.svg?react';
@@ -69,7 +70,7 @@ const FisChartLink = (props) => {
   const editedOpenEOErrorMsg = t`Statistical info not available for edited OpenEO process graph`;
 
   const getTitleBasedOnStatus = (errorMessage) => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !props.isVisualizingLayer) {
       return errorMessage;
     }
 
@@ -116,6 +117,12 @@ const FisChartLink = (props) => {
     return statsError(getLoggedInErrorMsg());
   }
 
+  // Available only while visualizing a layer (Layers/Highlights panel); disabled elsewhere
+  // (Compare, Pin, external WMS/WMTS) where the previous SH layer's support flags would linger.
+  if (!props.isVisualizingLayer) {
+    return statsError(getStatInfoNotAvailableInPanelMsg());
+  }
+
   if (isEditedOpenEOProcessingSelected) {
     return statsError(editedOpenEOErrorMsg);
   }
@@ -141,6 +148,7 @@ const mapStoreToProps = (store) => ({
   selectedProcessing: store.visualization.selectedProcessing,
   isProcessGraphModified: store.visualization.isProcessGraphModified,
   user: store.auth.user,
+  isVisualizingLayer: store.tabs.isVisualizingLayer,
   dataSourcesInitialized: store.themes.dataSourcesInitialized,
 });
 

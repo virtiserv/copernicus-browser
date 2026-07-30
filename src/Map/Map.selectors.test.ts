@@ -1,4 +1,5 @@
 import { mapStoreToProps } from './Map.selectors';
+import type { RootState } from '../hooks';
 
 const defaultStore = {
   mainMap: {
@@ -63,7 +64,7 @@ const defaultStore = {
     selectedThemeId: 'default',
     selectedModeId: null as unknown,
   },
-  tabs: { selectedTabIndex: 1, selectedTabSearchPanelIndex: 0 },
+  tabs: { selectedTabIndex: 1 },
   language: { selectedLanguage: 'en' },
   compare: {
     comparedLayers: [] as unknown[],
@@ -72,16 +73,24 @@ const defaultStore = {
   },
   auth: { user: null as unknown, token: null as unknown },
   elevationProfile: { highlightedPoint: null as unknown },
+  externalLayers: {
+    servers: [] as unknown[],
+    activeServerId: null as unknown,
+    activeLayerName: null as unknown,
+    activeLayerTime: null as unknown,
+    panelOpen: false,
+  },
 } as const;
 
 type StoreShape = typeof defaultStore;
 
 // Note: overrides are shallow-merged at the top level. To override nested fields,
 // spread the full slice: e.g. { visualization: { ...makeStore().visualization, orbitDirection: [] } }
-const makeStore = (overrides: Partial<StoreShape> = {}): StoreShape => ({
-  ...defaultStore,
-  ...overrides,
-});
+const makeStore = (overrides: Partial<StoreShape> = {}): RootState =>
+  ({
+    ...defaultStore,
+    ...overrides,
+  }) as unknown as RootState;
 
 describe('mapStoreToProps', () => {
   it('maps mainMap fields correctly', () => {
@@ -206,7 +215,6 @@ describe('mapStoreToProps', () => {
 
     // tabs / language
     expect(props.selectedTabIndex).toBe(1);
-    expect(props.selectedTabSearchPanelIndex).toBe(0);
     expect(props.selectedLanguage).toBe('en');
 
     // elevationProfile

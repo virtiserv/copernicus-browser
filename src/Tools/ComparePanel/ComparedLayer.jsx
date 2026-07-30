@@ -6,7 +6,7 @@ import { t } from 'ttag';
 import store, { mainMapSlice, compareLayersSlice } from '../../store';
 import { parsePosition } from '../../utils';
 import PinPreviewImage from '../Pins/PinPreviewImage';
-import { constructTimespanString, normalizePin } from '../Pins/Pin.utils';
+import { constructExternalWmsDateString, constructTimespanString, normalizePin } from '../Pins/Pin.utils';
 
 import LocationCrosshairsSvg from './LocationCrosshair.svg?react';
 import { COMPARE_OPTIONS } from '../../const';
@@ -47,6 +47,7 @@ const ComparedLayer = ({ layer, compareMode, opacity, clipping, index, onDrop })
   }
 
   const { title, lat, lng, zoom } = layer;
+  const externalWmsDate = layer.externalWms ? constructExternalWmsDateString(layer.externalWms.time) : null;
   return (
     <div ref={ref} className={`compare-layer normal-mode ${isDragging ? 'dragging' : ''}`} id={index}>
       <div className="order-layers">
@@ -79,9 +80,16 @@ const ComparedLayer = ({ layer, compareMode, opacity, clipping, index, onDrop })
         <PinPreviewImage pin={normalizePin(layer)} />
         <div className="compare-layer-info">
           <span>{title}</span>
-          <div>
-            <label>{t`Date`}:</label> <span className="pin-date">{constructTimespanString(layer)}</span>
-          </div>
+          {!layer.externalWms && (
+            <div>
+              <label>{t`Date`}:</label> <span className="pin-date">{constructTimespanString(layer)}</span>
+            </div>
+          )}
+          {layer.externalWms && externalWmsDate && (
+            <div>
+              <label>{t`Date`}:</label> <span className="pin-date">{externalWmsDate}</span>
+            </div>
+          )}
           <div>
             <label>{t`Lat/Lon`}:</label> {parseFloat(lat).toFixed(2)}, {parseFloat(lng).toFixed(2)} |{' '}
             <label>{t`Zoom`}:</label> {zoom}

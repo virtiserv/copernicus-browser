@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { CODE_EDITOR_URLS } from './fixtures/urls';
 import { getSaveResultFormat } from './fixtures/helpers';
+import { LIVE_REQUEST_TIMEOUT, HEAVY_TEST_TIMEOUT } from './fixtures/timeouts';
 
 const OPENEO_RESULT_URL = 'openeosh.dataspace.copernicus.eu/1.2/result';
 const SH_PROCESS_URL = '/api/v1/process';
@@ -15,7 +16,7 @@ test('openEO tile requests send a valid visualization format from the process gr
 
   const tileRequest = page.waitForRequest(
     (r) => r.method() === 'POST' && r.url().includes(OPENEO_RESULT_URL),
-    { timeout: 45_000 },
+    { timeout: LIVE_REQUEST_TIMEOUT },
   );
   await page.goto(CODE_EDITOR_URLS.s2L2aTrueColor);
   const req = await tileRequest;
@@ -30,7 +31,7 @@ test('SH Processing API tile requests send image/webp as output format', async (
   test.setTimeout(60_000);
 
   const tileRequest = page.waitForRequest((r) => r.method() === 'POST' && r.url().includes(SH_PROCESS_URL), {
-    timeout: 45_000,
+    timeout: LIVE_REQUEST_TIMEOUT,
   });
   await page.goto(CODE_EDITOR_URLS.customScript);
   const req = await tileRequest;
@@ -40,11 +41,12 @@ test('SH Processing API tile requests send image/webp as output format', async (
 });
 
 test('WebP download for non-openEO layer routes to SH Processing API with image/webp', async ({ page }) => {
-  // Cold tile load under single-worker CI; the default 30s budget is too tight.
-  test.setTimeout(60_000);
+  // Chains two live waits (initial tiles + download request) under single-worker CI;
+  // the combined budgets can exceed 60s, so give the whole test more headroom.
+  test.setTimeout(HEAVY_TEST_TIMEOUT);
 
   const initialTiles = page.waitForResponse((r) => r.url().includes(SH_PROCESS_URL) && r.status() === 200, {
-    timeout: 45_000,
+    timeout: LIVE_REQUEST_TIMEOUT,
   });
   await page.goto(CODE_EDITOR_URLS.customScript);
   await initialTiles;
@@ -59,7 +61,9 @@ test('WebP download for non-openEO layer routes to SH Processing API with image/
   await formatSelect.selectOption({ label: 'WebP (no georeference)' });
 
   const [downloadReq] = await Promise.all([
-    page.waitForRequest((r) => r.method() === 'POST' && r.url().includes(SH_PROCESS_URL)),
+    page.waitForRequest((r) => r.method() === 'POST' && r.url().includes(SH_PROCESS_URL), {
+      timeout: LIVE_REQUEST_TIMEOUT,
+    }),
     page.getByText('Download', { exact: true }).click(),
   ]);
 
@@ -73,7 +77,7 @@ test('CLMS Vector tiles request image/png, not WebP', async ({ page }) => {
 
   const tileRequest = page.waitForRequest(
     (r) => r.method() === 'GET' && r.url().includes(CLMS_VECTOR_WMS_URL) && r.url().includes('GetMap'),
-    { timeout: 45_000 },
+    { timeout: LIVE_REQUEST_TIMEOUT },
   );
   await page.goto(CODE_EDITOR_URLS.clmsVectorUrbanAtlas);
   const req = await tileRequest;
@@ -87,11 +91,11 @@ test('CLMS Vector tiles request image/png, not WebP', async ({ page }) => {
 test('WebP download for openEO layer routes to openEO with correct format', async ({ page }) => {
   // Heavy multi-wait test (cold tile load + download request) under single-worker CI;
   // the chained wait budgets can exceed 60s, so give the whole test more headroom.
-  test.setTimeout(90_000);
+  test.setTimeout(HEAVY_TEST_TIMEOUT);
 
   const initialTiles = page.waitForResponse(
     (r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200,
-    { timeout: 45_000 },
+    { timeout: LIVE_REQUEST_TIMEOUT },
   );
   await page.goto(CODE_EDITOR_URLS.s2L2aTrueColor);
   await initialTiles;
@@ -102,8 +106,17 @@ test('WebP download for openEO layer routes to openEO with correct format', asyn
   const formatSelect = page
     .locator('select')
     .filter({ has: page.locator('option', { hasText: 'WebP (no georeference)' }) });
+
+  // Wait for the live preview thumbnail request triggered by the format change to settle,
+  // so it can't race the download request below. Registered before the action that triggers it.
+  const previewRequest = page.waitForResponse(
+    (r) => r.url().includes(OPENEO_RESULT_URL) && r.status() === 200,
+    {
+      timeout: LIVE_REQUEST_TIMEOUT,
+    },
+  );
   await formatSelect.selectOption({ label: 'WebP (no georeference)' });
-  await page.waitForLoadState('networkidle');
+  await previewRequest;
 
   // The download panel's live preview thumbnail always requests PNG via this same
   // openEO endpoint, so the predicate must match on the save_result format itself
@@ -114,7 +127,7 @@ test('WebP download for openEO layer routes to openEO with correct format', asyn
         r.method() === 'POST' &&
         r.url().includes(OPENEO_RESULT_URL) &&
         getSaveResultFormat(r.postDataJSON()?.process?.process_graph) === 'webp',
-      { timeout: 30_000 },
+      { timeout: LIVE_REQUEST_TIMEOUT },
     ),
     page.getByText('Download', { exact: true }).click(),
   ]);

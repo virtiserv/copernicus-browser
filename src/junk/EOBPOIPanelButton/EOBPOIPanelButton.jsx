@@ -7,6 +7,7 @@ import PixelExplorer from '../../Controls/PixelExplorer/PixelExplorer';
 import SpectralExplorerButton from '../../Controls/SpectralExplorer/SpectralExplorerButton';
 import { connect } from 'react-redux';
 import { modalSlice } from '../../store';
+import { selectActiveExternalLayer } from '../../store/slices/externalLayersSlice';
 import { ModalId, DATASOURCES } from '../../const';
 import { getDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
 
@@ -71,14 +72,43 @@ function EOBPOIPanelButton(props) {
           geometryType="poi"
         />
       )}
-      {getDataSourceHandler(props.datasetId)?.datasource === DATASOURCES.CLMS_VECTOR && (
+      {!props.activeExternalLayer &&
+        getDataSourceHandler(props.datasetId)?.datasource === DATASOURCES.CLMS_VECTOR && (
+          /* eslint-disable-next-line */
+          <a
+            title={t`Show feature info`}
+            onClick={(e) => {
+              e.stopPropagation();
+              props.openFeatureInfo({
+                datasetId: props.datasetId,
+                lat: props.poiPosition.lat,
+                lng: props.poiPosition.lng,
+              });
+            }}
+          >
+            <i className="fa fa-info-circle" />
+          </a>
+        )}
+      {props.activeExternalLayer?.queryable && props.activeExternalLayer?.server?.infoFormat && (
         /* eslint-disable-next-line */
         <a
           title={t`Show feature info`}
           onClick={(e) => {
             e.stopPropagation();
+            const b = props.mapBounds;
+            const pb = props.pixelBounds;
             props.openFeatureInfo({
-              datasetId: props.datasetId,
+              externalWms: {
+                serverUrl: props.activeExternalLayer?.server?.url,
+                layerName: props.activeExternalLayer?.layerName,
+                layerTitle: props.activeExternalLayer?.layerTitle,
+                infoFormat: props.activeExternalLayer?.server?.infoFormat,
+                mapBounds: b
+                  ? { south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() }
+                  : undefined,
+                width: pb ? pb.max.x - pb.min.x : undefined,
+                height: pb ? pb.max.y - pb.min.y : undefined,
+              },
               lat: props.poiPosition.lat,
               lng: props.poiPosition.lng,
             });
@@ -104,11 +134,13 @@ const mapStoreToProps = (store) => ({
   datasetId: store.visualization.datasetId,
   poiGeometry: store.poi.geometry,
   poiPosition: store.poi.position,
+  activeExternalLayer: selectActiveExternalLayer(store),
+  mapBounds: store.mainMap.bounds,
+  pixelBounds: store.mainMap.pixelBounds,
 });
 
 const mapDispatchToProps = (dispatch) => ({
-  openFeatureInfo: (params) =>
-    dispatch(modalSlice.actions.addModal({ modal: ModalId.CLMS_VECTOR_FEATURE_INFO, params })),
+  openFeatureInfo: (params) => dispatch(modalSlice.actions.addModal({ modal: ModalId.FEATURE_INFO, params })),
 });
 
 export default connect(mapStoreToProps, mapDispatchToProps)(EOBPOIPanelButton);

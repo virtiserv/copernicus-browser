@@ -13,6 +13,10 @@ export const SENTINELHUB_LAYER_PANE_ID = 'sentinelhubPane';
 export const SENTINELHUB_LAYER_PANE_ZINDEX = 6;
 export const HIGHLIGHT_PANE_ID = 'highlightPane';
 export const HIGHLIGHT_PANE_ZINDEX = 500; // above overlayPane (400), below markerPane (600)
+export const EXTERNAL_LAYER_PANE_ID = 'externalLayerPane';
+export const EXTERNAL_LAYER_PANE_ZINDEX = 6; // same z-index as SH pane; mutually exclusive with it
+export const COMPARE_LAYER_PANE_ID = 'compareLayerPane';
+export const COMPARE_LAYER_PANE_ZINDEX = 6;
 
 // Compare layers defaults
 export const DEFAULT_COMPARED_LAYERS_MAX_ZOOM = 25;

@@ -1,4 +1,4 @@
-.clms-gfi-dialog {
+.feature-info-dialog {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -12,14 +12,14 @@
   }
 }
 
-.clms-gfi-content {
+.feature-info-content {
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   position: relative;
 }
 
-.clms-gfi-status {
+.feature-info-status {
   position: absolute;
   inset: 0;
   display: flex;
@@ -29,11 +29,11 @@
   font-size: 16px;
 }
 
-.clms-gfi-error {
+.feature-info-error {
   color: #c00;
 }
 
-.clms-gfi-table {
+.feature-info-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
@@ -66,4 +66,21 @@
   tr:hover td {
     background: #f5f7fa;
   }
+}
+
+.feature-info-html {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.feature-info-text {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: #222;
 }

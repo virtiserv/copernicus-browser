@@ -7,6 +7,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import store from './store';
 import App from './App';
+
 import LanguageProvider from './LanguageSelector/LanguageProvider';
 import AuthProvider from './Auth/AuthProvider';
 import URLParamsParser from './URLParamsParser/URLParamsParser';

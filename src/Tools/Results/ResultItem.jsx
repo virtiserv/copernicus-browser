@@ -20,6 +20,7 @@ import {
   S1_CDAS_IW_HH,
   S1_CDAS_IW_HHHV,
   CCM_VHR_COLLECTIONS,
+  DEM_COPERNICUS_30_CDAS,
 } from '../SearchPanel/dataSourceHandlers/dataSourceConstants';
 import { getDataSourceHandler } from '../SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import { constructBBoxFromBounds } from '../../Controls/ImgDownload/ImageDownload.utils';
@@ -34,7 +35,10 @@ import {
   flattenCLMSOptionsWithParent,
 } from '../VisualizationPanel/CollectionSelection/CLMSCollectionSelection.utils';
 import CustomCheckbox from '../../components/CustomCheckbox/CustomCheckbox';
-import { doesUserHaveAccessToCCMVisualization } from '../VisualizationPanel/CollectionSelection/AdvancedSearch/ccmProductTypeAccessRightsConfig';
+import {
+  doesUserHaveAccessToCCMVisualization,
+  doesUserHaveAnyCCMRole,
+} from '../VisualizationPanel/CollectionSelection/AdvancedSearch/ccmProductTypeAccessRightsConfig';
 import { handleCLMSConsolidationPeriod } from '../../utils/clms';
 import { getPlatformShortName, normalizeResult } from './Results.utils';
 import {
@@ -161,6 +165,13 @@ const visualizationButtonDisabled = (tile, user) => {
 
   const hasAccessToCCMVisualization = doesUserHaveAccessToCCMVisualization(user.access_token);
   if (CCM_VHR_COLLECTIONS.includes(datasetId) && !hasAccessToCCMVisualization) {
+    return ErrorMessage.CCMAccessRoleNotEligible();
+  }
+
+  // COP DEM 30m is restricted to CCM users (issue #1185); a non-CCM user can still land here via
+  // search results even though it's hidden from the visualization dropdown, since search results
+  // are populated from OData independently of CollectionSelection.jsx's CCM gating.
+  if (datasetId === DEM_COPERNICUS_30_CDAS && !doesUserHaveAnyCCMRole(user?.access_token)) {
     return ErrorMessage.CCMAccessRoleNotEligible();
   }
 

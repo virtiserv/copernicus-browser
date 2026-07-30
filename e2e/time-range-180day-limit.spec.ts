@@ -39,22 +39,24 @@ test('From text input: typing a date within the window is accepted; typing outsi
     .locator('input.date-picker-input');
 
   // URL loads with From=2023-01-01, Until=2023-07-01 (181+ days apart).
-  // URLParamsParser clamps fromTime to toTime - 180 days = 2023-01-02 on load.
-  await expect(fromInput).toHaveValue('2023-01-02');
+  // URLParamsParser clamps fromTime to toTime - 180 days = 2023-01-02 on load. The exact day
+  // depends on the browser timezone (fromTime carries a 00:00:00.000Z time component), so we
+  // match the month rather than a fixed date.
+  await expect(fromInput).toHaveValue(/^2023-01-/);
 
   // Typing a date within the window (Jan 15) must be accepted; Until stays unchanged
   // because Jan 15 + 180 days = Jul 14, which is after the current Until (Jul 1).
   await fromInput.fill('2023-01-15');
   await fromInput.press('Enter');
   await expect(fromInput).toHaveValue('2023-01-15');
-  await expect(untilInput).toHaveValue('2023-07-01');
+  await expect(untilInput).toHaveValue(/^2023-07-/);
 
   // Typing a From date more than 180 days before Until must be accepted and auto-adjust Until
   // to From + 180 days (not revert). 2022-01-01 + 180 days = 2022-06-30.
   await fromInput.fill('2022-01-01');
   await fromInput.press('Tab');
   await expect(fromInput).toHaveValue('2022-01-01');
-  await expect(untilInput).toHaveValue('2022-06-30');
+  await expect(untilInput).toHaveValue(/^2022-0[67]-/);
 });
 
 test('selecting a From date via the calendar sets it without jumping back', async ({ page }) => {
@@ -92,7 +94,9 @@ test('selecting a From date via the calendar sets it without jumping back', asyn
   expect(newFrom).toMatch(/^\d{4}-\d{2}-15$/);
 });
 
-test('clicking an Until date more than 180 days from From in the calendar auto-advances From', async ({ page }) => {
+test('clicking an Until date more than 180 days from From in the calendar auto-advances From', async ({
+  page,
+}) => {
   await openVisualisationInTimeRangeMode(page);
 
   const vizTab = page.locator('.visualization-time-select');
@@ -106,8 +110,9 @@ test('clicking an Until date more than 180 days from From in the calendar auto-a
     .locator('input.date-picker-input');
 
   // URL loads with From=2023-01-01, Until=2023-07-01. Because 2023-07-01 - 2023-01-01 > 180 days,
-  // URLParamsParser already clamps fromTime to toTime - 180 days = 2023-01-02 on load.
-  await expect(fromInput).toHaveValue('2023-01-02');
+  // URLParamsParser already clamps fromTime to toTime - 180 days = 2023-01-02 on load. The exact
+  // day depends on the browser timezone, so match the month rather than a fixed date.
+  await expect(fromInput).toHaveValue(/^2023-01-/);
 
   // Open the Until calendar — showing July 2023 (Until=2023-07-01)
   await untilInput.click();
@@ -129,10 +134,11 @@ test('clicking an Until date more than 180 days from From in the calendar auto-a
   await calendar.getByRole('gridcell', { name: 'Sunday, October 1st, 2023' }).click();
 
   // Until should update to the clicked date
-  await expect(untilInput).toHaveValue('2023-10-01');
+  await expect(untilInput).toHaveValue(/^2023-10-/);
 
-  // From must auto-advance to Oct 1 − 180 days = 2023-04-04 to maintain the constraint
-  await expect(fromInput).toHaveValue('2023-04-04');
+  // From must auto-advance to Oct 1 − 180 days = 2023-04-04 to maintain the constraint. The exact
+  // day depends on the browser timezone, so match the month rather than a fixed date.
+  await expect(fromInput).toHaveValue(/^2023-04-/);
 });
 
 test('Until text input: typing a date outside the window auto-adjusts From', async ({ page }) => {
@@ -148,8 +154,9 @@ test('Until text input: typing a date outside the window auto-adjusts From', asy
     .filter({ hasText: 'Until:' })
     .locator('input.date-picker-input');
 
-  // URL loads with From=2023-01-02 (clamped), Until=2023-07-01.
-  await expect(fromInput).toHaveValue('2023-01-02');
+  // URL loads with From=2023-01-02 (clamped), Until=2023-07-01. The exact day depends on the
+  // browser timezone, so match the month rather than a fixed date.
+  await expect(fromInput).toHaveValue(/^2023-01-/);
 
   // Typing an Until date more than 180 days after From must be accepted and auto-adjust From
   // to approximately Until - 180 days. The exact result depends on the browser timezone

@@ -5,6 +5,7 @@ import cloneDeep from 'lodash.clonedeep';
 import moment from 'moment';
 import distance from '@turf/distance';
 import { t, ngettext, msgid } from 'ttag';
+import { v4 as uuid } from 'uuid';
 
 import { EOBButton } from '../../junk/EOBCommon/EOBButton/EOBButton';
 import { NotificationPanel } from '../../junk/NotificationPanel/NotificationPanel';
@@ -19,20 +20,25 @@ import store, {
   modalSlice,
   notificationSlice,
   pinsSlice,
+  tabsSlice,
   themesSlice,
   visualizationSlice,
+  externalLayersSlice,
 } from '../../store';
 
 import { getDataSourceHandler } from '../SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import {
   formatDeprecatedPins,
   getPinsFromServer,
-  getPinsFromSessionStorage,
+  getLocalPins,
   getVisualizationUrl,
   normalizePin,
   removePinsFromServer,
+  writeLocalPins,
+  clearLocalPins,
   savePinsToServer,
-  savePinsToSessionStorage,
+  saveLocalPins,
+  shouldUsePinsBackend,
 } from './Pin.utils';
 import { parsePosition, resolveEvalscript } from '../../utils';
 import { customSelectStyle } from '../../components/CustomSelectInput/CustomSelectStyle';
@@ -46,6 +52,7 @@ import {
   DEFAULT_THEME_ID,
   MODES,
   MODE_THEMES_LIST,
+  TABS,
   URL_THEMES_LIST,
   USER_INSTANCES_THEMES_LIST,
   FUNCTIONALITY_TEMPORARILY_UNAVAILABLE_MSG,
@@ -57,9 +64,8 @@ import ArrowSvg from '../../icons/arrow.svg?react';
 import { isOpenEoSupported } from '../../api/openEO/openEOHelpers';
 import { IMAGE_FORMATS } from '../../Controls/ImgDownload/consts';
 
-import { UNSAVED_PINS, SAVED_PINS, OPERATION_SHARE, USE_PINS_BACKEND } from './const';
-
-const PINS_LC_NAME = 'eob-pins';
+import { UNSAVED_PINS, SAVED_PINS, OPERATION_SHARE } from './const';
+import { fetchWmsCapabilities, fetchWmtsCapabilities } from '../../ExternalLayers/externalLayers.utils';
 
 const ORDERING_MODE = {
   TITLE: 'title',
@@ -79,25 +85,69 @@ class PinPanel extends Component {
     displayModal: false,
   };
 
+  // Guards against migrateAnonymousPins running twice (e.g. componentDidMount and
+  // componentDidUpdate both firing) before the async backend save resolves, which would
+  // otherwise create duplicate backend pins since savePinsToServer appends and doesn't dedup.
+  _anonMigrationDone = false;
+
   componentDidMount() {
-    if (USE_PINS_BACKEND && this.props.user) {
-      this.fetchUserPins()
-        .then((pins) => {
-          this.setPinsInArray(pins, SAVED_PINS);
-          this.setState({
-            operation: null,
-            selectedPins: [],
-            sharePins: false,
-            updatingPins: false,
-            updatingPinsError: null,
-          });
-        })
-        .catch(() => {});
-    } else {
-      let pins = getPinsFromSessionStorage();
-      this.setPinsInArray(pins, UNSAVED_PINS);
+    // Local (client-side) pins are loaded from the per-user localStorage bucket. Logged-in users
+    // additionally have their native and external-WMS pins on the backend.
+    this.setPinsInArray(getLocalPins(), UNSAVED_PINS);
+
+    if (shouldUsePinsBackend(this.props.user)) {
+      // A real login is a full Keycloak redirect + app re-mount, so the user is already set on
+      // this first mount and the componentDidUpdate null -> user transition never fires.
+      this.migrateAnonymousPins();
     }
   }
+
+  // Migrates pins saved while anonymous to the backend, called both here (real login: user is
+  // already set on first mount) and from componentDidUpdate's null -> user transition. Callers
+  // don't need to reset updatingPins/updatingPinsError before calling this: the class-field
+  // initializer above already sets the right defaults, and the _anonMigrationDone early-return
+  // guard below ensures the migration body (and its updatingPins:true) runs at most once, even
+  // if both componentDidMount and componentDidUpdate fire.
+  migrateAnonymousPins = () => {
+    if (this._anonMigrationDone) {
+      return;
+    }
+    this._anonMigrationDone = true;
+
+    // Migrate all pins added while anonymous (including external-WMS pins) to the backend, same
+    // as native Sentinel-Hub pins. Same migration pattern as hydrateExternalServers.ts's
+    // resolveHydratedExternalLayers (external WMS/WMTS servers) — keep the two in sync if the
+    // failure-handling semantics of one changes.
+    const anonPins = getLocalPins();
+    if (anonPins.length) {
+      // Only clear the anon bucket once the backend save has confirmed success, so a failed
+      // migration leaves the pins in place instead of silently dropping them.
+      this.saveLocalUserPins(anonPins)
+        .then((res) => {
+          clearLocalPins();
+          // Drop the anonymous pins from the UNSAVED array (loaded from the session bucket at mount)
+          // now that they live in SAVED — otherwise each migrated pin shows twice (unsaved + saved).
+          this.removePinsFromArray(UNSAVED_PINS);
+          this.setPinsInArray(res.pins, SAVED_PINS);
+        })
+        .catch(() => {
+          this._anonMigrationDone = false;
+          // The migration save failed, but the user may already have pins on the backend.
+          // Fall back to fetching them so the UI shows the existing saved pins instead of
+          // nothing. The anon bucket is left intact (clearLocalPins only runs on success),
+          // so a later retry can still migrate them.
+          this.fetchUserPins()
+            .then((pins) => this.setPinsInArray(pins, SAVED_PINS))
+            .catch(() => {});
+        });
+    } else {
+      this.fetchUserPins()
+        .then((pins) => this.setPinsInArray(pins, SAVED_PINS))
+        .catch(() => {
+          this._anonMigrationDone = false;
+        });
+    }
+  };
 
   deleteUserPins = async (pinIds) => {
     this.setState({
@@ -201,35 +251,20 @@ class PinPanel extends Component {
       if (!this.props.user) {
         this.removePinsFromArray(SAVED_PINS);
         this.cancelSharePins();
-      } else if (USE_PINS_BACKEND) {
-        // user logged in
-        if (this.props.pinItems.filter((p) => p.type === UNSAVED_PINS).length) {
-          let pins = getPinsFromSessionStorage();
-          if (!pins.length) {
-            return;
-          }
-          this.saveLocalUserPins(pins)
-            .then((pins) => {
-              sessionStorage.setItem(PINS_LC_NAME, JSON.stringify([]));
-              this.removePinsFromArray(UNSAVED_PINS);
-              this.setPinsInArray(pins.pins, SAVED_PINS);
-            })
-            .catch(() => {});
-        } else {
-          this.fetchUserPins()
-            .then((pins) => this.setPinsInArray(pins, SAVED_PINS))
-            .catch(() => {});
-        }
+        // Reset the guard so a later login with new anon pins migrates again.
+        this._anonMigrationDone = false;
+      } else if (shouldUsePinsBackend(this.props.user)) {
+        this.migrateAnonymousPins();
       }
     }
 
     if (prevProps.lastAddedPin !== this.props.lastAddedPin) {
-      if (USE_PINS_BACKEND && this.props.user) {
+      if (shouldUsePinsBackend(this.props.user)) {
         this.fetchUserPins()
-          .then((pins) => this.setPinsInArray(pins, SAVED_PINS))
+          .then((pins) => this.setPinsInArray(this.moveAddedPinToTop(pins), SAVED_PINS))
           .catch(() => {});
       } else {
-        let pins = getPinsFromSessionStorage();
+        let pins = getLocalPins();
         this.setPinsInArray(pins, UNSAVED_PINS);
       }
     }
@@ -252,6 +287,20 @@ class PinPanel extends Component {
     );
   };
 
+  // Backend GET order is not guaranteed, so a just-added pin can come back anywhere in the
+  // response; move it back to the top so it stays visible where the user just placed it.
+  moveAddedPinToTop = (pins) => {
+    const addedId = this.props.lastAddedPin;
+    if (!addedId) {
+      return pins;
+    }
+    const idx = pins.findIndex((p) => p._id === addedId);
+    if (idx <= 0) {
+      return pins;
+    }
+    return [pins[idx], ...pins.slice(0, idx), ...pins.slice(idx + 1)];
+  };
+
   onPinIndexChange = (oldIndex, newIndex) => {
     const pinItems = [...this.props.pinItems];
     const pinItem = pinItems[oldIndex];
@@ -262,7 +311,7 @@ class PinPanel extends Component {
 
     const pins = pinItems.filter((p) => p.type === pinItem.type).map((p) => p.item);
     if (pinItem.type === UNSAVED_PINS) {
-      savePinsToSessionStorage(pins, true);
+      saveLocalPins(pins, true);
     }
     if (pinItem.type === SAVED_PINS) {
       this.savePins(pins, true)
@@ -279,13 +328,10 @@ class PinPanel extends Component {
     const pin = this.props.pinItems[index].item;
     const type = this.props.pinItems[index].type;
 
+    // Unsaved (local) pins are deleted from localStorage with no backend call.
     if (type === UNSAVED_PINS) {
-      let pins = getPinsFromSessionStorage();
-      if (!pins.length) {
-        return;
-      }
-      pins = pins.filter((p) => p._id !== pin._id);
-      sessionStorage.setItem(PINS_LC_NAME, JSON.stringify(pins));
+      const pins = getLocalPins().filter((p) => p._id !== pin._id);
+      writeLocalPins(pins);
       store.dispatch(pinsSlice.actions.removeItem(index));
       this.props.setLastAddedPin(null);
     } else if (type === SAVED_PINS) {
@@ -318,21 +364,28 @@ class PinPanel extends Component {
 
     this.cancelSharePins();
 
-    if (USE_PINS_BACKEND && this.props.user) {
+    if (shouldUsePinsBackend(this.props.user)) {
       const pinIds = this.props.pinItems
         .filter((p) => p.type === SAVED_PINS && !!p.item._id)
         .map((p) => p.item._id);
 
+      // Also clear this user's local bucket: logged-in users can still have local pins (e.g.
+      // external-WMS pins saved locally before `user.userdata` was available, see Tools.jsx savePin),
+      // and componentDidMount unconditionally reloads that bucket into UNSAVED_PINS on next mount.
+      const finishRemoveAll = () => {
+        clearLocalPins();
+        store.dispatch(pinsSlice.actions.updateItems([]));
+        this.props.setLastAddedPin(null);
+      };
       if (pinIds.length) {
         this.deleteUserPins(pinIds)
-          .then(() => {
-            store.dispatch(pinsSlice.actions.updateItems([]));
-            this.props.setLastAddedPin(null);
-          })
+          .then(finishRemoveAll)
           .catch(() => {});
+      } else {
+        finishRemoveAll();
       }
     } else {
-      sessionStorage.setItem(PINS_LC_NAME, JSON.stringify([]));
+      clearLocalPins();
       store.dispatch(pinsSlice.actions.updateItems([]));
     }
   };
@@ -369,6 +422,128 @@ class PinPanel extends Component {
     } = pin;
 
     if (arePinsSelectable) {
+      return;
+    }
+
+    if (rawPin.externalWms) {
+      const {
+        url,
+        layerName,
+        layerTitle,
+        layerAbstract,
+        legendUrl,
+        tileUrl,
+        type,
+        serverName,
+        version,
+        format,
+        infoFormat,
+        queryable,
+        time,
+      } = rawPin.externalWms;
+
+      // A corrupted or partial cache entry (e.g. `externalWms: {}`) is truthy but has no url/layer,
+      // which would dispatch setActiveExternalLayer with an undefined serverId. Bail out instead.
+      if (!url || !layerName) {
+        return;
+      }
+
+      // Reuse an existing server entry with the same URL to avoid duplicates in the list. Read the
+      // live store (not props): props are a render-time snapshot, so a rapid second press of the
+      // same pin would still see no server and add a duplicate. Redux dispatch is synchronous, so
+      // the store already reflects the server added by the first press.
+      const existingServer = store.getState().externalLayers.servers.find((s) => s.url === url);
+
+      let serverId;
+      if (existingServer) {
+        serverId = existingServer.id;
+        // Ensure the saved layer is present in the existing server's layer list so it can be highlighted.
+        const alreadyHasLayer = !layerName || existingServer.layers?.some((l) => l.name === layerName);
+        if (!alreadyHasLayer) {
+          // The pin payload only stores the selected `time`, not the layer's time dimension
+          // (timeRanges/timeStart/timeEnd), so this restored layer's calendar shows no highlighted
+          // available dates until the background capabilities refresh (below) repopulates them.
+          const mergedLayers = [
+            ...(existingServer.layers ?? []),
+            {
+              id: layerName,
+              name: layerName,
+              title: layerTitle || layerName,
+              abstract: layerAbstract,
+              legendUrl,
+              tileUrl,
+              queryable,
+            },
+          ];
+          store.dispatch(externalLayersSlice.actions.updateServerLayers({ serverId, layers: mergedLayers }));
+        }
+      } else {
+        serverId = uuid();
+        store.dispatch(
+          externalLayersSlice.actions.addExternalServer({
+            id: serverId,
+            name: serverName,
+            url,
+            type,
+            version,
+            format,
+            infoFormat,
+            layers: layerName
+              ? [
+                  {
+                    id: layerName,
+                    name: layerName,
+                    title: layerTitle || layerName,
+                    abstract: layerAbstract,
+                    legendUrl,
+                    tileUrl,
+                    queryable,
+                  },
+                ]
+              : [],
+          }),
+        );
+      }
+
+      store.dispatch(
+        externalLayersSlice.actions.setActiveExternalLayer({
+          serverId,
+          layerName,
+        }),
+      );
+      store.dispatch(externalLayersSlice.actions.setActiveExternalLayerTime(time ?? null));
+      store.dispatch(externalLayersSlice.actions.setWmsPanelOpen(true));
+      const { lat, lng, zoom } = rawPin;
+      const { lat: parsedLat, lng: parsedLng, zoom: parsedZoom } = parsePosition(lat, lng, zoom);
+      store.dispatch(mainMapSlice.actions.setPosition({ lat: parsedLat, lng: parsedLng, zoom: parsedZoom }));
+      store.dispatch(visualizationSlice.actions.reset());
+      store.dispatch(tabsSlice.actions.setTabIndex(TABS.VISUALIZE_TAB));
+      this.props.setShowPinPanel(false);
+
+      // If the server was freshly added, fetch full capabilities in background so the layer list
+      // shows all available layers. Skipped for existing servers (already have their layers loaded).
+      if (!existingServer) {
+        const fetchFn = type === 'WMTS' ? fetchWmtsCapabilities : fetchWmsCapabilities;
+        fetchFn(url)
+          .then((result) => {
+            if (result?.layers) {
+              store.dispatch(
+                externalLayersSlice.actions.updateServerLayers({ serverId, layers: result.layers }),
+              );
+            }
+          })
+          .catch((err) => console.warn('[ExternalLayers] Background capabilities refresh failed', err));
+      }
+
+      return;
+    }
+
+    if (!rawPin.datasetId && !rawPin.visualizationUrl) {
+      store.dispatch(
+        notificationSlice.actions.displayError(
+          t`This pin cannot be restored — it was saved before the layer URL was recorded.`,
+        ),
+      );
       return;
     }
 
@@ -589,7 +764,7 @@ class PinPanel extends Component {
     const pins = pinItems.filter((p) => p.type === pinType).map((p) => p.item);
 
     if (pinType === UNSAVED_PINS) {
-      savePinsToSessionStorage(pins, true);
+      saveLocalPins(pins, true);
       store.dispatch(pinsSlice.actions.updateItems(pinItems));
     }
     if (pinType === SAVED_PINS) {
@@ -607,7 +782,7 @@ class PinPanel extends Component {
   };
 
   checkIfUserLoggedInAndPinsPresent() {
-    if (!this.props.user || !USE_PINS_BACKEND) {
+    if (!shouldUsePinsBackend(this.props.user)) {
       return false;
     }
     if (!this.props.pinItems || this.props.pinItems.length === 0) {
@@ -703,7 +878,7 @@ class PinPanel extends Component {
   };
 
   compareByDatasetId = (a, b) => {
-    return a.item.datasetId.localeCompare(b.item.datasetId);
+    return (a.item.datasetId || '').localeCompare(b.item.datasetId || '');
   };
 
   compareByTitle = (a, b) => {

@@ -39,6 +39,26 @@ export const doesUserHaveAccessToCCMVisualization = (accessToken) => {
   return userRoles.some((role) => ROLES_WITH_ACCESS_TO_CCM_VISUALIZATION.includes(role));
 };
 
+// Returns true if the user holds ANY CCM role, including public-ccm and copernicus-operators-ccm.
+// Distinct from doesUserHaveAccessToCCMVisualization, whose allow-list deliberately excludes those
+// two roles. Used to gate display of the COP DEM 30m collection per its View Service license terms
+// (issue #1185). Object.values(CCM_ROLES) keeps this in sync if the role set ever changes.
+export const doesUserHaveAnyCCMRole = (accessToken) => {
+  if (accessToken === null || accessToken === undefined) {
+    return false;
+  }
+
+  const userRoles = jwtDecode(accessToken).realm_access?.roles;
+
+  if (userRoles === undefined) {
+    return false;
+  }
+
+  const allCCMRoles = Object.values(CCM_ROLES);
+
+  return userRoles.some((role) => allCCMRoles.includes(role));
+};
+
 const VHR_COMMON_ACCESS_RIGHTS = {
   DOWNLOAD_PRODUCT_ROLES: [
     CCM_ROLES.COPERNICUS_SERVICES_CCM,

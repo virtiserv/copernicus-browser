@@ -7,6 +7,7 @@ import {
   shouldShowCompareShLayers,
   shouldShowS2MosaicTransparency,
   getPinTimes,
+  getCompareLayerZIndex,
 } from './Map.utils';
 import { TABS } from '../const';
 
@@ -347,6 +348,7 @@ describe('shouldShowSingleShLayer', () => {
     customSelected: false,
     datasetId: 'S2L2A',
     visualizationUrl: 'https://example.com',
+    wmsPanelOpen: false,
   };
 
   test('returns true when all conditions are met', () => {
@@ -389,6 +391,16 @@ describe('shouldShowSingleShLayer', () => {
 
   test('returns false when visualizationUrl is missing', () => {
     expect(shouldShowSingleShLayer({ ...base, visualizationUrl: null })).toBe(false);
+  });
+
+  test('returns false when an external layer is active', () => {
+    expect(
+      shouldShowSingleShLayer({ ...base, activeExternalLayer: { server: {}, layerName: 'cities' } }),
+    ).toBe(false);
+  });
+
+  test('returns false when the WMS panel is open', () => {
+    expect(shouldShowSingleShLayer({ ...base, wmsPanelOpen: true })).toBe(false);
   });
 });
 
@@ -484,6 +496,28 @@ describe('getPinTimes', () => {
     const { pinTimeFrom, pinTimeTo } = getPinTimes(undefined, toTime, true);
     expect(pinTimeFrom).toEqual(moment.utc(toTime).startOf('day').toDate());
     expect(pinTimeTo).toEqual(moment.utc(toTime).endOf('day').toDate());
+  });
+});
+
+describe('getCompareLayerZIndex', () => {
+  test('increases with render position i', () => {
+    expect(getCompareLayerZIndex(0)).toBeLessThan(getCompareLayerZIndex(1));
+    expect(getCompareLayerZIndex(1)).toBeLessThan(getCompareLayerZIndex(2));
+  });
+
+  test('matches the "comparedLayers[0] ends up topmost" convention used by Map.jsx', () => {
+    // Map.jsx renders comparedLayers.slice().reverse().map((p, i) => ...), so the first
+    // compared layer is rendered last and must receive the highest zIndex to stay on top.
+    const comparedLayers = ['first', 'second', 'third'];
+    const zIndexByLayer = new Map(
+      comparedLayers
+        .slice()
+        .reverse()
+        .map((layer, i) => [layer, getCompareLayerZIndex(i)]),
+    );
+
+    const topmostLayer = [...zIndexByLayer.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    expect(topmostLayer).toBe(comparedLayers[0]);
   });
 });
 

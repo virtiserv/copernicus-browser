@@ -100,6 +100,11 @@ export async function getGlOverlay(layerPane) {
   }
 }
 
+// NOTE: the web-mercator tile-stitching core here (log2 zoom selection, antimeridian wrapping,
+// latitude-limit skip, bounds → tile grid → stitched canvas) overlaps with `compositeWmtsImage` in
+// `src/Controls/ImgDownload/WmsDownload.utils.tsx`. They are intentionally kept separate for now
+// (this path uses SphericalMercator + a 7-day Cache-API tile cache; that one is cache-less and
+// returns a Blob). Keep the two tile-math implementations in sync until a shared helper is extracted.
 export async function getMapOverlayXYZ(
   overlayUrl,
   bounds,

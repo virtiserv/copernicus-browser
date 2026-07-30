@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import { t } from 'ttag';
 
 import store, { mainMapSlice, notificationSlice } from '../store';
+import { selectActiveExternalLayer } from '../store/slices/externalLayersSlice';
 
 import Icon2D from './icons/icon-2D.svg?react';
 import Icon3D from './icons/icon-3D.svg?react';
@@ -22,6 +23,8 @@ class TerrainViewerButton extends Component {
       is3D,
       terrainViewerId,
       showComparePanel,
+      activeExternalLayer,
+      wmsLayerPanelOpen,
     } = this.props;
     const dsh = getDataSourceHandler(datasetId);
 
@@ -29,6 +32,12 @@ class TerrainViewerButton extends Component {
       return {
         isDisabled: true,
         errorMessage: t`You can only view data in 3D while visualising a collection.`,
+      };
+    }
+    if (!is3D && (activeExternalLayer || wmsLayerPanelOpen)) {
+      return {
+        isDisabled: true,
+        errorMessage: t`Not available for WMS layers`,
       };
     }
     if (!is3D && !(visualizationUrl && datasetId && layerId) && !customSelected) {
@@ -88,6 +97,8 @@ const mapStoreToProps = (store) => ({
   is3D: store.mainMap.is3D,
   selectedTabIndex: store.tabs.selectedTabIndex,
   terrainViewerId: store.terrainViewer.id,
+  activeExternalLayer: selectActiveExternalLayer(store),
+  wmsLayerPanelOpen: store.externalLayers.panelOpen,
 });
 
 export default connect(mapStoreToProps, null)(TerrainViewerButton);

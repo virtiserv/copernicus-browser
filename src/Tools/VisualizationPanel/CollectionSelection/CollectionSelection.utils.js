@@ -100,27 +100,6 @@ const createCollectionGroupsFromDataSourceHandlers = (filter, bounds) => {
   return mergedCollectionGroups;
 };
 
-const getSelectedCollectionTitle = (selected) => {
-  const collectionGroups = createCollectionGroupsFromDataSourceHandlers();
-  const collectionGroup = collectionGroups.find((cg) => cg.datasource === selected.datasource);
-
-  const collection =
-    collectionGroup &&
-    collectionGroup.collections &&
-    collectionGroup.collections.find((c) => c.dataset === selected.dataset);
-
-  let title = collectionGroup?.title;
-
-  if (collection && collection.title) {
-    if (collectionGroup && collectionGroup.collections && collectionGroup.collections.length === 1) {
-      title = collection.title;
-    } else {
-      title = `${title} ${collection.title}`;
-    }
-  }
-  return title;
-};
-
 async function displayLatestDateOnSelect({ datasetId, bounds, pixelBounds, maxCloudCover, orbitDirection }) {
   try {
     const latestDate = await findLatestDateWithData({
@@ -148,8 +127,4 @@ async function displayLatestDateOnSelect({ datasetId, bounds, pixelBounds, maxCl
   }
 }
 
-export {
-  createCollectionGroupsFromDataSourceHandlers,
-  getSelectedCollectionTitle,
-  displayLatestDateOnSelect,
-};
+export { createCollectionGroupsFromDataSourceHandlers, displayLatestDateOnSelect };

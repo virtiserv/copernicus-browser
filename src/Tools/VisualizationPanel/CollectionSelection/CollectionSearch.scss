@@ -19,9 +19,36 @@
     flex-grow: 1;
 
     .collection-search-title {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
       color: vars.$primaryColor;
       text-transform: uppercase;
       font-weight: 700;
+
+      .collection-title-label {
+        flex: 1;
+        min-width: 0;
+
+        &.external-source-title {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          // Keep a small gap so a long title ellipsizes before it touches the action buttons.
+          padding-right: 8px;
+          // It is a non-interactive label; without this a click places a text caret and scrolls
+          // the overflow horizontally, which makes text-overflow drop the ellipsis (Chromium quirk).
+          user-select: none;
+        }
+      }
+
+      .collection-tooltip-icon {
+        margin-right: 10px;
+        flex-shrink: 0;
+      }
     }
 
     .collection-search-tools {
@@ -45,11 +72,19 @@
         fill: vars.$primaryColor;
       }
 
+      i {
+        color: vars.$primaryColor;
+      }
+
       &.active {
         background-color: vars.$primaryColor;
 
         svg {
           fill: vars.$secondaryColor;
+        }
+
+        i {
+          color: vars.$secondaryColor;
         }
       }
 

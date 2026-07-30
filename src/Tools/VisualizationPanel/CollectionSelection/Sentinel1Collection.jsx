@@ -73,7 +73,10 @@ const Sentinel1Collection = ({
 
   const handlePreSelectedPolarization = (acq) => {
     const hardcodedDefault = S1_MODE_POLARIZATION_DEFAULTS[acq];
-    if (hardcodedDefault && (!supportedPolarizations?.[acq] || supportedPolarizations[acq].has(hardcodedDefault))) {
+    if (
+      hardcodedDefault &&
+      (!supportedPolarizations?.[acq] || supportedPolarizations[acq].has(hardcodedDefault))
+    ) {
       return hardcodedDefault;
     }
     return Object.keys(POLARIZATIONS[acq]).find(

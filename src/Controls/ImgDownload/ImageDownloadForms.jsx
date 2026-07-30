@@ -59,6 +59,7 @@ export function ImageDownloadForms(props) {
     isZoomLevelOK,
     isAnalyticalModeAndOnlyRawBands,
     areImageDimensionsValid,
+    activeExternalLayer,
   } = props;
 
   const bounds = hasAoi ? aoiBounds : mapBounds;
@@ -168,6 +169,7 @@ export function ImageDownloadForms(props) {
           isBasicForm={true}
           hasAoi={hasAoi}
           hasLoi={hasLoi}
+          isExternalLayer={!!activeExternalLayer}
         />
       )}
       {selectedTab === TABS.ANALYTICAL && (

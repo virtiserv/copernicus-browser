@@ -1,0 +1,153 @@
+import L from 'leaflet';
+import { createTileLayerComponent, type LayerProps } from '@react-leaflet/core';
+import { updateLayerClipping, updateLayerOpacity, bindClipOpacityOnMove } from './layerClipOpacity';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyLeafletLayer = any;
+
+// Compare-mode clip/opacity is shared with the other tile-layer plugins via layerClipOpacity.ts;
+// only the WMS-specific onAdd setup (writing srs/crs into wmsParams) lives here.
+function addClippingAndOpacity(layer: AnyLeafletLayer) {
+  layer.onAdd = function (map: L.Map) {
+    (this as AnyLeafletLayer)._initContainer();
+    (this as AnyLeafletLayer)._crs = (this as AnyLeafletLayer).options.crs || map.options.crs;
+    // Replicate L.TileLayer.WMS.onAdd setup: write srs/crs into wmsParams before tiles are requested
+    if ((this as AnyLeafletLayer).wmsParams) {
+      (this as AnyLeafletLayer)._wmsVersion = parseFloat((this as AnyLeafletLayer).wmsParams.version);
+      const projectionKey = (this as AnyLeafletLayer)._wmsVersion >= 1.3 ? 'crs' : 'srs';
+      (this as AnyLeafletLayer).wmsParams[projectionKey] = (this as AnyLeafletLayer)._crs.code;
+    }
+    L.TileLayer.prototype.onAdd.call(this, map);
+    bindClipOpacityOnMove(this, map);
+  };
+
+  layer.updateClipping = function () {
+    updateLayerClipping(this);
+  };
+
+  layer.updateOpacity = function () {
+    updateLayerOpacity(this);
+  };
+
+  layer.setClipping = function (clipping: number[] | null) {
+    (this as AnyLeafletLayer).clipping = clipping;
+    (this as AnyLeafletLayer).updateClipping();
+  };
+
+  layer.setOpacity = function (opacity: number | null) {
+    (this as AnyLeafletLayer).opacity = opacity;
+    (this as AnyLeafletLayer).updateOpacity();
+  };
+}
+
+class ExternalWmsLayer extends L.TileLayer.WMS {
+  constructor(url: string, options: L.WMSOptions) {
+    super(url, options);
+    addClippingAndOpacity(this);
+  }
+}
+
+class ExternalTileLayer extends L.TileLayer {
+  constructor(url: string, options?: L.TileLayerOptions) {
+    super(url, options);
+    addClippingAndOpacity(this);
+  }
+}
+
+interface ExternalWmsProps extends LayerProps {
+  url: string;
+  layers: string;
+  format?: string;
+  transparent?: boolean;
+  version?: string;
+  pane?: string;
+  zIndex?: number;
+  opacity?: number | null;
+  clipping?: number[] | null;
+  time?: string | null;
+}
+
+interface ExternalTileProps extends LayerProps {
+  url: string;
+  pane?: string;
+  zIndex?: number;
+  opacity?: number | null;
+  clipping?: number[] | null;
+}
+
+export const ExternalWmsLayerComponent = createTileLayerComponent<ExternalWmsLayer, ExternalWmsProps>(
+  (props, context) => {
+    const { url, layers, format, transparent, version, pane, zIndex, opacity, clipping, time } = props;
+    const options: L.WMSOptions = {
+      layers: layers,
+      format: format ?? 'image/png',
+      transparent: transparent !== undefined ? transparent : true,
+      version: version ?? '1.1.1',
+      pane: pane,
+    };
+    // Only set zIndex when provided; passing undefined would override Leaflet's GridLayer default.
+    if (zIndex != null) {
+      options.zIndex = zIndex;
+    }
+    // TIME is an extra WMS GetMap param (not part of L.WMSOptions' typed keys); it ends up in wmsParams.
+    if (time) {
+      (options as Record<string, unknown>).TIME = time;
+    }
+    const instance = new ExternalWmsLayer(url, options);
+    (instance as AnyLeafletLayer).setClipping(clipping ?? null);
+    (instance as AnyLeafletLayer).setOpacity(opacity ?? null);
+    return { instance, context };
+  },
+  (instance, props, prevProps) => {
+    if (prevProps.opacity !== props.opacity) {
+      (instance as AnyLeafletLayer).setOpacity(props.opacity ?? null);
+    }
+    if (prevProps.clipping !== props.clipping) {
+      (instance as AnyLeafletLayer).setClipping(props.clipping ?? null);
+    }
+    if (prevProps.zIndex !== props.zIndex) {
+      (instance as AnyLeafletLayer).setZIndex(props.zIndex);
+    }
+    if (prevProps.time !== props.time) {
+      // setParams merges into wmsParams and redraws; empty string clears the TIME filter.
+      (instance as AnyLeafletLayer).setParams({ TIME: props.time ?? '' });
+    }
+    // Guard against instance reuse: if a reused layer is handed a different source, repoint it.
+    if (prevProps.url !== props.url) {
+      (instance as AnyLeafletLayer).setUrl(props.url);
+    }
+    if (prevProps.layers !== props.layers) {
+      (instance as AnyLeafletLayer).setParams({ layers: props.layers });
+    }
+  },
+);
+
+export const ExternalTileLayerComponent = createTileLayerComponent<ExternalTileLayer, ExternalTileProps>(
+  (props, context) => {
+    const { url, pane, zIndex, opacity, clipping } = props;
+    const options: L.TileLayerOptions = { pane };
+    // Only set zIndex when provided; passing undefined would override Leaflet's GridLayer default.
+    if (zIndex != null) {
+      options.zIndex = zIndex;
+    }
+    const instance = new ExternalTileLayer(url, options);
+    (instance as AnyLeafletLayer).setClipping(clipping ?? null);
+    (instance as AnyLeafletLayer).setOpacity(opacity ?? null);
+    return { instance, context };
+  },
+  (instance, props, prevProps) => {
+    if (prevProps.opacity !== props.opacity) {
+      (instance as AnyLeafletLayer).setOpacity(props.opacity ?? null);
+    }
+    if (prevProps.clipping !== props.clipping) {
+      (instance as AnyLeafletLayer).setClipping(props.clipping ?? null);
+    }
+    if (prevProps.zIndex !== props.zIndex) {
+      (instance as AnyLeafletLayer).setZIndex(props.zIndex);
+    }
+    // Guard against instance reuse: if a reused layer is handed a different source, repoint it.
+    if (prevProps.url !== props.url) {
+      (instance as AnyLeafletLayer).setUrl(props.url);
+    }
+  },
+);

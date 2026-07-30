@@ -33,7 +33,7 @@ export const ModalId = {
   SPECTRAL_EXPLORER: 'SpectralExplorer',
   BROWSE_PRODUCT: 'BrowseProduct',
   RRD_PRODUCT_DETAILS: 'RRDProductDetails',
-  CLMS_VECTOR_FEATURE_INFO: 'CLMSVectorFeatureInfo',
+  FEATURE_INFO: 'FeatureInfo',
 } as const;
 
 // --- Themes & modes ---
@@ -211,6 +211,7 @@ export const DATASOURCES = {
   CLMS_VECTOR: 'CLMS Vector',
   CCM: 'CCM',
   EVOLAND: 'EVOLAND',
+  EXTERNAL_WMS: 'EXTERNAL_WMS',
 } as const;
 
 // --- Visualization effects ---

@@ -7,6 +7,7 @@ import L from 'leaflet';
 import { CancelToken } from '@sentinel-hub/sentinelhub-js';
 
 import store, { notificationSlice } from '../../store';
+import { selectActiveExternalLayer } from '../../store/slices/externalLayersSlice';
 
 import {
   checkIfIndexOutputPresent,
@@ -72,7 +73,14 @@ class HistogramWrapper extends Component {
       selectedTabIndex,
       selectedProcessing,
       isProcessGraphModified,
+      activeExternalLayer,
+      wmsLayerPanelOpen,
     } = this.props;
+
+    if (activeExternalLayer || wmsLayerPanelOpen) {
+      this.setState({ histogramEnabled: false, errorMessage: t`Not available for WMS layers` });
+      return;
+    }
 
     const dsHandler = getDataSourceHandler(datasetId);
     const supportsV3Evalscript = dsHandler && dsHandler.supportsV3Evalscript(datasetId);
@@ -162,6 +170,8 @@ const mapStoreToProps = (store) => ({
   evalscript: store.visualization.evalscript,
   visualizationUrl: store.visualization.visualizationUrl,
   dataSourcesInitialized: store.themes.dataSourcesInitialized,
+  activeExternalLayer: selectActiveExternalLayer(store),
+  wmsLayerPanelOpen: store.externalLayers.panelOpen,
 });
 
 export default connect(mapStoreToProps, null)(HistogramWrapper);

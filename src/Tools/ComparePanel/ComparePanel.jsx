@@ -64,6 +64,9 @@ const ComparePanel = (props) => {
   useEffect(() => {
     const getAndSetCompareSharedPinsId = async () => {
       try {
+        // externalWms is forwarded verbatim in the outbound POST body (toServerPin's ...rest), and
+        // the sharedpins backend persists and returns it on GET, so external WMS/WMTS layers are
+        // restored when opening a shared compare link.
         const sharedPinsId = await saveSharedPinsToServer(comparedLayers);
         store.dispatch(compareLayersSlice.actions.setCompareSharedPinsId(sharedPinsId));
       } catch (e) {
@@ -81,6 +84,8 @@ const ComparePanel = (props) => {
   const toggleSocialSharePanel = () => {
     setDisplaySocialShareOptions((prevState) => !prevState);
   };
+
+  const isShareDisabled = comparedLayers.length === 0;
 
   return (
     <div className="compare-panel">
@@ -111,13 +116,15 @@ const ComparePanel = (props) => {
           >
             {t`Remove all`}
           </div>
-          <div
-            className={`compare-panel-button ${comparedLayers.length === 0 && 'disabled'} `}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleSocialSharePanel();
-            }}
-          >{t`Share`}</div>
+          <div className="compare-panel-share-button-wrapper">
+            <div
+              className={`compare-panel-button ${isShareDisabled ? 'disabled' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSocialSharePanel();
+              }}
+            >{t`Share`}</div>
+          </div>
           <div className={`compare-panel-button ${pins.length === 0 && 'disabled'}`} onClick={addAllPins}>
             {t`Add all pins`}
           </div>
@@ -133,7 +140,7 @@ const ComparePanel = (props) => {
         {comparedLayers.map((layer, i) => (
           <ComparedLayer
             id={i}
-            key={`${i}-${layer.id}`}
+            key={layer.id}
             index={i}
             layer={layer}
             compareMode={compareMode.value}

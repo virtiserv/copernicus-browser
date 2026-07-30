@@ -1571,7 +1571,6 @@ const mapStoreToProps = (store) => ({
   themesLists: store.themes.themesLists,
   selectedThemesListId: store.themes.selectedThemesListId,
   selectedLanguage: store.language.selectedLanguage,
-  selectedTab: store.tabs.selectedTabSearchPanelIndex,
   terrainViewerId: store.terrainViewer.id,
   userToken: store.auth.user.access_token,
   savedWorkspaceProducts: store.workspace.savedWorkspaceProducts,

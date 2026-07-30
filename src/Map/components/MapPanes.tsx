@@ -5,6 +5,10 @@ import {
   BASE_PANE_ZINDEX,
   BASE_S2_MOSAIC_PANE_ID,
   BASE_S2_MOSAIC_PANE_ZINDEX,
+  EXTERNAL_LAYER_PANE_ID,
+  EXTERNAL_LAYER_PANE_ZINDEX,
+  COMPARE_LAYER_PANE_ID,
+  COMPARE_LAYER_PANE_ZINDEX,
   HIGHLIGHT_PANE_ID,
   HIGHLIGHT_PANE_ZINDEX,
 } from '../const';
@@ -14,6 +18,8 @@ const MapPanes = () => {
     <>
       <Pane name={BASE_PANE_ID} style={{ zIndex: BASE_PANE_ZINDEX }} />
       <Pane name={BASE_S2_MOSAIC_PANE_ID} style={{ zIndex: BASE_S2_MOSAIC_PANE_ZINDEX }} />
+      <Pane name={EXTERNAL_LAYER_PANE_ID} style={{ zIndex: EXTERNAL_LAYER_PANE_ZINDEX }} />
+      <Pane name={COMPARE_LAYER_PANE_ID} style={{ zIndex: COMPARE_LAYER_PANE_ZINDEX }} />
       <Pane name={HIGHLIGHT_PANE_ID} style={{ zIndex: HIGHLIGHT_PANE_ZINDEX }} />
     </>
   );

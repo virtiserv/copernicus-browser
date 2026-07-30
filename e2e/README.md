@@ -27,15 +27,15 @@ Tests use a **shared authentication** setup. The `auth.setup.ts` file logs in vi
 
 ### Playwright projects
 
-| Project | Description |
-|---------|-------------|
-| `setup` | Runs `auth.setup.ts` to perform SSO login and save state |
-| `chromium` | Authenticated tests – depends on `setup`, loads saved state |
-| `chromium-no-auth` | Tests without auth – matches `*.noauth.spec.ts` files |
+| Project            | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `setup`            | Runs `auth.setup.ts` to perform SSO login and save state    |
+| `chromium`         | Authenticated tests – depends on `setup`, loads saved state |
+| `chromium-no-auth` | Tests without auth – matches `*.noauth.spec.ts` files       |
 
 ### Credentials
 
-The SSO credentials are read from environment variables `E2E_SSO_USERNAME` and `E2E_SSO_PASSWORD`. Set these in your `.env` file for local development. 
+The SSO credentials are read from environment variables `E2E_SSO_USERNAME` and `E2E_SSO_PASSWORD`. Set these in your `.env` file for local development. If either is unset, `auth.setup.ts` fails immediately with a clear error instead of silently attempting to log in with empty strings.
 
 ## Running tests
 
@@ -142,6 +142,17 @@ test('anonymous flow', async ({ page }) => {
 });
 ```
 
+## Typed runtime config
+
+`window.API_ENDPOINT_CONFIG` (set at runtime from `public/config/config.js`) is typed for the `e2e/` directory via the ambient declaration in `e2e/global.d.ts`, so tests can read it in `page.evaluate` calls without an `any` cast:
+
+```typescript
+const config = await page.evaluate(() => window.API_ENDPOINT_CONFIG);
+expect(config?.OPENEO_BASEURL).toBeDefined();
+```
+
+Run `npm run type-check:e2e` to type-check the `e2e/` directory (not part of the blocking `npm run lint`/`type-check`, which scope to `src`/`scripts`).
+
 ## Debugging
 
 ### Run in debug mode (step through with inspector)
@@ -197,10 +208,10 @@ Then commit the updated `.png` files.
 
 > **Authenticated tests:** Specs that depend on the `setup` (SSO login) project — i.e. anything
 > not named `*.noauth.spec.ts` — need valid `E2E_SSO_USERNAME` / `E2E_SSO_PASSWORD` and the
-> `VITE_*` vars in your `.env` (mounted with the repo), or the login step fails before any
-> screenshot is taken. As an alternative for these, let CI run the failing test and download
-> the `…-actual.png` from the `e2e_tests` job artifacts, rename it to the baseline name
-> (e.g. `compare-view-chromium-linux.png`), and commit it.
+> `VITE_*` vars in your `.env` (mounted with the repo), or `auth.setup.ts` throws immediately
+> with a clear error before any screenshot is taken. As an alternative for these, let CI run the
+> failing test and download the `…-actual.png` from the `e2e_tests` job artifacts, rename it to
+> the baseline name (e.g. `compare-view-chromium-linux.png`), and commit it.
 
 ### Running snapshot tests locally on macOS
 

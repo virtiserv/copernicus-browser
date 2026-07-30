@@ -1,9 +1,9 @@
 import { getVisualizationEffectsFromStore } from '../utils/effectsUtils';
 import { getOrbitDirectionFromList } from '../Tools/VisualizationPanel/VisualizationPanel.utils';
+import { selectActiveExternalLayer } from '../store/slices/externalLayersSlice';
+import type { RootState } from '../hooks';
 
-// TODO: replace `any` with RootState once store.js slices are typed
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const mapStoreToProps = (store: any) => {
+export const mapStoreToProps = (store: RootState) => {
   return {
     lat: store.mainMap.lat,
     lng: store.mainMap.lng,
@@ -52,11 +52,12 @@ export const mapStoreToProps = (store: any) => {
     comparedOpacity: store.compare.comparedOpacity,
     comparedClipping: store.compare.comparedClipping,
     auth: store.auth,
-    selectedTabSearchPanelIndex: store.tabs.selectedTabSearchPanelIndex,
     is3D: store.mainMap.is3D,
     selectedModeId: store.themes.selectedModeId,
     elevationProfileHighlightedPoint: store.elevationProfile.highlightedPoint,
     quicklookOverlays: store.mainMap.quicklookOverlays,
     filteredQuicklookOverlays: store.mainMap.filteredQuicklookOverlays,
+    activeExternalLayer: selectActiveExternalLayer(store),
+    wmsPanelOpen: store.externalLayers.panelOpen,
   };
 };

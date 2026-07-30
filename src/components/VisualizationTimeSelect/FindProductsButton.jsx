@@ -38,6 +38,7 @@ const FindProductsButton = ({
   maxCC,
   hasProductsWithinSelectedRange,
   layerId,
+  forceDisabled,
 }) => {
   const [{ searchInProgress, searchError, oDataSearchResult }, productSearch, setODataSearchAuthToken] =
     useODataSearch();
@@ -219,11 +220,13 @@ const FindProductsButton = ({
     }
   };
 
-  const isEnabled = enabled && datasetId;
+  // External WMS: show the button disabled (not clickable via the `disabled` class' pointer-events).
+  const isEnabled = enabled && datasetId && !forceDisabled;
 
   const dsh = getDataSourceHandler(datasetId);
 
-  if (!dsh?.supportsFindProductsForCurrentView(datasetId)) {
+  // External WMS has no SH datasource handler; still render the (disabled) button for layout parity.
+  if (!forceDisabled && !dsh?.supportsFindProductsForCurrentView(datasetId)) {
     return null;
   }
 

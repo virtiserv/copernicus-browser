@@ -105,6 +105,7 @@
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:headed": "npx playwright test --headed",
     "type-check": "tsc --noEmit --skipLibCheck",
+    "type-check:e2e": "tsc --noEmit -p e2e/tsconfig.json",
     "lint": "npm run type-check && eslint --max-warnings 0 \"src/**/*.{js,jsx,ts,tsx}\" \"scripts/**/*.{js,ts}\" && stylelint --max-warnings 0 \"src/**/*.css\" \"src/**/*.scss\" && eslint --max-warnings 0 \"**/*.html\"",
     "lint-js": "eslint --max-warnings 0 \"src/**/*.{js,jsx,ts,tsx}\" \"scripts/**/*.{js,ts}\"",
     "lint-css": "stylelint --max-warnings 0 \"src/**/*.css\" \"src/**/*.scss\"",

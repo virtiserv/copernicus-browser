@@ -175,6 +175,9 @@ import {
   COPERNICUS_CLMS_WSI_SNOW_PHENOLOGY_S1_S2_EUROPE_UTM_60M_YEARLY_V1,
   COPERNICUS_CLMS_WSI_WATER_COVER_DURATION_EUROPE_UTM_10M_YEARLY_V1,
   COPERNICUS_CLMS_WSI_ICE_COVER_DURATION_EUROPE_UTM_20M_YEARLY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
   COPERNICUS_CLMS_VLCC_BROADLEAVED_COVER_DENSITY_EUROPE_100M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_CONIFEROUS_COVER_DENSITY_EUROPE_100M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_FOREST_TYPE_EUROPE_100M_3YEARLY_V1,
@@ -937,6 +940,18 @@ export const CLMS_OPTIONS = [
               {
                 label: 'clms_wsi_ice-cover-duration_europe_utm_20m_yearly_v1',
                 id: COPERNICUS_CLMS_WSI_ICE_COVER_DURATION_EUROPE_UTM_20M_YEARLY_V1,
+              },
+              {
+                label: 'clms_wsi_water-ice-cover-s1_europe_utm_60m_daily_v1',
+                id: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+              },
+              {
+                label: 'clms_wsi_water-ice-cover-s2_europe_utm_20m_daily_v1',
+                id: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+              },
+              {
+                label: 'clms_wsi_water-ice-cover-s1-s2_europe_utm_20m_daily_v1',
+                id: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
               },
             ],
           },

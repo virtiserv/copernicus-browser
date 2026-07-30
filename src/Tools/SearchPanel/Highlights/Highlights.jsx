@@ -18,10 +18,11 @@ import { setTerrainViewerFromPin } from '../../../TerrainViewer/TerrainViewer.ut
 import './Highlights.scss';
 import { SAVED_PINS, UNSAVED_PINS, USE_PINS_BACKEND } from '../../Pins/const';
 import {
-  getPinsFromSessionStorage,
+  getLocalPins,
   savePinsToServer,
-  savePinsToSessionStorage,
+  saveLocalPins,
   normalizePin,
+  shouldUsePinsBackend,
 } from '../../Pins/Pin.utils';
 import { connect } from 'react-redux';
 import { IMAGE_FORMATS } from '../../../Controls/ImgDownload/consts';
@@ -80,7 +81,7 @@ class Highlights extends Component {
         })
         .catch(() => {});
     } else {
-      let pins = getPinsFromSessionStorage();
+      let pins = getLocalPins();
       this.setPinsInArray(pins, UNSAVED_PINS);
     }
   }
@@ -335,10 +336,13 @@ class Highlights extends Component {
       pinsToSave = [normalizePin({ ...pin, themeId })];
     }
 
-    if (USE_PINS_BACKEND && userdata) {
+    // Same shouldUsePinsBackend(user) gate as Tools.jsx's savePinToServerOrLocal, PinTools.jsx's
+    // onImportPins and Pin.utils.js's importSharedPins, duplicated here intentionally without the
+    // try/catch fallback-or-notify safety (out of scope for #1076).
+    if (shouldUsePinsBackend(userdata)) {
       await savePinsToServer(pinsToSave);
     } else {
-      savePinsToSessionStorage(pinsToSave);
+      saveLocalPins(pinsToSave);
     }
 
     store.dispatch(pinsSlice.actions.setNewPinsCount(newPinsCount + pinsToSave.length));

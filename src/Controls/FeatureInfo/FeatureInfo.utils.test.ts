@@ -1,4 +1,4 @@
-import { parseGmlResponse, GFI_IMAGE_SIZE } from './CLMSVectorFeatureInfo.utils';
+import { parseGmlResponse, GFI_IMAGE_SIZE } from './FeatureInfo.utils';
 import { CLMSVectorDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/CLMSVectorDataSourceHandler';
 import { COPERNICUS_CLMS_UA_LCU_2021_VECTOR } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceConstants';
 

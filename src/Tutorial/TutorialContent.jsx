@@ -30,6 +30,9 @@ import CompareActive from '/images/tutorial-icons/Compare-active.svg';
 import PinsActive from '/images/tutorial-icons/Pins-active.svg';
 import Pencil from '/images/tutorial-icons/Pencil.svg';
 
+// WMS/WMTS panel step
+import WmsWmtsActive from '/images/tutorial-icons/WmsWmts-active.svg';
+
 // 9th slide
 import WorkspacePlus from '/images/tutorial-icons/Workspace.svg';
 
@@ -180,6 +183,19 @@ In the line above your pins, you have different options that apply to all pins:
  - Export pins as a JSON file - by clicking on **Export**.
  - Import pins from a JSON file - by clicking on **Import**.
  - Delete all pins - by clicking on **Clear**.
+`;
+
+const externalWmsMd = () => t`
+The **WMS/WMTS panel** lets you add third-party map layers to Copernicus Browser via a service **GetCapabilities URL**.
+
+To **add a service** - paste its GetCapabilities URL into the input field and click the add button <span class="icon"><i class="fas fa-plus"></i></span> (or press Enter). The service and its layers appear alongside the standard collections.
+
+Once a service is loaded, you can:
+- View **service details** (description, access constraints and fees) - by clicking on the info icon <span class="icon"><i class="fa fa-info"></i></span> next to the service name.
+- **Select** a service - by clicking on its name; the active service is marked with a checkmark and its layers are listed below.
+- **Remove** a service - by clicking on the remove icon <span class="icon"><i class="fas fa-trash"></i></span>.
+
+In the layer list you can **search** layers by name, page through them with the <span class="icon"><i class="fas fa-chevron-left"></i></span> and <span class="icon"><i class="fas fa-chevron-right"></i></span> controls, and pick how many layers to show per page. Click a layer to display it on the map. On the active layer, use **Add to** <span class="icon"><i class="fas fa-plus"></i></span> to add it to the **Compare** or **Pins** panels.
 `;
 
 const searchTabMd = () => t`
@@ -422,6 +438,19 @@ export const TUTORIAL_STEPS = () => [
       </div>
     ),
     target: '#pins-panel-button',
+    placement: 'right',
+    disableBeacon: true,
+    styles: tutorialStyles,
+    locale: localeNames,
+  },
+  {
+    title: `![active-wms-wmts](${WmsWmtsActive}) ${t`WMS/WMTS Panel`}`,
+    content: (
+      <div className="content-div-style">
+        <ReactMarkdown rehypePlugins={REACT_MARKDOWN_REHYPE_PLUGINS}>{externalWmsMd()}</ReactMarkdown>
+      </div>
+    ),
+    target: '#external-layers-panel-button',
     placement: 'right',
     disableBeacon: true,
     styles: tutorialStyles,

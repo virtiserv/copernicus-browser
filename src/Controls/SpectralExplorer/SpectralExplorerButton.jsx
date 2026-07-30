@@ -11,9 +11,16 @@ import {
 
 import SpectralExplorerIcon from '../../icons/spectral_explorer.svg?react';
 
-const checkButtonDisabled = ({ datasetId, geometry, fromTime, toTime, user }) => {
+// Spectral explorer is a Sentinel Hub layer tool, so it's only available while a layer is being
+// visualized (the Layers or Highlights panel). It is disabled in Compare, Pin and the external
+// WMS/WMTS panel (where the previous SH layer's state would otherwise keep it enabled).
+const checkButtonDisabled = ({ datasetId, geometry, fromTime, toTime, user, isVisualizingLayer }) => {
   if (!user.userdata) {
     return `${spectralExplorerLabels.title()}\n(${spectralExplorerLabels.errorLogIn()})`;
+  }
+
+  if (!isVisualizingLayer) {
+    return `${spectralExplorerLabels.title()}\n(${spectralExplorerLabels.errorNotAvailableInPanel()})`;
   }
 
   if (!datasetId) {
@@ -66,12 +73,20 @@ const SpectralExplorerButton = ({
   fromTime,
   toTime,
   user,
+  isVisualizingLayer,
 }) => {
   if (!SPECTRAL_EXPLORER_ENABLED) {
     return null;
   }
 
-  const errorMessage = checkButtonDisabled({ datasetId, geometry, fromTime, toTime, user });
+  const errorMessage = checkButtonDisabled({
+    datasetId,
+    geometry,
+    fromTime,
+    toTime,
+    user,
+    isVisualizingLayer,
+  });
 
   return (
     // jsx-a11y/anchor-is-valid
@@ -95,6 +110,7 @@ const mapStoreToProps = (store) => ({
   fromTime: store.visualization.fromTime,
   toTime: store.visualization.toTime,
   user: store.auth.user,
+  isVisualizingLayer: store.tabs.isVisualizingLayer,
 });
 
 export default connect(mapStoreToProps, null)(SpectralExplorerButton);

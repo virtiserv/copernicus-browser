@@ -28,6 +28,7 @@ const spectralExplorerLabels = {
   errorGeometryNotSet: getGeometryNotSetMsg,
   errorDateNotSet: getDateNotSetMsg,
   errorLogIn: getLoggedInErrorMsg,
+  errorNotAvailableInPanel: () => t`Spectral explorer is not available in this panel.`,
   errorParameterNotSet: (parameter) => t`Parameter ${parameter} is not set`,
   reflectance: () => t`Reflectance`,
   wavelength: () => t`Wavelength (nm)`,

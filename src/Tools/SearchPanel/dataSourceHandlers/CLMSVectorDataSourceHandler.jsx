@@ -14,7 +14,7 @@ import {
   COPERNICUS_CLMS_UA_STL_2021_RASTER,
 } from './dataSourceConstants';
 import { DATASOURCES } from '../../../const';
-import { GFI_IMAGE_SIZE } from '../../../Controls/CLMSVectorFeatureInfo/CLMSVectorFeatureInfo.utils';
+import { GFI_IMAGE_SIZE } from '../../../Controls/FeatureInfo/FeatureInfo.utils';
 import { getFixedSizeBBoxBounds } from '../../../utils/geojson.utils';
 import { filterLayers } from './filter';
 import {

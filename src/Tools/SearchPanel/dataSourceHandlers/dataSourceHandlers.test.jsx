@@ -53,4 +53,3 @@ describe('isDataSourceReadyForDataset', () => {
     expect(isDataSourceReadyForDataset('totally-unknown-dataset-id-xyz')).toBe(false);
   });
 });
-

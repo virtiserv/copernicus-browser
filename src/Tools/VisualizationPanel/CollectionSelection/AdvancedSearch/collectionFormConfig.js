@@ -2624,6 +2624,26 @@ export const recursiveCollectionCLMS = [
                   'clms_wsi_ice-cover-duration_europe_utm_20m_yearly_v1',
                 )})`,
               },
+              {
+                id: 'clms_wsi_water-ice-cover-search_group',
+                label: 'Water Ice Cover, Europe, Daily, 20m/60m, (2016-present), V1',
+                type: 'productType',
+                // Intentionally matches all three WSI Water and Ice Cover datasets (S1, S2, S1+S2) as one search item.
+                // S1 and S2 are matched by datasetAlias; S1+S2 has no alias, so it's matched by datasetIdentifier instead.
+                customFilterExpression: `((${FilterElement.Attribute(
+                  ODataAttributes.datasetIdentifier,
+                  ODataFilterOperator.eq,
+                  'clms_wsi_water-ice-cover-s1_europe_utm_60m_daily_v1',
+                )}) or (${FilterElement.Attribute(
+                  ODataAttributes.datasetIdentifier,
+                  ODataFilterOperator.eq,
+                  'clms_wsi_water-ice-cover-s2_europe_utm_20m_daily_v1',
+                )}) or (${FilterElement.Attribute(
+                  ODataAttributes.datasetIdentifier,
+                  ODataFilterOperator.eq,
+                  'clms_wsi_water-ice-cover-s1-s2_europe_utm_20m_daily_v1',
+                )}))`,
+              },
             ],
           },
           {

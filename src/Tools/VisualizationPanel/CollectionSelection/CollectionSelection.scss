@@ -133,15 +133,45 @@
           width: 100%;
         }
 
+        .external-collection-delete-btn {
+          flex-shrink: 0;
+          background: none;
+          border: none;
+          color: vars.$textColor;
+          font-size: 16px;
+          line-height: 1;
+          padding: 4px 6px;
+          margin-left: 18px;
+          margin-right: 3px;
+          cursor: pointer;
+          opacity: 0.5;
+          border-radius: 3px;
+
+          &:hover {
+            opacity: 1;
+            background: rgb(255 255 255 / 8%);
+          }
+        }
+
         .collection-button {
           display: flex;
           justify-content: space-between;
           align-items: center;
           flex-grow: 1;
+          overflow: hidden;
           color: vars.$textColor;
           background-color: vars.$mainMedium;
           font-weight: vars.$fontWeightNormal;
           text-align: left;
+
+          .collection-button-title {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-width: 0;
+            flex: 1;
+          }
           /*stylelint-disable*/
           &.primary {
             font-size: 14px;
@@ -280,7 +310,6 @@
   .title-content {
     display: flex;
     align-items: center;
-    max-height: 33px;
 
     .loading {
       display: flex;
@@ -296,10 +325,29 @@
     .collection-search {
       .collection-search-header {
         .sensors-satellites-selection {
-          flex-basis: 100%;
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
           display: flex;
           align-items: center;
           margin-bottom: 0;
+
+          .collection-title-label {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-width: 0;
+            flex: 1;
+
+            &.external-source-title {
+              // Keep a small gap so a long title ellipsizes before it touches the action buttons.
+              padding-right: 8px;
+              // It is a non-interactive label; without this a click places a text caret and scrolls
+              // the overflow horizontally, which makes text-overflow drop the ellipsis (Chromium quirk).
+              user-select: none;
+            }
+          }
 
           .collection-tooltip-icon {
             margin-right: 10px;

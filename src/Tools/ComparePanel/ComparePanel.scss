@@ -113,6 +113,14 @@
     .compare-panel-button-wrapper {
       margin: 10px 0 0;
 
+      // Wraps the Share button so its title tooltip still shows when the button itself is
+      // `.disabled` (which sets pointer-events: none). Mirrors the button's flex-grow so the
+      // three buttons keep equal width.
+      .compare-panel-share-button-wrapper {
+        display: flex;
+        flex-grow: 1;
+      }
+
       .compare-panel-button {
         cursor: pointer;
         color: vars.$textColor;

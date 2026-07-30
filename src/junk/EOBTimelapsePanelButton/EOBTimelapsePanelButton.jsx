@@ -30,19 +30,21 @@ export function EOBTimelapsePanelButton(props) {
   const isTimelapseSupported =
     isLayerSelected && props.selectedResult.getDates && props.selectedResult.baseUrls.WMS;
 
-  const errMsg = props.showComparePanel
-    ? getCompareModeErrorMsg()
-    : !props.isLoggedIn
-      ? getLoggedInErrorMsg()
-      : !isLayerSelected || props.selectedTabIndex !== TABS.VISUALIZE_TAB
-        ? getLayerNotSelectedMsg()
-        : !isTimelapseSupported
-          ? getDatasourceNotSupportedMsg()
-          : props.zoomTooLow
-            ? zoomTooLow3DMsg()
-            : props.isPlacingVertex
-              ? getFinishDrawingMsg()
-              : null;
+  const errMsg = props.errorOverride
+    ? props.errorOverride
+    : props.showComparePanel
+      ? getCompareModeErrorMsg()
+      : !props.isLoggedIn
+        ? getLoggedInErrorMsg()
+        : !isLayerSelected || props.selectedTabIndex !== TABS.VISUALIZE_TAB
+          ? getLayerNotSelectedMsg()
+          : !isTimelapseSupported
+            ? getDatasourceNotSupportedMsg()
+            : props.zoomTooLow
+              ? zoomTooLow3DMsg()
+              : props.isPlacingVertex
+                ? getFinishDrawingMsg()
+                : null;
 
   const isEnabled = errMsg === null;
   const errorMessage = errMsg ? `\n(${errMsg})` : '';

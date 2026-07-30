@@ -1,6 +1,8 @@
 import { t } from 'ttag';
 
 import store, { compareLayersSlice, timelapseSlice } from '../../../store';
+import { selectActiveExternalLayer } from '../../../store/slices/externalLayersSlice';
+import { buildExternalWmsPayload } from '../../Pins/Pin.utils';
 import {
   getDatasetLabel,
   getDataSourceHandler,
@@ -82,6 +84,21 @@ const addVisualizationToComponent = (
 };
 
 const addVisualizationToCompare = (props) => {
+  const activeExternalLayer = selectActiveExternalLayer(store.getState());
+  if (activeExternalLayer) {
+    const externalTitle = activeExternalLayer.server.name;
+    store.dispatch(
+      compareLayersSlice.actions.addToCompare({
+        title: externalTitle,
+        zoom: props.zoom,
+        lat: props.lat,
+        lng: props.lng,
+        themeId: store.getState().themes.selectedThemeId,
+        externalWms: buildExternalWmsPayload(activeExternalLayer),
+      }),
+    );
+    return;
+  }
   addVisualizationToComponent(compareLayersSlice.actions.addToCompare, props);
 };
 

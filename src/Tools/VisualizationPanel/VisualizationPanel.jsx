@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import { t } from 'ttag';
 
 import DateSelection from './DateSelection';
+import WmsDateSelection from './WmsDateSelection';
 import VisualizationLayerContainer from './VisualizationLayer/VisualizationLayerContainer';
 import CollectionSelection from './CollectionSelection/CollectionSelection';
 import Highlights from '../SearchPanel/Highlights/Highlights';
@@ -17,12 +18,8 @@ import ComparePanel from '../ComparePanel/ComparePanel';
 import ThemeSelect from './ThemeSelect/ThemeSelect';
 
 import { haveEffectsChangedFromDefault } from './VisualizationPanel.utils';
-import store, {
-  visualizationSlice,
-  compareLayersSlice,
-  pinsSlice,
-  collapsiblePanelSlice,
-} from '../../store';
+import store, { visualizationSlice, compareLayersSlice, pinsSlice, collapsiblePanelSlice } from '../../store';
+import { selectActiveExternalLayer } from '../../store/slices/externalLayersSlice';
 import {
   EXPIRED_ACCOUNT,
   MIN_SCREEN_HEIGHT_FOR_DATE_AND_COLLECTION_PANEL,
@@ -36,6 +33,7 @@ import { resetMessagePanel } from '../../utils';
 import { isOpenEoSupported } from '../../api/openEO/openEOHelpers';
 import { IMAGE_FORMATS } from '../../Controls/ImgDownload/consts';
 import { NOTIFICATION_BADGE_RESET_TIMEOUT } from './const';
+import ExternalWmsLayerContainer from '../../ExternalLayers/ExternalWmsLayerContainer';
 
 const showEffectsText = () => t`Show effects and advanced options`;
 const appliedEffectsText = () => t`Effects and advanced options applied`;
@@ -128,6 +126,9 @@ function VisualizationPanel({
   selectedTabIndex,
   customSelected,
   selectedProcessing,
+  activeExternalServerId,
+  wmsLayersPanelOpen,
+  activeExternalLayer,
 }) {
   const selectedTheme = selectedThemesListId
     ? themesLists[selectedThemesListId].find((t) => t.id === selectedThemeId)
@@ -224,7 +225,16 @@ function VisualizationPanel({
     !showHighlightPanel &&
     !showComparePanel &&
     !showPinPanel &&
+    !wmsLayersPanelOpen &&
     authToken
+  );
+
+  const shouldShowExternalLayerList = !!(
+    activeExternalServerId &&
+    wmsLayersPanelOpen &&
+    !showHighlightPanel &&
+    !showComparePanel &&
+    !showPinPanel
   );
 
   useEffect(() => {
@@ -277,28 +287,43 @@ function VisualizationPanel({
   return (
     <div className="visualization-panel">
       <>
-        {selectedThemeId !== EXPIRED_ACCOUNT.instanceId && datasetId && (
-          <div className="date-selection">
-            <DateSelection
-              compareShare={compareShare}
-              showLayerPanel={showLayerPanel}
-              setShowLayerPanel={setShowLayerPanel}
-              showHighlightPanel={showHighlightPanel}
-              showComparePanel={showComparePanel}
-            />
-          </div>
-        )}
+        {selectedThemeId !== EXPIRED_ACCOUNT.instanceId &&
+          (activeExternalLayer && (activeExternalLayer.timeStart || activeExternalLayer.timeDefault) ? (
+            <div className="date-selection">
+              <WmsDateSelection
+                compareShare={compareShare}
+                showLayerPanel={showLayerPanel}
+                setShowLayerPanel={setShowLayerPanel}
+                showHighlightPanel={showHighlightPanel}
+                showComparePanel={showComparePanel}
+              />
+            </div>
+          ) : (
+            datasetId && (
+              <div className={`date-selection ${wmsLayersPanelOpen ? 'wms-disabled-overlay' : ''}`}>
+                <DateSelection
+                  compareShare={compareShare}
+                  showLayerPanel={showLayerPanel}
+                  setShowLayerPanel={setShowLayerPanel}
+                  showHighlightPanel={showHighlightPanel}
+                  showComparePanel={showComparePanel}
+                />
+              </div>
+            )
+          ))}
         {showMessagePanel && (
           <MessagePanel variant="plain" onClose={onMessagePanelClose}>
             {messagePanelContent}
           </MessagePanel>
         )}
-        <ThemeSelect
-          compareShare={compareShare}
-          setShowLayerPanel={setShowLayerPanel}
-          highlightsAvailable={highlightsAvailable}
-          setShowHighlightPanel={setShowHighlightPanel}
-        />
+        <div className={wmsLayersPanelOpen ? 'wms-disabled-overlay' : ''}>
+          <ThemeSelect
+            compareShare={compareShare}
+            setShowLayerPanel={setShowLayerPanel}
+            highlightsAvailable={highlightsAvailable}
+            setShowHighlightPanel={setShowHighlightPanel}
+          />
+        </div>
 
         {selectedThemeId && (
           <>
@@ -319,7 +344,7 @@ function VisualizationPanel({
                 newPinsCount={newPinsCount}
               />
             )}
-            {showLayerPanel && !displayEffects && shouldShowLayerList && (
+            {showLayerPanel && !displayEffects && shouldShowLayerList && !shouldShowExternalLayerList && (
               <VisualizationLayerContainer
                 shouldShowLayerList={shouldShowLayerList}
                 savePin={savePin}
@@ -328,7 +353,14 @@ function VisualizationPanel({
                 layerActionsOpen={layerActionsOpen}
               />
             )}
-            {shouldShowLayerList && (
+            {!displayEffects && shouldShowExternalLayerList && (
+              <ExternalWmsLayerContainer
+                savePin={savePin}
+                toggleLayerActions={toggleLayerActions}
+                layerActionsOpen={layerActionsOpen}
+              />
+            )}
+            {shouldShowLayerList && !shouldShowExternalLayerList && (
               <>
                 {displayEffects && (
                   <EOBEffectsPanel
@@ -401,6 +433,9 @@ const mapStoreToProps = (store) => ({
   dataSourcesInitialized: store.themes.dataSourcesInitialized,
   dataSourcesLoading: store.themes.dataSourcesLoading,
   selectedTabIndex: store.tabs.selectedTabIndex,
+  activeExternalLayer: selectActiveExternalLayer(store),
+  activeExternalServerId: store.externalLayers.activeServerId,
+  wmsLayersPanelOpen: store.externalLayers.panelOpen,
 });
 
 export default connect(mapStoreToProps, null)(VisualizationPanel);

@@ -23,7 +23,7 @@ import {
   validateEvalscript,
   validateProcessGraph,
 } from './LayerSelection.utils';
-import store, { visualizationSlice, notificationSlice } from '../../store';
+import store, { visualizationSlice, notificationSlice, externalLayersSlice } from '../../store';
 import { t } from 'ttag';
 import { parseEvalscriptBands } from '../../utils';
 import { parseIndexEvalscript } from '../../utils/parseIndexEvalscript.util';
@@ -114,6 +114,7 @@ const LayerSelection = ({
 
       setProcessGraph(processGraphValue);
 
+      store.dispatch(externalLayersSlice.actions.clearActiveExternalLayer());
       store.dispatch(
         visualizationSlice.actions.setVisualizationParams({
           visualizationUrl: layer.url,

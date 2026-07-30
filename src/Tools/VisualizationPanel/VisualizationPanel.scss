@@ -64,7 +64,8 @@
       display: flex;
       flex-direction: column;
       flex-grow: 1;
-      padding-left: 10px;
+      padding-left: 8px;
+      padding-right: 8px;
 
       small {
         font-size: 10px;
@@ -333,5 +334,20 @@
       // This is needed in order to display NotificationPanel properly inside the sidebar
       padding-bottom: 1px;
     }
+  }
+}
+
+// Disabled look for the date picker and configuration panels while the external
+// WMS/WMTS panel is active: a translucent white layer that also blocks interaction.
+.wms-disabled-overlay {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: rgb(255 255 255 / 60%);
+    z-index: 1000;
+    cursor: not-allowed;
   }
 }

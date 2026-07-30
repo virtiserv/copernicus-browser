@@ -20,9 +20,80 @@ import {
 } from '../../utils/effectsUtils';
 import { getLayerFromParams } from '../../Controls/ImgDownload/ImageDownload.utils';
 import { PROCESSING_OPTIONS, TABS } from '../../const';
-import { SAVED_PINS, UNSAVED_PINS } from './const';
+import { SAVED_PINS, UNSAVED_PINS, USE_PINS_BACKEND } from './const';
 
+// Single source of truth for the "is this a logged-in, backend-enabled session?" gate reused by
+// Tools.jsx (savePinToServerOrLocal), PinTools.jsx (onImportPins), Highlights.jsx (savePin) and
+// importSharedPins below, so the call sites converge on one predicate instead of independently
+// re-deriving it. The parameter is deliberately just a truthy "is the user logged in?" signal, not
+// a specific shape: call sites pass whatever they have on hand for that signal (the user object,
+// its userdata sub-object, or a plain boolean), and all of those are truthy exactly when logged in.
+// This predicate only unifies that truthiness check with the USE_PINS_BACKEND flag.
+export const shouldUsePinsBackend = (isLoggedIn) => USE_PINS_BACKEND && !!isLoggedIn;
+
+// Anonymous pins live in sessionStorage under a single, non-user-suffixed key — the same store and
+// key production (main) has always used, so anonymous pins created before this ships are not orphaned.
+// Logged-in users' native Sentinel-Hub and external-WMS/WMTS pins are saved to the backend (see
+// #1076), never to browser storage; this session bucket is only for anonymous users (and a fallback
+// for external-WMS/WMTS pins if the backend save fails). sessionStorage is per-tab and cleared on
+// close, so there is no cross-user leakage and no need to namespace the key per user.
 const PINS_LC_NAME = 'eob-pins';
+
+// Low-level read of the raw stored pin array (no normalization, no dispatch).
+function readLocalPins() {
+  try {
+    const raw = sessionStorage.getItem(PINS_LC_NAME);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Low-level write of the pin array (no dispatch). Degrades gracefully if storage is unavailable
+// (e.g. iOS Safari private mode).
+export function writeLocalPins(pins) {
+  try {
+    // Remove the key entirely when there are no pins left, so an emptied bucket doesn't linger as a
+    // stray "[]" entry (matches clearLocalPins / clearPersistedExternalLayers).
+    if (!pins || pins.length === 0) {
+      sessionStorage.removeItem(PINS_LC_NAME);
+    } else {
+      sessionStorage.setItem(PINS_LC_NAME, JSON.stringify(pins));
+    }
+  } catch (e) {
+    console.warn('Could not store local pins:', e);
+  }
+}
+
+// Builds the self-contained externalWms payload stored on a WMS/WMTS pin from the active external
+// layer. Called from Tools.savePin.
+export function buildExternalWmsPayload(activeExternalLayer) {
+  return {
+    url: activeExternalLayer.server.url,
+    layerName: activeExternalLayer.layerName,
+    layerTitle: activeExternalLayer.layerTitle,
+    layerAbstract: activeExternalLayer.layerAbstract,
+    legendUrl: activeExternalLayer.legendUrl,
+    tileUrl: activeExternalLayer.tileUrl,
+    type: activeExternalLayer.server.type,
+    serverName: activeExternalLayer.server.name,
+    version: activeExternalLayer.server.version,
+    format: activeExternalLayer.server.format,
+    infoFormat: activeExternalLayer.server.infoFormat,
+    time: activeExternalLayer.time ?? null,
+    queryable: activeExternalLayer.queryable,
+  };
+}
+
+// Clears the anonymous pin bucket by removing the key entirely (no dispatch), matching
+// clearPersistedExternalLayers so a migrated/cleared bucket leaves no leftover empty `[]` entry.
+export function clearLocalPins() {
+  try {
+    sessionStorage.removeItem(PINS_LC_NAME);
+  } catch (e) {
+    console.warn('Could not clear local pins:', e);
+  }
+}
 
 async function getPinsFromBackend(access_token) {
   const url = `${import.meta.env.VITE_CDSE_BACKEND}userpins`;
@@ -92,8 +163,8 @@ async function savePinsToBackend(pins, replace = false) {
   if (replace) {
     newPins = [...pins];
   } else {
-    const currentPins = await getPinsFromServer();
-    newPins = [...pins, ...currentPins];
+    const backendPins = await getPinsFromServer();
+    newPins = [...pins, ...backendPins];
   }
   try {
     await axios.put(url, { items: newPins.map(toServerPin) }, requestParams);
@@ -115,7 +186,7 @@ export async function savePinsToServer(pins, replace = false) {
   return { ...response, pins: normalizedPins };
 }
 
-export function savePinsToSessionStorage(newPins, replace = false) {
+export function saveLocalPins(newPins, replace = false) {
   let lastUniqueId;
   newPins = newPins.map((p) => {
     if (!p._id) {
@@ -125,32 +196,21 @@ export function savePinsToSessionStorage(newPins, replace = false) {
     lastUniqueId = p._id;
     return normalizePin({ ...p });
   });
-  let pins = sessionStorage.getItem(PINS_LC_NAME);
-  if (!pins) {
-    pins = [];
-  } else {
-    pins = JSON.parse(pins);
-  }
+  let pins = readLocalPins();
   if (!replace) {
     pins = [...newPins, ...pins.map((pin) => normalizePin({ ...pin }))];
   } else {
     pins = newPins;
   }
 
-  sessionStorage.setItem(PINS_LC_NAME, JSON.stringify(pins));
+  writeLocalPins(pins);
   store.dispatch(pinsSlice.actions.updatePinsByType({ pins: pins, pinType: UNSAVED_PINS }));
 
   return lastUniqueId;
 }
 
-export function getPinsFromSessionStorage() {
-  let pins = sessionStorage.getItem(PINS_LC_NAME);
-  if (!pins) {
-    pins = [];
-  } else {
-    pins = JSON.parse(pins);
-  }
-
+export function getLocalPins() {
+  const pins = readLocalPins();
   const formattedPins = pins.map((pin) => normalizePin({ ...pin }));
 
   return establishCorrectDataFusionFormatInPins(formattedPins);
@@ -179,9 +239,11 @@ export async function getSharedPins(sharedPinsListId) {
 const pinPropertiesSubset = (pin) => ({
   title: pin.title,
   themeId: pin.themeId,
-  datasetId: pin.datasetId,
+  // Coerce "" / null / undefined to null so external pins (no dataset/visualizationUrl) dedup
+  // consistently across FE-local, legacy "" rows, and backend null (see pins-backend#4).
+  datasetId: pin.datasetId || null,
   layerId: pin.layerId,
-  visualizationUrl: pin.visualizationUrl,
+  visualizationUrl: pin.visualizationUrl || null,
   lat: pin.lat,
   lng: pin.lng,
   zoom: pin.zoom,
@@ -217,7 +279,7 @@ export function getPinsFromStorage(user) {
     if (user) {
       getPinsFromServer().then((pins) => resolve(pins));
     } else {
-      const pinsFromLocalStorage = getPinsFromSessionStorage();
+      const pinsFromLocalStorage = getLocalPins();
       resolve(pinsFromLocalStorage);
     }
   });
@@ -255,10 +317,13 @@ export async function importSharedPins(sharedPinsListId) {
   if (newPins.length > 0) {
     const mergedPins = [...existingPins, ...newPins];
 
-    if (isUserLoggedIn) {
+    // Same shouldUsePinsBackend() gate as Tools.jsx's savePinToServerOrLocal, PinTools.jsx's
+    // onImportPins and Highlights.jsx's savePin, duplicated here intentionally without the
+    // try/catch fallback-or-notify safety (out of scope for #1076).
+    if (shouldUsePinsBackend(isUserLoggedIn)) {
       result = await savePinsToServer(mergedPins, true);
     } else {
-      result = savePinsToSessionStorage(mergedPins, true);
+      result = saveLocalPins(mergedPins, true);
     }
   }
   return result;
@@ -269,6 +334,10 @@ export async function layerFromPin(pin, reqConfig) {
   const { datasetId, layerId, evalscript, evalscriptUrl, dataFusion } = pin;
 
   const visualizationUrl = getVisualizationUrl(pin);
+
+  if (!visualizationUrl) {
+    return null;
+  }
 
   const dsh = getDataSourceHandler(datasetId);
   const shJsDataset = dsh ? dsh.getSentinelHubDataset(datasetId) : null;
@@ -342,6 +411,23 @@ export const constructTimespanString = ({ fromTime, toTime } = {}) => {
   }
 
   return `${moment.utc(fromTime).format('YYYY-MM-DD')} - ${moment.utc(toTime).format('YYYY-MM-DD')}`;
+};
+
+// Date label for an external WMS/WMTS pin. The selected time is stored on the pin as
+// externalWms.time (a date or a full datetime for sub-daily layers). Returns null when the layer has
+// no time dimension so the Date row is hidden.
+export const constructExternalWmsDateString = (time) => {
+  if (!time) {
+    return null;
+  }
+  const m = moment.utc(time);
+  if (!m.isValid()) {
+    return null;
+  }
+  // Show the time-of-day only for sub-daily layers (the stored value carries a non-midnight time),
+  // otherwise just the day — enough to tell e.g. March/April/May pins apart.
+  const hasTimeOfDay = typeof time === 'string' && time.includes('T') && !/T00:00(:00)?/.test(time);
+  return hasTimeOfDay ? m.format('YYYY-MM-DD HH:mm [UTC]') : m.format('YYYY-MM-DD');
 };
 
 export const constructCompareTimespanString = (comparedLayers = []) => {
@@ -463,8 +549,9 @@ export async function constructPinFromProps(props) {
   } = props;
   const themeName = getThemeName(themesLists[selectedThemesListId].find((t) => t.id === selectedThemeId));
   const layer = await getLayerFromParams(props);
+  const pinTitle = `${getDatasetLabel(datasetId)}: ${customSelected ? 'Custom' : (layer?.title ?? '')} (${themeName})`;
   return {
-    title: `${getDatasetLabel(datasetId)}: ${customSelected ? 'Custom' : layer.title} (${themeName})`,
+    title: pinTitle,
     lat: lat,
     lng: lng,
     zoom: zoom,

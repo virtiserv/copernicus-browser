@@ -16,6 +16,12 @@ if (!fs.existsSync(authFile)) {
 }
 
 setup('authenticate via SSO', async ({ page }) => {
+  const username = process.env.E2E_SSO_USERNAME;
+  const password = process.env.E2E_SSO_PASSWORD;
+  if (!username || !password) {
+    throw new Error('E2E_SSO_USERNAME and E2E_SSO_PASSWORD must be set to run authenticated e2e tests.');
+  }
+
   // Step 1: Go to the app and trigger login
   await page.goto('/');
 
@@ -26,12 +32,21 @@ setup('authenticate via SSO', async ({ page }) => {
   // later on the Email field.
   await page.waitForURL(/identity\.dataspace\.copernicus\.eu/, { timeout: 60_000 });
   await page.getByRole('textbox', { name: 'Email' }).click();
-  await page.getByRole('textbox', { name: 'Email' }).fill(process.env.E2E_SSO_USERNAME ?? '');
+  await page.getByRole('textbox', { name: 'Email' }).fill(username);
   await page.getByRole('textbox', { name: 'Password' }).click();
-  await page.getByRole('textbox', { name: 'Password' }).fill(process.env.E2E_SSO_PASSWORD ?? '');
+  await page.getByRole('textbox', { name: 'Password' }).fill(password);
   await page.getByRole('button', { name: 'LOGIN' }).click();
-  await page.getByRole('button', { name: "Don't show again" }).click();
-  await expect(page.getByText('FE-Team Test Account')).toBeVisible();
+
+  // First-login consent dialog is not shown on every run; dismiss it only when present
+  // so an absent dialog does not stall the setup for the full action timeout.
+  const consentButton = page.getByRole('button', { name: "Don't show again" });
+  await consentButton.waitFor({ state: 'visible', timeout: 3_000 }).catch(() => {});
+  if (await consentButton.isVisible()) {
+    await consentButton.click();
+  }
+
+  // Authoritative login-success signal (the consent click above is best-effort).
+  await expect(page.getByText('FE-Team Test Account')).toBeVisible({ timeout: 30_000 });
 
   // Step 5: Save the authenticated browser state
   await page.context().storageState({ path: authFile });

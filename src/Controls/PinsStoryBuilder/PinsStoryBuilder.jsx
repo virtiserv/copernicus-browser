@@ -15,7 +15,7 @@ import {
   drawBlobOnCanvas,
 } from '@sentinel-hub/sentinelhub-js';
 
-import store, { modalSlice } from '../../store';
+import store, { modalSlice, notificationSlice } from '../../store';
 import SlidesSelector from './SlidesSelector';
 import SlidesPreview from './SlidesPreview';
 import SlidesDownload from './SlidesDownload';
@@ -194,11 +194,19 @@ class PinsStoryBuilder extends React.Component {
 
       const bbox = new BBox(CRS_EPSG4326, ...bounds);
 
+      let skippedExternalWmsPin = false;
       for (let i = 0; i < slides.length; i++) {
         const { withinBounds, selected, id: slideId, pin, title } = slides[i];
 
         if (!withinBounds || !selected || images[slideId]) {
           // nothing to do - not within bounds, not selected or already have an image
+          continue;
+        }
+
+        // External WMS pins have no Sentinel Hub layer to render in a story; flag and skip them
+        // so we can tell the user afterwards instead of silently dropping the slide.
+        if (pin.externalWms) {
+          skippedExternalWmsPin = true;
           continue;
         }
 
@@ -283,6 +291,14 @@ class PinsStoryBuilder extends React.Component {
             [slideId]: URL.createObjectURL(blob),
           },
         }));
+      }
+
+      if (skippedExternalWmsPin) {
+        store.dispatch(
+          notificationSlice.actions.displayWarning(
+            t`External WMS layers can't be included in a story and were skipped.`,
+          ),
+        );
       }
     } catch (ex) {
       if (!isCancelled(ex)) {

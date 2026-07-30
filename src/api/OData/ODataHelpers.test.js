@@ -42,6 +42,9 @@ import {
   COPERNICUS_CLMS_VLCC_MAIN_CROP_EMERGENCE_EUROPE_10M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_MAIN_CROP_HARVEST_EUROPE_10M_YEARLY_V1,
   COPERNICUS_CLMS_WSI_ICE_COVER_DURATION_EUROPE_UTM_20M_YEARLY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
 } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceConstants';
 import {
   COPERNICUS_CLMS_VLCC_CROP_TYPES_EUROPE_10M_YEARLY_V1_DATASET_IDENTIFIERS,
@@ -2579,6 +2582,34 @@ describe('getODataCollectionInfoFromDatasetId — ICD (single collection)', () =
     expect(result[0].instrument).toBe('WATER_AND_ICE_COVER');
     expect(result[0].productType).toBe('clms_wsi_ice-cover-duration_europe_utm_20m_yearly_v1');
     expect(result[0].selectedFilters).toEqual({});
+  });
+});
+
+describe('getODataCollectionInfoFromDatasetId — WSI Water and Ice Cover (grouped search)', () => {
+  test.each([
+    [COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1],
+    [COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1],
+    [COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1],
+  ])(
+    '%s returns a single WATER_AND_ICE_COVER entry with the shared search group productType',
+    (datasetId) => {
+      const result = getODataCollectionInfoFromDatasetId(datasetId, {});
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('CLMS_BIOGEOPHYSICAL_PARAMETERS');
+      expect(result[0].instrument).toBe('WATER_AND_ICE_COVER');
+      expect(result[0].productType).toBe('clms_wsi_water-ice-cover-search_group');
+      expect(result[0].selectedFilters).toEqual({});
+    },
+  );
+
+  test('all three datasets resolve to the same productType (OR logic across datasets)', () => {
+    const results = [
+      COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+      COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+      COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
+    ].map((datasetId) => getODataCollectionInfoFromDatasetId(datasetId, {})[0].productType);
+
+    expect(new Set(results).size).toBe(1);
   });
 });
 

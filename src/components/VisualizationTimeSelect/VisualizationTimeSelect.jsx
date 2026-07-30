@@ -76,6 +76,8 @@ export function VisualizationTimeSelect({
   dateMode,
   compareShare,
   clmsSelection,
+  disabledModes = /** @type {string[]} */ ([]),
+  findProductsDisabled = false,
 }) {
   const [loading, setLoading] = useState(false);
   const calendarHolder = useRef(null);
@@ -187,6 +189,7 @@ export function VisualizationTimeSelect({
               title={DATE_MODES.SINGLE.description()}
               aria-label={DATE_MODES.SINGLE.description()}
               aria-pressed={isSingle}
+              disabled={disabledModes.includes(DATE_MODES.SINGLE.value)}
               onClick={() => store.dispatch(visualizationSlice.actions.setDateMode(DATE_MODES.SINGLE.value))}
             >
               <Single className={`single-mode-svg ${isSingle ? 'active' : ''}`} aria-hidden="true" />
@@ -195,6 +198,7 @@ export function VisualizationTimeSelect({
               title={DATE_MODES.MOSAIC.description()}
               aria-label={DATE_MODES.MOSAIC.description()}
               aria-pressed={isMosaic}
+              disabled={disabledModes.includes(DATE_MODES.MOSAIC.value)}
               onClick={() => store.dispatch(visualizationSlice.actions.setDateMode(DATE_MODES.MOSAIC.value))}
             >
               <Mosaic className={`mosaic-mode-svg ${isMosaic ? 'active' : ''}`} aria-hidden="true" />
@@ -203,6 +207,7 @@ export function VisualizationTimeSelect({
               title={DATE_MODES['TIME RANGE'].description()}
               aria-label={DATE_MODES['TIME RANGE'].description()}
               aria-pressed={isTimeRange}
+              disabled={disabledModes.includes(DATE_MODES['TIME RANGE'].value)}
               onClick={() =>
                 store.dispatch(visualizationSlice.actions.setDateMode(DATE_MODES['TIME RANGE'].value))
               }
@@ -335,6 +340,7 @@ export function VisualizationTimeSelect({
             enabled={isZoomLevelOk}
             setLoading={setLoading}
             hasProductsWithinSelectedRange={isTimeRange || isMosaic}
+            forceDisabled={findProductsDisabled}
           />
         </>
       );

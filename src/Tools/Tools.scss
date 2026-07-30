@@ -152,3 +152,11 @@ $searchBorderColour: vars.$primaryColor;
     }
   }
 }
+
+// Each tab renders its own `.tabPanelContainer`; only the inner `.active`/`.none` div toggles
+// visibility, so the outer RRD container stays in the layout. Its `flex: 1 1 auto` then steals
+// vertical space below whichever tab is active (e.g. pushing the WMS pagination footer up). Collapse
+// it while inactive. The :has() raises specificity above the `display: flex` rule above.
+#rapid-response-desk-tab:has(> .none) {
+  display: none;
+}

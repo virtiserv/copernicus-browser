@@ -3356,3 +3356,59 @@ export const COPERNICUS_CLMS_WSI_WATER_COVER_DURATION_EUROPE_UTM_10M_YEARLY_V1_B
     getDescription: () => ``,
   },
 ];
+export const COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1_BANDS = [
+  {
+    name: 'WIC',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+  {
+    name: 'WIC_QA',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+  {
+    name: 'QAFLAGS',
+    sampleType: 'UINT16',
+    getDescription: () => ``,
+  },
+];
+export const COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1_BANDS = [
+  {
+    name: 'WIC',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+  {
+    name: 'WIC_QA',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+  {
+    name: 'QAFLAGS',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+  {
+    name: 'PRB',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+];
+export const COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1_BANDS = [
+  {
+    name: 'WIC',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+  {
+    name: 'WIC_QA',
+    sampleType: 'UINT8',
+    getDescription: () => ``,
+  },
+  {
+    name: 'QAFLAGS',
+    sampleType: 'UINT16',
+    getDescription: () => ``,
+  },
+];

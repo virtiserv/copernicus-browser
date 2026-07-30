@@ -5,7 +5,10 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-shims.css';
 import { isMobile } from 'react-device-detect';
 
-import store, { notificationSlice, visualizationSlice, themesSlice, toolsSlice } from './store';
+import store, { notificationSlice, visualizationSlice, themesSlice, toolsSlice, tabsSlice } from './store';
+import { externalLayersSlice } from './store/slices/externalLayersSlice';
+import { markExternalLayersHydrated } from './ExternalLayers/externalLayersPersistence';
+import { resolveHydratedExternalLayers } from './ExternalLayers/hydrateExternalServers';
 import Map from './Map/Map';
 import Notification from './Notification/Notification';
 import Tools from './Tools/Tools';
@@ -34,7 +37,29 @@ class App extends Component {
     showComparePanel: false,
   };
 
+  // Rehydrates the user's persisted external WMS/WMTS servers (per user) on app mount. App renders
+  // only after AuthProvider has resolved auth, so the store holds the correct user here. Not
+  // awaited by componentDidMount (see below) so a slow/hung backend can't delay unrelated startup
+  // steps; resolveHydratedExternalLayers has its own try/catch, so this never rejects.
+  // markExternalLayersHydrated() is called last so the persistence middleware's write-gate keeps it
+  // from saving empty initial state to the backend while this is in flight.
+  hydrateExternalServers = async () => {
+    const state = store.getState();
+    const accessToken = state.auth?.user?.access_token;
+    const isLoggedIn = !!state.auth?.user?.userdata && !!accessToken;
+
+    const hydrated = await resolveHydratedExternalLayers(isLoggedIn, accessToken);
+    if (hydrated) {
+      store.dispatch(externalLayersSlice.actions.hydrateExternalLayers(hydrated));
+    }
+    markExternalLayersHydrated();
+  };
+
   async componentDidMount() {
+    // Not awaited: rehydrating external WMS/WMTS servers is unrelated to the steps below, and a
+    // slow/hung backend must not delay them (mobile panel collapse, hostname override, etc.).
+    this.hydrateExternalServers();
+
     const { sharedPinsListIdFromUrlParams, compareShareInit } = this.props;
     if (sharedPinsListIdFromUrlParams) {
       if (import.meta.env.VITE_CDSE_BACKEND) {
@@ -66,9 +91,13 @@ class App extends Component {
     if (!!isMobile) {
       store.dispatch(toolsSlice.actions.setOpen(false));
     }
+
+    store.dispatch(
+      tabsSlice.actions.setIsVisualizingLayer(this.state.showLayerPanel || this.state.showHighlightPanel),
+    );
   }
 
-  async componentDidUpdate(prevProps) {
+  async componentDidUpdate(prevProps, prevState) {
     if (this.props.handlePositions === prevProps.handlePositions) {
       updatePath({ ...this.props });
     } else {
@@ -84,6 +113,14 @@ class App extends Component {
     }
     if (!prevProps.is3D && this.props.is3D) {
       this.setState({ hasSwitchedFrom3D: false });
+    }
+
+    // Keep the Redux mirror in sync (used by the AOI/POI Spectral Explorer & Statistical Info
+    // buttons to disable outside the Layers/Highlights panels).
+    const next = this.state.showLayerPanel || this.state.showHighlightPanel;
+    const prev = prevState.showLayerPanel || prevState.showHighlightPanel;
+    if (next !== prev) {
+      store.dispatch(tabsSlice.actions.setIsVisualizingLayer(next));
     }
   }
 

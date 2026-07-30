@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
+import { t } from 'ttag';
 import { EOBTimelapsePanelButton } from '../../junk/EOBTimelapsePanelButton/EOBTimelapsePanelButton';
 
 import store, { notificationSlice, timelapseSlice } from '../../store';
+import { selectActiveExternalLayer } from '../../store/slices/externalLayersSlice';
 import { getDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import { TIMELAPSE_3D_MIN_EYE_HEIGHT } from '../../TerrainViewer/TerrainViewer.const';
 
@@ -25,6 +27,7 @@ const TimelapseButton = (props) => {
     aoi,
     showComparePanel,
     isPlacingVertex,
+    activeExternalLayer,
   } = props;
 
   useEffect(() => {
@@ -57,7 +60,17 @@ const TimelapseButton = (props) => {
     visualizationUrl,
   ]);
 
+  const getWmsErrorOverride = () => {
+    if (activeExternalLayer || props.wmsLayerPanelOpen) {
+      return t`Not available for WMS layers`;
+    }
+    return null;
+  };
+
   const generateSelectedResult = () => {
+    if (activeExternalLayer || props.wmsLayerPanelOpen) {
+      return undefined;
+    }
     const { dataSourcesInitialized, layerId, customSelected, datasetId, visualizationUrl } = props;
     const isVisualizationSet =
       dataSourcesInitialized && (layerId || customSelected) && datasetId && visualizationUrl;
@@ -78,6 +91,7 @@ const TimelapseButton = (props) => {
     <div className="timelapse-wrapper">
       <EOBTimelapsePanelButton
         selectedResult={generateSelectedResult()}
+        errorOverride={getWmsErrorOverride()}
         isLoggedIn={!!user.userdata}
         selectedTabIndex={selectedTabIndex}
         is3D={is3D}
@@ -108,6 +122,8 @@ const mapStoreToProps = (store) => ({
   newLayersCount: store.timelapse.newLayersCount,
   displayTimelapseAreaPreview: store.timelapse.displayTimelapseAreaPreview,
   isPlacingVertex: store.aoi.isPlacingVertex,
+  activeExternalLayer: selectActiveExternalLayer(store),
+  wmsLayerPanelOpen: store.externalLayers.panelOpen,
 });
 
 export default connect(mapStoreToProps, null)(TimelapseButton);

@@ -29,6 +29,8 @@ import { metersPerPixel } from '../../utils/coords';
 import openEOApi from '../../api/openEO/openEO.api';
 import processGraphBuilder from '../../api/openEO/processGraphBuilder';
 import { IMAGE_FORMATS } from '../../Controls/ImgDownload/consts';
+import { buildExternalWmsGetMapUrl } from '../../Controls/ImgDownload/WmsDownload.utils';
+import { buildWmtsPreviewTileUrl } from '../../ExternalLayers/externalLayers.utils';
 import { runEffectFunctions } from '../../utils/effects/runEffectFuntions';
 import { resolveEvalscript } from '../../utils';
 
@@ -46,6 +48,11 @@ class PinPreviewImage extends React.Component {
 
   async componentDidMount() {
     const { auth, pin } = this.props;
+    const externalPreviewUrl = this.buildExternalWmsPreviewUrl(pin);
+    if (externalPreviewUrl) {
+      this.setState({ previewImgUrl: externalPreviewUrl });
+      return;
+    }
     const authToken = getAppropriateAuthToken(auth, pin.themeId);
     if (authToken) {
       await this.ensurePinPreview(authToken);
@@ -82,6 +89,11 @@ class PinPreviewImage extends React.Component {
       });
 
       const { auth, pin } = this.props;
+      const externalPreviewUrl = this.buildExternalWmsPreviewUrl(pin);
+      if (externalPreviewUrl) {
+        this.setState({ previewImgUrl: externalPreviewUrl });
+        return;
+      }
       const authToken = getAppropriateAuthToken(auth, pin.themeId);
       if (authToken) {
         await this.ensurePinPreview(authToken, true);
@@ -114,6 +126,31 @@ class PinPreviewImage extends React.Component {
     const { lat: north, lng: east } = L.CRS.EPSG4326.pointToLatLng(L.point(x + WIDTH, y - HEIGHT), zoom);
 
     return new BBox(CRS_EPSG4326, west, south, east, north);
+  };
+
+  buildExternalWmsPreviewUrl = (pin) => {
+    const { externalWms, lat, lng, zoom } = pin;
+    if (!externalWms?.url || !externalWms?.layerName) {
+      return null;
+    }
+    if (externalWms.type === 'WMTS' && externalWms.tileUrl) {
+      const previewBbox = this.computeBBox(lat ?? 0, lng ?? 0, zoom ?? 5);
+      return buildWmtsPreviewTileUrl(externalWms.tileUrl, {
+        south: previewBbox.minY,
+        west: previewBbox.minX,
+        north: previewBbox.maxY,
+        east: previewBbox.maxX,
+      });
+    }
+    const bbox = this.computeBBox(lat ?? 0, lng ?? 0, zoom ?? 5);
+    const bounds = L.latLngBounds([bbox.minY, bbox.minX], [bbox.maxY, bbox.maxX]);
+    return buildExternalWmsGetMapUrl(
+      externalWms.url,
+      externalWms.layerName,
+      bounds,
+      PIN_PREVIEW_DIMENSIONS.WIDTH,
+      PIN_PREVIEW_DIMENSIONS.HEIGHT,
+    );
   };
 
   ensurePinPreview = async (authToken, forceReload = false) => {

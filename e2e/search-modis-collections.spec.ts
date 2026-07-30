@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { LIVE_REQUEST_TIMEOUT, HEAVY_TEST_TIMEOUT } from './fixtures/timeouts';
 
 async function setupSearchTab(page: Page) {
   await page.goto('/');
@@ -141,6 +142,9 @@ test('TERRAAQUA MODIS product types are available in search tab', async ({ page 
 });
 
 test('searching TERRA MODIS products sends correct OData request', async ({ page }) => {
+  // Live OData search request under single-worker CI; the default 30s budget is too tight.
+  test.setTimeout(HEAVY_TEST_TIMEOUT);
+
   await setupSearchTab(page);
 
   // Select TERRA → MODIS → first product type
@@ -151,6 +155,7 @@ test('searching TERRA MODIS products sends correct OData request', async ({ page
   // Register listener before triggering search
   const searchResponse = page.waitForResponse(
     (r) => r.url().includes('catalogue.dataspace.copernicus.eu/odata/v1/Products') && r.status() === 200,
+    { timeout: LIVE_REQUEST_TIMEOUT },
   );
   await page.getByTitle('Search').click();
   const response = await searchResponse;

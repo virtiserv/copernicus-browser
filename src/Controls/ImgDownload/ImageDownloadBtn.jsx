@@ -3,12 +3,14 @@ import { connect } from 'react-redux';
 import { t } from 'ttag';
 
 import store, { modalSlice, notificationSlice } from '../../store';
+import { selectActiveExternalLayer } from '../../store/slices/externalLayersSlice';
 import { ModalId } from '../../const';
 
 import DownloadIcon from './download-icon.svg?react';
 import { TABS } from '../../const';
 import { getDataSourceHandler } from '../../Tools/SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import { getDatasourceNotSupportedMsg } from '../../junk/ConstMessages';
+import { isAllExternalCompare } from './WmsDownload.utils';
 
 import './ImgDownloadBtn.scss';
 
@@ -36,7 +38,22 @@ const ImageDownloadBtn = (props) => {
   };
 
   const checkIfEnabled = () => {
-    const { layerId, customSelected, selectedTabIndex, comparedLayers, datasetId, showComparePanel } = props;
+    const {
+      layerId,
+      customSelected,
+      selectedTabIndex,
+      comparedLayers,
+      datasetId,
+      showComparePanel,
+      activeExternalLayer,
+    } = props;
+
+    if (activeExternalLayer) {
+      return { enabled: true, errorMessage: null };
+    }
+    if (props.wmsLayerPanelOpen) {
+      return { enabled: false, errorMessage: t`Please load a WMS layer first` };
+    }
     const isOnVisualizationPanel = selectedTabIndex === TABS.VISUALIZE_TAB;
     const isOnComparePanel = showComparePanel;
     const hasVisualization = !!(layerId || customSelected);
@@ -60,8 +77,16 @@ const ImageDownloadBtn = (props) => {
       return { enabled: false, errorMessage: t`you need to compare at least 2 layers` };
     }
     if (isOnComparePanel && comparedLayers.length >= 2) {
-      const allLayersSupport = comparedLayers.map((l) => checkIfSupportedByDatasetId(l.datasetId));
-      const disabledDatasetFound = allLayersSupport.find((s) => !s.enabled);
+      // All-external compare is downloaded via the external path (no datasetId support check needed).
+      if (isAllExternalCompare(comparedLayers)) {
+        return { enabled: true, errorMessage: null };
+      }
+      // Mixed (external + Sentinel Hub) and all-SH compares: external layers are fetched via the
+      // external path, so only the Sentinel Hub layers need a dataset-support check.
+      const disabledDatasetFound = comparedLayers
+        .filter((l) => !l.externalWms)
+        .map((l) => checkIfSupportedByDatasetId(l.datasetId))
+        .find((s) => !s.enabled);
       if (disabledDatasetFound) {
         return disabledDatasetFound;
       }
@@ -98,6 +123,8 @@ const mapStoreToProps = (store) => ({
   zoom: store.mainMap.zoom,
   modalId: store.modal.id,
   dataSourcesInitialized: store.themes.dataSourcesInitialized,
+  activeExternalLayer: selectActiveExternalLayer(store),
+  wmsLayerPanelOpen: store.externalLayers.panelOpen,
 });
 
 export default connect(mapStoreToProps, null)(ImageDownloadBtn);

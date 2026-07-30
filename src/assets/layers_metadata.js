@@ -225,6 +225,9 @@ import {
   COPERNICUS_CLMS_WSI_SNOW_PHENOLOGY_S1_S2_EUROPE_UTM_60M_YEARLY_V1,
   COPERNICUS_CLMS_WSI_WATER_COVER_DURATION_EUROPE_UTM_10M_YEARLY_V1,
   COPERNICUS_CLMS_WSI_ICE_COVER_DURATION_EUROPE_UTM_20M_YEARLY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+  COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
   COPERNICUS_CLMS_VLCC_BROADLEAVED_COVER_DENSITY_EUROPE_100M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_CONIFEROUS_COVER_DENSITY_EUROPE_100M_YEARLY_V1,
   COPERNICUS_CLMS_VLCC_FOREST_TYPE_EUROPE_100M_3YEARLY_V1,
@@ -5053,7 +5056,7 @@ temperatures of atmospheric window channels within the infrared range. LST descr
       },
     ],
     description: () =>
-      t`Bitmask layer with pixel quality flags. The default visualisation displays the sensor type of the satellite data (optical=0, radar=1). These correspond to pixels where bit 7 is activated. Additional information can also be visualised by selecting other bits. More details are available in the </> Custom option.`,
+      t`Bitmask layer with pixel quality flags. The default visualisation displays the sensor type of the satellite data (optical=0 in blue, radar=1 in pink). These correspond to pixels where bit 7 is activated. Additional information can also be visualised by selecting other bits. More details are available in the </> Custom option.`,
   },
   {
     match: [
@@ -5190,7 +5193,7 @@ temperatures of atmospheric window channels within the infrared range. LST descr
       },
     ],
     description: () =>
-      t`Bitmask layer with pixel quality flags. The default visualisation displays areas where the snow cover duration is less than 60 days. These correspond to pixels where bit 4 is activated. Additional information can also be visualised by selecting other bits. More details are available in the </> Custom option.`,
+      t`Bitmask layer with pixel quality flags. The default visualisation displays the areas where wet snow detection is performed (high elevation, non-forested, non-urban, non-water areas). These correspond to pixels where bit 7 is activated. Additional information can also be visualised by selecting other bits. More details are available in the </> Custom option.`,
   },
   {
     match: [
@@ -5349,12 +5352,109 @@ temperatures of atmospheric window channels within the infrared range. LST descr
   {
     match: [
       {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+        layerId: '1_WIC',
+      },
+    ],
+    description: () =>
+      t`Water and ice cover classification from Sentinel-1 imagery within water bodies defined by the input water mask. Classes include open water (1), snow-covered or snow-free ice (100), radar limitations such as shadow, layover, or foreshortening (200), and no data (255).`,
+  },
+  {
+    match: [
+      {
         datasourceId: COPERNICUS_CLMS_VLCC_MAIN_CROP_EMERGENCE_EUROPE_10M_YEARLY_V1,
         layerId: COPERNICUS_CLMS_VLCC_MAIN_CROP_EMERGENCE_EUROPE_10M_YEARLY_V1_LAYER_IDS.CPMCE,
       },
     ],
     description: () =>
       t`Provides at pan-European level the emergence date of the main growing season at a spatial resolution of 10 m and a MMU of 0.25 ha.`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+        layerId: '2_WIC-QA',
+      },
+    ],
+    description: () => t`Quality layer providing basic assessment of the Water/Ice Cover layer.`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_EUROPE_UTM_60M_DAILY_V1,
+        layerId: '3_QAFLAGS',
+      },
+    ],
+    description: () =>
+      t`The default visualisation highlights inland water surfaces over which the water/ice classification is performed; these correspond to pixels where bit 15 is activated. Additional information can also be visualised by selecting other bits. More details are available in the </> Custom option.`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+        layerId: '1_WIC',
+      },
+    ],
+    description: () =>
+      t`Extent of open-water and ice across the continent derived from Sentinel-2 optical imagery. A water mask is applied to distinguish snow on ice-covered water bodies from snow on land. The primary classes are open water (1), snow-covered or snow-free ice (100), and other features (254), which include land, vegetation, salt seas, and other surface types. The dataset has also the following classes for areas where water/ice classification cannot be determined from Sentinel-2 optical imagery: cloud or cloud shadow (205), and no data (255).`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+        layerId: '2_WIC-QA',
+      },
+    ],
+    description: () => t`Quality layer providing basic assessment of the Water/Ice Cover layer.`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+        layerId: '3_QAFLAGS',
+      },
+    ],
+    description: () =>
+      t`The default visualisation indicates whether a pixel is located in the hillshade; these correspond to pixels where bit 0 is activated. Additional information can also be visualised by selecting other bits. More details are available in the </> Custom option.`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S2_EUROPE_UTM_20M_DAILY_V1,
+        layerId: '4_PRB',
+      },
+    ],
+    description: () =>
+      t`Confidence level of the Random Forest classifier for the class assigned in the WIC layer (0-100%).`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
+        layerId: '1_WIC',
+      },
+    ],
+    description: () =>
+      t`Water and ice cover classification from Sentinel-2 (optical) or Sentinel-1 (radar) imagery within water bodies defined by the input water mask. The primary classes are open water (1), snow-covered or snow-free ice (100), and other features (254), which include land, vegetation, salt seas, and other surface types. When classification is not possible, specific values indicate radar-related limitations (shadow, layover, foreshortening - 200), cloud or cloud shadow in optical images (205), or no data (255).`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
+        layerId: '2_WIC-QA',
+      },
+    ],
+    description: () => t`Quality layer providing basic assessment of the Water/Ice Cover layer.`,
+  },
+  {
+    match: [
+      {
+        datasourceId: COPERNICUS_CLMS_WSI_WATER_ICE_COVER_S1_S2_EUROPE_UTM_20M_DAILY_V1,
+        layerId: '3_QAFLAGS',
+      },
+    ],
+    description: () =>
+      t`Bitmask layer with pixel quality flags. The default visualisation displays the satellite sensor type used for the classification (optical=0 in blue, radar=1 in pink). These correspond to pixels where bit 9 is activated. Additional information can also be visualised by selecting other bits. More details are available in the </> Custom option.`,
   },
   {
     match: [

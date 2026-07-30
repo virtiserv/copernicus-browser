@@ -97,7 +97,9 @@ describe('useMessagePanelContent', () => {
   });
 
   test('does not render a close action when panelError.canBeClosed is false', () => {
-    store.dispatch(notificationSlice.actions.displayPanelError({ message: 'Cannot close', canBeClosed: false }));
+    store.dispatch(
+      notificationSlice.actions.displayPanelError({ message: 'Cannot close', canBeClosed: false }),
+    );
     renderHarness();
     expect(screen.queryByText('close')).not.toBeInTheDocument();
   });

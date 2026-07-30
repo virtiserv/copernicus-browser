@@ -16,6 +16,14 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+// vite-plugin-svgr: `import Icon from './icon.svg?react'` returns a React component.
+declare module '*.svg?react' {
+  import * as React from 'react';
+  const ReactComponent: React.FunctionComponent<React.SVGProps<SVGSVGElement> & { title?: string }>;
+  export default ReactComponent;
+}
+
+// Mirrored in e2e/global.d.ts (e2e cannot import app-internal src/ modules) — keep both in sync.
 interface Window {
   API_ENDPOINT_CONFIG?: {
     SH_SERVICES_URL: string;

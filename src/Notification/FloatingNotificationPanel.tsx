@@ -8,8 +8,11 @@ import { TABS } from '../const';
 
 import './FloatingNotificationPanel.scss';
 import store, { mainMapSlice, visualizationSlice } from '../store';
+import { selectExternalLayers } from '../store/slices/externalLayersSlice';
 import useLoginLogout from '../Auth/loginLogout/useLoginLogout';
 import { RootState } from '../hooks';
+import { isAllExternalCompare } from '../Controls/ImgDownload/WmsDownload.utils';
+import { CompareLayerItem } from '../store/slices/compareLayersSlice';
 
 type WithToolsOpen = {
   toolsOpen: boolean;
@@ -87,6 +90,8 @@ type Props = {
   toolsOpen: boolean;
   mapLoadingMessage: string | null;
   resolutionTooLow: boolean;
+  activeExternalServerId: string | null;
+  comparedLayers: CompareLayerItem[];
 };
 
 function FloatingNotificationPanel({
@@ -98,6 +103,8 @@ function FloatingNotificationPanel({
   toolsOpen,
   mapLoadingMessage,
   resolutionTooLow,
+  activeExternalServerId,
+  comparedLayers,
 }: Props) {
   const resolutionTooLowRef = useRef(resolutionTooLow);
   resolutionTooLowRef.current = resolutionTooLow;
@@ -109,6 +116,12 @@ function FloatingNotificationPanel({
   }, [zoom]);
 
   function showZoomInAlert() {
+    // Suppress the zoom-in hint when an external WMS/WMTS layer is shown, either as the
+    // single active layer or when every compared layer is external (compare mode stays on
+    // the Visualize tab, so the tab check alone would still let it through).
+    if (activeExternalServerId || isAllExternalCompare(comparedLayers)) {
+      return false;
+    }
     const { min: minZoom } = getZoomConfiguration(datasetId, layerId);
     return selectedTabIndex === TABS.VISUALIZE_TAB && zoom < minZoom;
   }
@@ -143,6 +156,8 @@ const mapStoreToProps = (store: RootState) => ({
   toolsOpen: store.tools.open,
   mapLoadingMessage: store.mainMap.loadingMessage,
   resolutionTooLow: store.visualization.resolutionTooLow,
+  activeExternalServerId: selectExternalLayers(store).activeServerId,
+  comparedLayers: store.compare.comparedLayers,
 });
 
 export default connect(mapStoreToProps, null)(FloatingNotificationPanel);

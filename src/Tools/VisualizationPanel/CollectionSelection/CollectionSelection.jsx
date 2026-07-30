@@ -10,22 +10,38 @@ import { CollectionSearch, CollectionSearchTools } from './CollectionSearch';
 import {
   createCollectionGroupsFromDataSourceHandlers,
   displayLatestDateOnSelect,
-  getSelectedCollectionTitle,
 } from './CollectionSelection.utils';
-import store, { clmsSlice, collapsiblePanelSlice, visualizationSlice } from '../../../store';
+import { useSelector } from 'react-redux';
+
+import store, {
+  clmsSlice,
+  collapsiblePanelSlice,
+  visualizationSlice,
+  externalLayersSlice,
+} from '../../../store';
+import { selectExternalLayers } from '../../../store/slices/externalLayersSlice';
 import { DATASOURCES } from '../../../const';
 import { getDataSourceHandler } from '../../SearchPanel/dataSourceHandlers/dataSourceHandlers';
 import { EOBButton } from '../../../junk/EOBCommon/EOBButton/EOBButton';
 
 import { SearchableSelect } from '../../../components/SearchableSelect/SearchableSelect';
 
+import Loader from '../../../Loader/Loader';
 import CheckmarkSvg from './checkmark.svg?react';
 
 import './CollectionSelection.scss';
 import CollectionTooltip from './CollectionTooltip/CollectionTooltip';
 
 import CLMSCollectionSelection from './CLMSCollectionSelection';
-import { doesUserHaveAccessToCCMVisualization } from './AdvancedSearch/ccmProductTypeAccessRightsConfig';
+import ExtraCollectionsPanel from '../../../ExternalLayers/ExtraCollectionsPanel';
+import {
+  doesUserHaveAccessToCCMVisualization,
+  doesUserHaveAnyCCMRole,
+} from './AdvancedSearch/ccmProductTypeAccessRightsConfig';
+import {
+  DEM_COPERNICUS_30_CDAS,
+  DEM_COPERNICUS_90_CDAS,
+} from '../../SearchPanel/dataSourceHandlers/dataSourceConstants';
 
 const renderCollectionSelectionForm = ({ selectedCollectionGroup, selectedCollection, onSelect }) => {
   const { datasource } = selectedCollectionGroup;
@@ -67,7 +83,7 @@ const renderCollectionsList = ({ collections, selectedCollection, onSelect }) =>
             <EOBButton
               text={
                 <>
-                  {collection.title}
+                  <span className="collection-button-title">{collection.title}</span>
                   {isCollectionSelected && <CheckmarkSvg />}
                 </>
               }
@@ -101,19 +117,33 @@ const renderCollections = (
   dataSourcesLoading,
 ) => {
   if (isExpanded) {
-    const selectedCollectionGroup = collectionGroups.find(
+    const hasAccessToCCMVisualization = doesUserHaveAccessToCCMVisualization(user?.access_token);
+    const hasAnyCCMRole = doesUserHaveAnyCCMRole(user?.access_token);
+
+    // COP DEM 30m is restricted to CCM users (issue #1185); hide only that dataset while
+    // leaving the DEM group and the 90m dataset visible to everyone. Filtering collectionGroups
+    // itself (rather than just the dropdown options) keeps the expanded group's collection
+    // buttons (renderCollectionsList) in sync with the dropdown.
+    const visibleCollectionGroups = hasAnyCCMRole
+      ? collectionGroups
+      : collectionGroups.map((g) =>
+          g.datasource === DATASOURCES.DEM_CDAS
+            ? { ...g, collections: g.collections.filter((c) => c.dataset !== DEM_COPERNICUS_30_CDAS) }
+            : g,
+        );
+
+    const selectedCollectionGroup = visibleCollectionGroups.find(
       (d) => d.datasource === selectedCollection.datasource,
     );
     const collectionsPerGroup = Object.fromEntries(
-      collectionGroups.map((g) => [
+      visibleCollectionGroups.map((g) => [
         g.title,
         g.collections.map((c) => ({ label: c.title, value: c.dataset })),
       ]),
     );
 
-    const hasAccessToCCMVisualization = doesUserHaveAccessToCCMVisualization(user.access_token);
     const options = [
-      ...collectionGroups
+      ...visibleCollectionGroups
         .map((g) =>
           [{ label: g.title, value: g.datasource, type: 'datasource' }].concat(
             g.collections.map((c) => ({
@@ -168,19 +198,34 @@ const renderCollections = (
 
     const setValue = ({ value, type, parentDataset }) => {
       if (type === 'datasource') {
+        const group = collectionGroups.find((d) => d.datasource === value);
+        let preselected = group?.preselectedDataset;
+        // Non-CCM users can't see COP DEM 30m (issue #1185), which is the DEM group's default
+        // preselection — fall back to 90m so selecting the group doesn't strand them on a hidden dataset.
+        if (
+          value === DATASOURCES.DEM_CDAS &&
+          preselected === DEM_COPERNICUS_30_CDAS &&
+          !hasAnyCCMRole
+        ) {
+          preselected = DEM_COPERNICUS_90_CDAS;
+        }
         onSelect({
           datasource: value,
-          dataset: collectionGroups.find((d) => d.datasource === value).preselectedDataset,
+          dataset: preselected,
         });
-        store.dispatch(clmsSlice.actions.reset());
-        store.dispatch(clmsSlice.actions.setSelected(value === DATASOURCES.CLMS));
+        if (value !== DATASOURCES.EXTERNAL_WMS) {
+          store.dispatch(clmsSlice.actions.reset());
+          store.dispatch(clmsSlice.actions.setSelected(value === DATASOURCES.CLMS));
+        }
       }
       if (type === 'dataset') {
         onSelect({
           datasource: parentDataset,
           dataset: value,
         });
-        store.dispatch(clmsSlice.actions.setSelectedCollection(value));
+        if (parentDataset !== DATASOURCES.EXTERNAL_WMS) {
+          store.dispatch(clmsSlice.actions.setSelectedCollection(value));
+        }
       }
     };
 
@@ -250,6 +295,63 @@ const CollectionSelection = ({
   const [collectionGroups, setCollectionGroups] = useState([]);
   const previousVisualizationDate = usePrevious(visualizationDate);
 
+  const {
+    activeServerId,
+    activeLayerName,
+    servers: externalServers,
+    panelOpen: showExternalLayersPanel,
+    lastActiveServerId,
+    lastActiveLayerName,
+    lastActiveLayerTime,
+  } = useSelector(selectExternalLayers);
+
+  // When the WMS/WMTS panel is open with collections loaded but nothing active (e.g. after
+  // switching to a Sentinel Hub layer and back, or after deleting the active server), restore the
+  // last layer the user had — falling back to the first layer of the first collection — so the map
+  // isn't blank.
+  useEffect(() => {
+    if (!showExternalLayersPanel || activeServerId) {
+      return;
+    }
+    const remembered = externalServers?.find(
+      (s) => s.id === lastActiveServerId && s.layers?.some((l) => l.name === lastActiveLayerName),
+    );
+    const fallback = externalServers?.find((s) => s.layers?.length);
+    const server = remembered ?? fallback;
+    const layerName = remembered ? lastActiveLayerName : fallback?.layers?.[0]?.name;
+    if (server && layerName) {
+      store.dispatch(externalLayersSlice.actions.setActiveExternalLayer({ serverId: server.id, layerName }));
+      // Restore the date the user had picked on this layer (setActiveExternalLayer reset it because
+      // the layer was inactive), so navigating back to the panel keeps the chosen date.
+      if (remembered && lastActiveLayerTime) {
+        store.dispatch(externalLayersSlice.actions.setActiveExternalLayerTime(lastActiveLayerTime));
+      }
+    }
+  }, [
+    showExternalLayersPanel,
+    activeServerId,
+    externalServers,
+    lastActiveServerId,
+    lastActiveLayerName,
+    lastActiveLayerTime,
+  ]);
+
+  const handleOpenExternalLayers = () => {
+    // Only open (never toggle off) so a second click / double-click doesn't deselect it — matching
+    // the other panel buttons. It still closes when another panel is selected (onCloseExternalLayers).
+    if (showExternalLayersPanel) {
+      return;
+    }
+    store.dispatch(externalLayersSlice.actions.setWmsPanelOpen(true));
+    if (!collectionPanelExpanded) {
+      store.dispatch(collapsiblePanelSlice.actions.setCollectionPanelExpanded(true));
+    }
+    setShowLayerPanel(false);
+    setComparePanel(false);
+    setPinPanel(false);
+    setShowHighlightPanel(false);
+  };
+
   const onSelect = async (selectedCollection, orbitDirection = null) => {
     const selectedConfig = { ...selectedCollection };
 
@@ -258,6 +360,8 @@ const CollectionSelection = ({
       return;
     }
 
+    store.dispatch(externalLayersSlice.actions.setWmsPanelOpen(false));
+    store.dispatch(externalLayersSlice.actions.clearActiveExternalLayer());
     setSelected(selectedCollection);
     if (!showLayerPanel && setShowLayerPanel) {
       setShowLayerPanel(true);
@@ -306,6 +410,35 @@ const CollectionSelection = ({
     if (dataSourcesInitialized || dataSourcesReadyVersion > 0) {
       const collectionGroupsFromDsh = createCollectionGroupsFromDataSourceHandlers(filter);
       setCollectionGroups(collectionGroupsFromDsh);
+      // A shared link or saved pin can carry COP DEM 30m, which is restricted to CCM users
+      // (issue #1185). If a non-CCM user restores it, redirect to 90m instead of loading the
+      // hidden dataset. This only fires while datasetId === 30m, so it never un-does itself if
+      // the user later gains a CCM role — that's fine in practice because AuthProvider blocks
+      // rendering of this component until Keycloak/anon auth has resolved, and gaining a role
+      // (logging in) goes through a full-page redirect that remounts the app, not an in-place
+      // token swap.
+      if (datasetId === DEM_COPERNICUS_30_CDAS && !doesUserHaveAnyCCMRole(user?.access_token)) {
+        const demGroup = collectionGroupsFromDsh.find((g) => g.datasource === DATASOURCES.DEM_CDAS);
+        if (demGroup) {
+          setSelected({ datasource: DATASOURCES.DEM_CDAS, dataset: DEM_COPERNICUS_90_CDAS });
+          // DEM is timeless, and resetting dates here would null `toTime` with nothing left to
+          // repopulate it (the isTimeless effect that normally does so only re-fires when
+          // isTimeless itself changes, which it doesn't for a 30m->90m switch) — leaving the
+          // layer panel gated off with no visible layer. Mirror onSelect's sibling-based check
+          // so switching between DEM siblings preserves the existing date, as it does there.
+          const dsh = getDataSourceHandler(DEM_COPERNICUS_90_CDAS);
+          const sibling = dsh && dsh.getSibling(DEM_COPERNICUS_90_CDAS);
+          const resetDates = sibling ? sibling.siblingId !== datasetId : true;
+          store.dispatch(
+            visualizationSlice.actions.setNewDatasetId({
+              datasetId: DEM_COPERNICUS_90_CDAS,
+              resetDates: resetDates,
+              orbitDirection: null,
+            }),
+          );
+          return;
+        }
+      }
       const preSelected = collectionGroupsFromDsh.find((collectionGroup) => {
         const { collections } = collectionGroup;
         return collections && collections.find((collection) => collection.dataset === datasetId);
@@ -315,7 +448,14 @@ const CollectionSelection = ({
         store.dispatch(clmsSlice.actions.setSelected(preSelected.datasource === DATASOURCES.CLMS));
       }
     }
-  }, [filter, selectedThemeId, dataSourcesInitialized, dataSourcesReadyVersion, datasetId]);
+  }, [
+    filter,
+    selectedThemeId,
+    dataSourcesInitialized,
+    dataSourcesReadyVersion,
+    datasetId,
+    user?.access_token,
+  ]);
 
   useEffect(() => {
     if (!previousVisualizationDate && visualizationDate) {
@@ -325,63 +465,109 @@ const CollectionSelection = ({
   }, [visualizationDate]);
 
   const renderCollectionSelectionContent = (isExpanded) => {
-    return (
-      <>
-        {renderCollections(
-          collectionGroups,
-          selectedCollection,
-          onSelect,
-          isExpanded,
-          user,
-          dataSourcesLoading,
-        )}
-      </>
+    if (!isExpanded) {
+      return null;
+    }
+    if (!dataSourcesInitialized) {
+      return <Loader />;
+    }
+    if (showExternalLayersPanel) {
+      return <ExtraCollectionsPanel />;
+    }
+    return renderCollections(
+      collectionGroups,
+      selectedCollection,
+      onSelect,
+      isExpanded,
+      user,
+      dataSourcesLoading,
     );
   };
 
-  const renderCollectionSelectionTitle = (collectionGroups, selectedCollection) => {
-    const selectedCollectionGroup = collectionGroups.find(
-      (d) => d.datasource === selectedCollection.datasource,
-    );
+  const extraCollectionsInfo = t`External WMS and WMTS layers from third-party map servers.`;
 
-    let temporaryLabel;
-    if (selectedCollectionGroup) {
-      temporaryLabel = selectedCollectionGroup.collections.find(
-        (collection) => collection.dataset === selectedCollection.dataset,
-      );
-    }
+  const closeExternalLayers = () => {
+    store.dispatch(externalLayersSlice.actions.setWmsPanelOpen(false));
+    store.dispatch(externalLayersSlice.actions.clearActiveExternalLayer());
+  };
 
-    const getSelectionDescription = () => {
-      if (datasetId) {
-        const dsh = getDataSourceHandler(datasetId);
-        if (dsh?.getDescriptionForDataset) {
-          const desc = dsh.getDescriptionForDataset(datasetId);
-          if (desc) {
-            return desc;
+  const isExtraCollectionsMode = showExternalLayersPanel || !!activeServerId;
+
+  const renderCollectionSelectionTitle = (allGroups, selectedCollection) => {
+    const titleLabel = isExtraCollectionsMode
+      ? (() => {
+          if (!showExternalLayersPanel && activeLayerName) {
+            const activeServer = externalServers.find((s) => s.id === activeServerId);
+            const activeLayer = activeServer?.layers?.find((l) => l.name === activeLayerName);
+            const title = activeLayer?.title || activeLayerName;
+            return (
+              <div className="sensors-satellites-selection">
+                <span className="collection-title-label external-source-title" title={title}>
+                  {title}
+                </span>
+              </div>
+            );
           }
-        }
-        if (dsh?.getDescription) {
-          const desc = dsh.getDescription();
-          if (desc) {
-            return desc;
+          if (activeServerId) {
+            const activeServer = externalServers.find((s) => s.id === activeServerId);
+            const serverName = activeServer?.name || activeServerId;
+            return (
+              <div className="sensors-satellites-selection">
+                <span className="collection-title-label external-source-title" title={serverName}>
+                  {serverName}
+                </span>
+              </div>
+            );
           }
-        }
-      }
-      return t`No description available`;
-    };
+          return (
+            <div className="sensors-satellites-selection">
+              <span className="collection-title-label">{t`WMS/WMTS:`}</span>
+              <CollectionTooltip source={extraCollectionsInfo} credits={null} />
+            </div>
+          );
+        })()
+      : (() => {
+          const selectedCollectionGroup = allGroups.find(
+            (d) => d.datasource === selectedCollection.datasource,
+          );
+          const temporaryLabel = selectedCollectionGroup?.collections.find(
+            (collection) => collection.dataset === selectedCollection.dataset,
+          );
+          const getSelectionDescription = () => {
+            if (datasetId) {
+              const dsh = getDataSourceHandler(datasetId);
+              if (dsh?.getDescriptionForDataset) {
+                const desc = dsh.getDescriptionForDataset(datasetId);
+                if (desc) {
+                  return desc;
+                }
+              }
+              if (dsh?.getDescription) {
+                const desc = dsh.getDescription();
+                if (desc) {
+                  return desc;
+                }
+              }
+            }
+            return t`No description available`;
+          };
+          return (
+            <div className="sensors-satellites-selection">
+              {temporaryLabel && <span className="collection-title-label">{temporaryLabel.title}</span>}
+              {selectedCollectionGroup?.getDescription && (
+                <CollectionTooltip
+                  source={getSelectionDescription()}
+                  credits={selectedCollectionGroup?.credits}
+                />
+              )}
+            </div>
+          );
+        })();
 
     return (
       <div className="collection-search">
         <div className="collection-search-header">
-          <div className="sensors-satellites-selection">
-            {temporaryLabel && temporaryLabel.title}
-            {selectedCollectionGroup?.getDescription && (
-              <CollectionTooltip
-                source={getSelectionDescription()}
-                credits={selectedCollectionGroup?.credits}
-              />
-            )}
-          </div>
+          {titleLabel}
           <CollectionSearchTools
             showLayerPanel={showLayerPanel}
             setShowLayerPanel={setShowLayerPanel}
@@ -394,22 +580,45 @@ const CollectionSelection = ({
             newPinsCount={newPinsCount}
             showPinPanel={showPinPanel}
             setPinPanel={setPinPanel}
+            onOpenExternalLayers={handleOpenExternalLayers}
+            showExternalLayersPanel={showExternalLayersPanel}
+            onCloseExternalLayers={closeExternalLayers}
           />
         </div>
       </div>
     );
   };
 
-  const selectedCollectionTitle = getSelectedCollectionTitle(selectedCollection);
+  const collapsedTitle = (() => {
+    if (isExtraCollectionsMode) {
+      if (activeServerId) {
+        const activeServer = externalServers.find((s) => s.id === activeServerId);
+        const serverName = activeServer?.name || activeServerId;
+        return (
+          <span className="collection-title-label external-source-title" title={serverName}>
+            {serverName}
+          </span>
+        );
+      }
+      return <span className="collection-title-label">{t`WMS/WMTS:`}</span>;
+    }
+    const group = collectionGroups.find((d) => d.datasource === selectedCollection.datasource);
+    const col = group?.collections.find((c) => c.dataset === selectedCollection.dataset);
+    if (col?.title) {
+      return <span className="collection-title-label">{col.title}</span>;
+    }
+    return t`Data Collections:`;
+  })();
 
   return (
     <CollapsiblePanel
       headerComponent={
         advanced ? (
-          <div>{selectedCollectionTitle}</div>
+          <div>{collapsedTitle}</div>
         ) : (
           <CollectionSearch
-            title={t`Data Collections:`}
+            title={isExtraCollectionsMode ? collapsedTitle : t`Data Collections:`}
+            infoTooltip={isExtraCollectionsMode && !activeServerId ? extraCollectionsInfo : null}
             filter={filter}
             onChange={setFilter}
             showLayerPanel={showLayerPanel}
@@ -423,6 +632,9 @@ const CollectionSelection = ({
             showPinPanel={showPinPanel}
             newCompareLayersCount={newCompareLayersCount}
             newPinsCount={newPinsCount}
+            onOpenExternalLayers={handleOpenExternalLayers}
+            showExternalLayersPanel={showExternalLayersPanel}
+            onCloseExternalLayers={closeExternalLayers}
           />
         )
       }

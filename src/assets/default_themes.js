@@ -1300,6 +1300,24 @@ export const DEFAULT_THEMES = [
         }/ogc/wms/e20955-YOUR-INSTANCEID-HERE`,
       },
       {
+        name: 'clms_wsi_water-ice-cover-s1_europe_utm_60m_daily_v1',
+        url: `${
+          global.window ? global.window.API_ENDPOINT_CONFIG.SH_SERVICES_URL : FALLBACK_SH_SERVICES_URL
+        }/ogc/wms/0ea1d4-YOUR-INSTANCEID-HERE`,
+      },
+      {
+        name: 'clms_wsi_water-ice-cover-s2_europe_utm_20m_daily_v1',
+        url: `${
+          global.window ? global.window.API_ENDPOINT_CONFIG.SH_SERVICES_URL : FALLBACK_SH_SERVICES_URL
+        }/ogc/wms/2fbe63-YOUR-INSTANCEID-HERE`,
+      },
+      {
+        name: 'clms_wsi_water-ice-cover-s1-s2_europe_utm_20m_daily_v1',
+        url: `${
+          global.window ? global.window.API_ENDPOINT_CONFIG.SH_SERVICES_URL : FALLBACK_SH_SERVICES_URL
+        }/ogc/wms/323dbd-YOUR-INSTANCEID-HERE`,
+      },
+      {
         name: 'clms_vlcc_broadleaved-cover-density_europe_100m_yearly_v1',
         url: `${
           global.window ? global.window.API_ENDPOINT_CONFIG.SH_SERVICES_URL : FALLBACK_SH_SERVICES_URL

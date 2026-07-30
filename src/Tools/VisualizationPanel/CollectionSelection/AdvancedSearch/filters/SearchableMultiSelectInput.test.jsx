@@ -73,14 +73,18 @@ describe('SearchableMultiSelectInput', () => {
 
   test('renders the tooltip icon when input.tooltip is set', () => {
     const input = buildInput({ tooltip: 'Some helpful info' });
-    const { container } = render(<SearchableMultiSelectInput input={input} value={[]} onChange={jest.fn()} />);
+    const { container } = render(
+      <SearchableMultiSelectInput input={input} value={[]} onChange={jest.fn()} />,
+    );
 
     expect(container.querySelector('.collection-tooltip-icon')).toBeInTheDocument();
   });
 
   test('does not render the tooltip icon when input.tooltip is not set', () => {
     const input = buildInput({ tooltip: undefined });
-    const { container } = render(<SearchableMultiSelectInput input={input} value={[]} onChange={jest.fn()} />);
+    const { container } = render(
+      <SearchableMultiSelectInput input={input} value={[]} onChange={jest.fn()} />,
+    );
 
     expect(container.querySelector('.collection-tooltip-icon')).not.toBeInTheDocument();
   });
@@ -94,7 +98,9 @@ describe('SearchableMultiSelectInput', () => {
 
   test('renders options sourced from input.getOptions when the menu is opened', () => {
     const input = buildInput();
-    const { container } = render(<SearchableMultiSelectInput input={input} value={[]} onChange={jest.fn()} />);
+    const { container } = render(
+      <SearchableMultiSelectInput input={input} value={[]} onChange={jest.fn()} />,
+    );
 
     openMenu(container);
 

@@ -8,11 +8,12 @@ import { getLoggedInErrorMsg } from '../../junk/ConstMessages';
 import './PinTools.scss';
 
 import {
-  savePinsToSessionStorage,
+  saveLocalPins,
   savePinsToServer,
   isPinValid,
   formatDeprecatedPins,
   establishCorrectDataFusionFormatInPins,
+  shouldUsePinsBackend,
 } from './Pin.utils';
 import { OPERATION_SHARE, USE_PINS_BACKEND } from './const';
 
@@ -90,11 +91,14 @@ class PinTools extends Component {
       pins = pins.filter((pin) => !existingIds.includes(pin._id));
       const replaceExisting = !this.state.keepExisting;
       let uniqueId;
-      if (this.props.isUserLoggedIn && USE_PINS_BACKEND) {
+      // Same shouldUsePinsBackend(user) gate as Tools.jsx's savePinToServerOrLocal, Highlights.jsx's
+      // savePin and Pin.utils.js's importSharedPins, duplicated here intentionally without the
+      // try/catch fallback-or-notify safety (out of scope for #1076).
+      if (shouldUsePinsBackend(this.props.isUserLoggedIn)) {
         const res = await savePinsToServer(pins, replaceExisting);
         uniqueId = res.uniqueId;
       } else {
-        uniqueId = savePinsToSessionStorage(pins, replaceExisting);
+        uniqueId = saveLocalPins(pins, replaceExisting);
       }
       this.onCloseModal();
       if (uniqueId) {

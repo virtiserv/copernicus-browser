@@ -1,8 +1,17 @@
+import axios from 'axios';
+
 import {
   isOnEqualDate,
   constructTimespanString,
   constructCompareTimespanString,
+  constructExternalWmsDateString,
   normalizePin,
+  saveLocalPins,
+  getLocalPins,
+  writeLocalPins,
+  clearLocalPins,
+  saveSharedPinsToServer,
+  importSharedPins,
   layerFromPin,
 } from './Pin.utils';
 import { LayersFactory } from '@sentinel-hub/sentinelhub-js';
@@ -17,6 +26,8 @@ jest.mock('../SearchPanel/dataSourceHandlers/dataSourceHandlers', () => ({
   ...jest.requireActual('../SearchPanel/dataSourceHandlers/dataSourceHandlers'),
   getDataSourceHandler: jest.fn(),
 }));
+
+jest.mock('axios');
 
 describe('isOnEqualDate', () => {
   it('should return true when both dates are on the same date', () => {
@@ -78,6 +89,29 @@ describe('constructTimespanString', () => {
   it('should return null when a pin is not passed', () => {
     const date = constructTimespanString();
     expect(date).toBe(null);
+  });
+});
+
+describe('constructExternalWmsDateString', () => {
+  it('returns null when there is no time (timeless layer)', () => {
+    expect(constructExternalWmsDateString(null)).toBeNull();
+    expect(constructExternalWmsDateString(undefined)).toBeNull();
+  });
+
+  it('returns the day for a date-only value', () => {
+    expect(constructExternalWmsDateString('2024-03-15')).toBe('2024-03-15');
+  });
+
+  it('returns the day for a midnight datetime value', () => {
+    expect(constructExternalWmsDateString('2024-04-15T00:00:00Z')).toBe('2024-04-15');
+  });
+
+  it('includes the time-of-day for a sub-daily value', () => {
+    expect(constructExternalWmsDateString('2024-05-15T13:30:00Z')).toBe('2024-05-15 13:30 UTC');
+  });
+
+  it('returns null for an invalid value', () => {
+    expect(constructExternalWmsDateString('not-a-date')).toBeNull();
   });
 });
 
@@ -193,6 +227,139 @@ describe('normalizePin', () => {
     expect(result.evalscriptUrl).toBe('https://example.com/eval');
     expect('evalscripturl' in result).toBe(false);
     expect('processgraphurl' in result).toBe(false);
+  });
+});
+
+describe('local pins storage (single sessionStorage bucket)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it('writes and reads anonymous pins from the eob-pins session bucket', () => {
+    writeLocalPins([{ _id: 'p1', title: 'A' }]);
+    const pins = getLocalPins();
+    expect(pins).toHaveLength(1);
+    expect(pins[0]._id).toBe('p1');
+    // Same store + key production has always used, so anonymous pins survive a deploy.
+    expect(sessionStorage.getItem('eob-pins')).not.toBeNull();
+    expect(localStorage.getItem('eob-pins')).toBeNull();
+  });
+
+  it('clearLocalPins removes the bucket key entirely (no leftover empty array)', () => {
+    writeLocalPins([{ _id: 'p1' }]);
+    clearLocalPins();
+    expect(getLocalPins()).toHaveLength(0);
+    // The key is removed, not left as "[]", matching clearPersistedExternalLayers.
+    expect(sessionStorage.getItem('eob-pins')).toBeNull();
+  });
+
+  it('writeLocalPins removes the key when the last pin is removed', () => {
+    writeLocalPins([{ _id: 'p1' }]);
+    expect(sessionStorage.getItem('eob-pins')).not.toBeNull();
+    // Removing the last pin (e.g. via onRemovePin rewriting the filtered list) must not leave "[]".
+    writeLocalPins([]);
+    expect(sessionStorage.getItem('eob-pins')).toBeNull();
+  });
+
+  it('saveLocalPins assigns an id, returns it, and stores it', () => {
+    const id = saveLocalPins([{ title: 'New' }], true);
+    expect(id).toMatch(/-pin$/);
+    const stored = getLocalPins();
+    expect(stored).toHaveLength(1);
+    expect(stored[0]._id).toBe(id);
+  });
+
+  it('saveLocalPins with replace=false prepends to existing pins', () => {
+    writeLocalPins([{ _id: 'old-pin', title: 'Old' }]);
+    saveLocalPins([{ _id: 'new-pin', title: 'New' }], false);
+    const stored = getLocalPins();
+    expect(stored.map((p) => p._id)).toEqual(['new-pin', 'old-pin']);
+  });
+
+  it('supports deleting a local pin by filtering and rewriting', () => {
+    writeLocalPins([{ _id: 'a', externalWms: { url: 'x' } }, { _id: 'b' }]);
+    const remaining = getLocalPins().filter((p) => p._id !== 'a');
+    writeLocalPins(remaining);
+    const stored = getLocalPins();
+    expect(stored).toHaveLength(1);
+    expect(stored[0]._id).toBe('b');
+  });
+
+  it('stores external WMS pins whole, with externalWms inline', () => {
+    saveLocalPins([{ title: 'WMS', externalWms: { url: 'https://w', layerName: 'l' } }], true);
+    const stored = getLocalPins();
+    expect(stored[0].externalWms).toEqual({ url: 'https://w', layerName: 'l' });
+  });
+});
+
+describe('toServerPin (via saveSharedPinsToServer)', () => {
+  beforeEach(() => {
+    axios.post.mockReset();
+  });
+
+  it('forwards the externalWms payload verbatim to the backend, unchanged by serialisation', async () => {
+    axios.post.mockResolvedValue({ data: { id: 'shared-id' } });
+    const externalWms = {
+      url: 'https://example.com/wms',
+      layerName: 'layer-1',
+      layerTitle: 'Layer 1',
+      time: null,
+    };
+    const pin = { _id: 'p1', title: 'WMS pin', externalWms };
+
+    await saveSharedPinsToServer([pin]);
+
+    const [, body] = axios.post.mock.calls[0];
+    expect(body.items[0].externalWms).toEqual(externalWms);
+  });
+});
+
+describe('importSharedPins dedup (external-WMS pins)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    axios.get.mockReset();
+    window.confirm = jest.fn(() => true);
+  });
+
+  it('dedups an external-WMS pin whose datasetId/visualizationUrl are "" / null / undefined across FE-local and shared copies', async () => {
+    const existingWmsPin = {
+      _id: 'local-1',
+      title: 'External WMS',
+      themeId: 'theme-1',
+      // Legacy FE-local rows store "" rather than null/undefined for unset dataset fields.
+      datasetId: '',
+      visualizationUrl: '',
+      lat: 1,
+      lng: 2,
+      zoom: 3,
+      externalWms: { url: 'https://example.com/wms', layerName: 'layer-1' },
+    };
+    saveLocalPins([existingWmsPin], true);
+
+    // Same pin coming back from a share link, but with null/undefined instead of "".
+    const sharedDuplicate = {
+      ...existingWmsPin,
+      _id: 'shared-1',
+      datasetId: null,
+      visualizationUrl: undefined,
+    };
+    const sharedNew = {
+      _id: 'shared-2',
+      title: 'Different external WMS',
+      themeId: 'theme-1',
+      datasetId: undefined,
+      visualizationUrl: null,
+      lat: 10,
+      lng: 20,
+      zoom: 5,
+      externalWms: { url: 'https://example.com/other-wms', layerName: 'layer-2' },
+    };
+    axios.get.mockResolvedValue({ data: { items: [sharedDuplicate, sharedNew] } });
+
+    await importSharedPins('shared-list-id');
+
+    const stored = getLocalPins();
+    expect(stored.map((p) => p._id).sort()).toEqual(['local-1', 'shared-2']);
   });
 });
 

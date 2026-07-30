@@ -6,7 +6,12 @@ import EditableString from './EditableString';
 import Description from './Description';
 import { parsePosition } from '../../utils';
 import PinPreviewImage from './PinPreviewImage';
-import { constructTimespanString, isPinValid, normalizePin } from './Pin.utils';
+import {
+  constructExternalWmsDateString,
+  constructTimespanString,
+  isPinValid,
+  normalizePin,
+} from './Pin.utils';
 import { constructEffectsFromPinOrHighlight } from '../../utils/effectsUtils';
 import InvalidPin from './InvalidPin';
 
@@ -62,6 +67,8 @@ const Pin = ({
   }
 
   const { description, title, lat, lng, zoom } = item;
+  const isExternalWmsPin = !!item.externalWms;
+  const externalWmsDate = isExternalWmsPin ? constructExternalWmsDateString(item.externalWms.time) : null;
   const { isValid, error } = isPinValid(item);
 
   if (!isValid) {
@@ -110,14 +117,25 @@ const Pin = ({
               <EditableString text={title} onEditSave={(title) => savePinProperty(index, 'title', title)} />
             )}
           </div>
-          <div className="pin-info-row pin-date">
-            <label>{t`Date`}:</label> <span className="pin-date">{constructTimespanString(item)}</span>
-            {canAddToCompare && (
-              <div className="add-to-compare" title={t`Add to Compare`} onClick={addPinToCompare}>
-                <CompareIcon />
-              </div>
-            )}
-          </div>
+          {(!isExternalWmsPin || canAddToCompare || externalWmsDate) && (
+            <div className="pin-info-row pin-date">
+              {!isExternalWmsPin && (
+                <>
+                  <label>{t`Date`}:</label> <span className="pin-date">{constructTimespanString(item)}</span>
+                </>
+              )}
+              {isExternalWmsPin && externalWmsDate && (
+                <>
+                  <label>{t`Date`}:</label> <span className="pin-date">{externalWmsDate}</span>
+                </>
+              )}
+              {canAddToCompare && (
+                <div className="add-to-compare" title={t`Add to Compare`} onClick={addPinToCompare}>
+                  <CompareIcon />
+                </div>
+              )}
+            </div>
+          )}
           <div className="pin-info-row pin-location" title={t`Zoom to pinned location`}>
             <label>{t`Lat/Lon`}:&nbsp;</label>
             <span className="pin-lat-lng-link" onClick={zoomToPin}>

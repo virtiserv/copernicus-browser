@@ -134,6 +134,8 @@ type SingleShLayerParams = {
   customSelected: boolean;
   datasetId: string | null;
   visualizationUrl: string | null;
+  activeExternalLayer?: unknown;
+  wmsPanelOpen?: boolean;
 };
 
 export const shouldShowSingleShLayer = ({
@@ -146,8 +148,12 @@ export const shouldShowSingleShLayer = ({
   customSelected,
   datasetId,
   visualizationUrl,
+  activeExternalLayer,
+  wmsPanelOpen,
 }: SingleShLayerParams): boolean =>
   !!(
+    !activeExternalLayer &&
+    !wmsPanelOpen &&
     authenticated &&
     dataSourcesInitialized &&
     selectedTabIndex === TABS.VISUALIZE_TAB &&
@@ -173,6 +179,11 @@ export const shouldShowS2MosaicTransparency = (
   visibleOnMap: boolean,
   showCompareShLayers: boolean,
 ): boolean => !!((showSingleShLayer && visibleOnMap) || showCompareShLayers);
+
+// Depends only on render position i, not on comparedLayers.length/index: appending a
+// layer at the top is index-stable, but reordering/removing mid-list shifts zIndex
+// for every layer between the old and new position.
+export const getCompareLayerZIndex = (i: number): number => i + 1;
 
 export const getPinTimes = (
   fromTime: string | null | undefined,
