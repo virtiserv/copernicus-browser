@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { v4 as uuid } from 'uuid';
 import moment from 'moment';
-import isEqual from 'fast-deep-equal';
 import { t } from 'ttag';
 import { LayersFactory } from '@sentinel-hub/sentinelhub-js';
 
@@ -236,44 +235,6 @@ export async function getSharedPins(sharedPinsListId) {
   return data;
 }
 
-const pinPropertiesSubset = (pin) => ({
-  title: pin.title,
-  themeId: pin.themeId,
-  // Coerce "" / null / undefined to null so external pins (no dataset/visualizationUrl) dedup
-  // consistently across FE-local, legacy "" rows, and backend null (see pins-backend#4).
-  datasetId: pin.datasetId || null,
-  layerId: pin.layerId,
-  visualizationUrl: pin.visualizationUrl || null,
-  lat: pin.lat,
-  lng: pin.lng,
-  zoom: pin.zoom,
-  fromTime: pin.fromTime,
-  toTime: pin.toTime,
-  dateMode: pin.dateMode,
-  evalscript: pin.evalscript,
-  evalscriptUrl: pin.evalscriptUrl,
-  processGraphUrl: pin.processGraphUrl,
-  dataFusion: pin.dataFusion,
-  dataFusionLegacy: pin.dataFusionLegacy,
-  gain: pin.gain,
-  gamma: pin.gamma,
-  redRange: pin.redRange,
-  greenRange: pin.greenRange,
-  blueRange: pin.blueRange,
-  description: pin.description,
-  minQa: pin.minQa,
-  mosaickingOrder: pin.mosaickingOrder,
-  upsampling: pin.upsampling,
-  downsampling: pin.downsampling,
-  speckleFilter: pin.speckleFilter,
-  orthorectification: pin.orthorectification,
-  backscatterCoeff: pin.backscatterCoeff,
-  demSource3D: pin.demSource3D,
-  terrainViewerSettings: pin.terrainViewerSettings,
-  processGraph: pin.processGraph,
-  selectedProcessing: pin.selectedProcessing,
-});
-
 export function getPinsFromStorage(user) {
   return new Promise((resolve) => {
     if (user) {
@@ -299,23 +260,13 @@ export async function importSharedPins(sharedPinsListId) {
 
   store.dispatch(tabsSlice.actions.setTabIndex(TABS.VISUALIZE_TAB));
 
-  //merge sharedPins with pins
-  const newPins = [];
   sharedPins.items = establishCorrectDataFusionFormatInPins(sharedPins.items.map(normalizePin));
-  sharedPins.items.forEach((sharedPin) => {
-    //for each shared pin check if it already exists in existing pins list
-    const existingPin = existingPins.find((pin) =>
-      isEqual(pinPropertiesSubset(pin), pinPropertiesSubset(sharedPin)),
-    );
 
-    if (!existingPin) {
-      newPins.push(sharedPin);
-    }
-  });
-  //construct new list of pins and save it
+  //construct new list of pins and save it — all shared pins are always imported (no dedup
+  //against existing pins), matching the "add to pins" button which also never dedups.
   let result;
-  if (newPins.length > 0) {
-    const mergedPins = [...existingPins, ...newPins];
+  if (sharedPins.items.length > 0) {
+    const mergedPins = [...existingPins, ...sharedPins.items];
 
     // Same shouldUsePinsBackend() gate as Tools.jsx's savePinToServerOrLocal, PinTools.jsx's
     // onImportPins and Highlights.jsx's savePin, duplicated here intentionally without the

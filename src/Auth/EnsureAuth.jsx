@@ -3,21 +3,27 @@ import { t } from 'ttag';
 import Modal from '../components/Modal/Modal';
 
 import UserAuth from './UserAuth';
+import Button from '../components/Button/Button';
 
 import './EnsureAuth.scss';
 import ReactMarkdown from 'react-markdown';
 import { REACT_MARKDOWN_REHYPE_PLUGINS } from '../rehypeConfig';
 import { getRecaptchaConsentFromLocalStorage } from './authHelpers';
 
-const AnonAuthButton = ({ executeAnonAuth }) => {
+const AnonAuthButton = ({ executeAnonAuth, anonAuthInProgress }) => {
   return (
-    <div className="login-button" onClick={executeAnonAuth}>
-      {t`Anonymously`}
-    </div>
+    <Button
+      label={t`Anonymously`}
+      className="login-button"
+      styleClassName="label-normal-case"
+      isLoading={anonAuthInProgress}
+      disabled={anonAuthInProgress}
+      onClick={executeAnonAuth}
+    />
   );
 };
 
-const LoginRequired = ({ user, executeAnonAuth }) => (
+const LoginRequired = ({ user, executeAnonAuth, anonAuthInProgress }) => (
   <Modal
     animation="slideUp"
     customStyles={{
@@ -37,7 +43,7 @@ const LoginRequired = ({ user, executeAnonAuth }) => (
     <div className="ensure-user-logged-in-modal-text">{t`To continue browsing, please log in or continue anonymously.`}</div>
     <div className="actions">
       <UserAuth user={user} />
-      <AnonAuthButton executeAnonAuth={executeAnonAuth} />
+      <AnonAuthButton executeAnonAuth={executeAnonAuth} anonAuthInProgress={anonAuthInProgress} />
     </div>
     <div className="recaptcha-cookie-notice">
       <ReactMarkdown rehypePlugins={REACT_MARKDOWN_REHYPE_PLUGINS}>
@@ -54,6 +60,7 @@ const EnsureAuth = ({
   executeAnonAuth,
   userAuthCompleted,
   blockingModalOpen,
+  anonAuthInProgress,
 }) => {
   // Don't show this modal while ThemesProvider is already showing its own auth dialog
   // (private theme URL or CCM access denied) — prevents two login prompts stacking.
@@ -63,10 +70,18 @@ const EnsureAuth = ({
 
   if (
     !(anonToken || user || tokenRefreshInProgress) &&
-    !getRecaptchaConsentFromLocalStorage() &&
+    // executeAnonAuth saves the recaptcha consent flag in the same tick it sets
+    // anonAuthInProgress, so without the anonAuthInProgress escape hatch this modal
+    // would unmount before ever rendering the disabled/loading "Anonymously" button.
+    // anonAuthInProgress only ever becomes true for a user-initiated click (see
+    // AuthProvider's isUserInitiatedAnonAuthRef) — silent background re-auth attempts never
+    // set it, so they can't flash this modal open for a returning user who already consented.
+    (!getRecaptchaConsentFromLocalStorage() || anonAuthInProgress) &&
     userAuthCompleted
   ) {
-    return <LoginRequired user={user} executeAnonAuth={executeAnonAuth} />;
+    return (
+      <LoginRequired user={user} executeAnonAuth={executeAnonAuth} anonAuthInProgress={anonAuthInProgress} />
+    );
   }
 
   return null;

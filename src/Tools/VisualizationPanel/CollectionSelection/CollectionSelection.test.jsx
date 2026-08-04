@@ -5,8 +5,13 @@ import { configureStore } from '@reduxjs/toolkit';
 
 import CollectionSelection from './CollectionSelection';
 import { visualizationSlice } from '../../../store/slices/visualizationSlice';
+import { clmsSlice } from '../../../store/slices/clmsSlice';
 import { getDataSourceHandler } from '../../SearchPanel/dataSourceHandlers/dataSourceHandlers';
-import { DEM_COPERNICUS_30_CDAS, DEM_COPERNICUS_90_CDAS } from '../../SearchPanel/dataSourceHandlers/dataSourceConstants';
+import {
+  DEM_COPERNICUS_30_CDAS,
+  DEM_COPERNICUS_90_CDAS,
+  COPERNICUS_CLMS_DMP_300M_10DAILY_RT0,
+} from '../../SearchPanel/dataSourceHandlers/dataSourceConstants';
 import { DATASOURCES } from '../../../const';
 
 // A JWT whose realm_access.roles includes a CCM role (public-ccm), decodable client-side by
@@ -66,6 +71,22 @@ const mockDemCollectionGroups = [
         dataset: 'DEM_COPERNICUS_90_CDAS',
         title: 'Copernicus 90',
         datasource: 'DEM CDAS',
+        getDescription: () => '',
+      },
+    ],
+  },
+];
+
+const mockClmsCollectionGroups = [
+  {
+    datasource: DATASOURCES.CLMS,
+    title: 'CLMS',
+    preselectedDataset: undefined,
+    collections: [
+      {
+        dataset: COPERNICUS_CLMS_DMP_300M_10DAILY_RT0,
+        title: 'clms_global_dmp_300m_v1_10daily_geotiff_RT0',
+        datasource: DATASOURCES.CLMS,
         getDescription: () => '',
       },
     ],
@@ -141,6 +162,7 @@ function makeStore({
   toTime,
   user,
   collectionPanelExpanded,
+  useRealClmsReducer,
 }) {
   mockCurrentTestStore = configureStore({
     reducer: {
@@ -149,7 +171,7 @@ function makeStore({
       mainMap: (state = {}) => state,
       collapsiblePanel: (state = {}) => state,
       auth: (state = {}) => state,
-      clms: (state = {}) => state,
+      clms: useRealClmsReducer ? clmsSlice.reducer : (state = {}) => state,
       externalLayers: (state = {}) => state,
     },
     preloadedState: {
@@ -163,7 +185,7 @@ function makeStore({
       mainMap: { bounds: undefined, pixelBounds: undefined },
       collapsiblePanel: { collectionPanelExpanded: collectionPanelExpanded ?? false },
       auth: { user: user ?? {} },
-      clms: {},
+      clms: useRealClmsReducer ? clmsSlice.getInitialState() : {},
       externalLayers: {
         servers: [],
         activeServerId: null,
@@ -305,6 +327,50 @@ describe('CollectionSelection', () => {
       });
 
       expect(store.getState().visualization.datasetId).toBe(DEM_COPERNICUS_90_CDAS);
+    });
+  });
+
+  describe('CLMS category search results (#1170)', () => {
+    beforeEach(() => {
+      mockCreateCollectionGroupsFromDataSourceHandlers = jest.fn(() => mockClmsCollectionGroups);
+    });
+
+    afterEach(() => {
+      mockCreateCollectionGroupsFromDataSourceHandlers = jest.fn(() => mockCollectionGroups);
+    });
+
+    it('lists an intermediate CLMS category node as a selectable search result', () => {
+      renderComponent({
+        dataSourcesInitialized: true,
+        dataSourcesReadyVersion: 0,
+        dataSourcesLoading: false,
+        datasetId: COPERNICUS_CLMS_DMP_300M_10DAILY_RT0,
+        collectionPanelExpanded: true,
+        useRealClmsReducer: true,
+      });
+
+      expect(screen.getByText('Dry/Gross Dry Matter Productivity')).toBeInTheDocument();
+    });
+
+    it('navigates the CLMS breadcrumb to the category node without loading a layer, when a category result is selected', () => {
+      const { store } = renderComponent({
+        dataSourcesInitialized: true,
+        dataSourcesReadyVersion: 0,
+        dataSourcesLoading: false,
+        datasetId: COPERNICUS_CLMS_DMP_300M_10DAILY_RT0,
+        collectionPanelExpanded: true,
+        useRealClmsReducer: true,
+      });
+
+      fireEvent.change(screen.getByLabelText('collection-select'), {
+        target: { value: 'Dry/Gross Dry Matter Productivity' },
+      });
+
+      expect(store.getState().clms.selected).toBe(true);
+      expect(store.getState().clms.selectedPath).toBe('Dry/Gross Dry Matter Productivity');
+      expect(store.getState().clms.selectedCollection).toBeNull();
+      // No concrete leaf dataset is loaded as a result of selecting a category.
+      expect(store.getState().visualization.datasetId).toBeUndefined();
     });
   });
 });

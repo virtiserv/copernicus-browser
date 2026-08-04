@@ -1,6 +1,11 @@
 import L from 'leaflet';
 import { createTileLayerComponent, type LayerProps } from '@react-leaflet/core';
-import { updateLayerClipping, updateLayerOpacity, bindClipOpacityOnMove } from './layerClipOpacity';
+import {
+  updateLayerClipping,
+  updateLayerOpacity,
+  bindClipOpacityOnMove,
+  bindDebouncedTileUpdate,
+} from './layerClipOpacity';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyLeafletLayer = any;
@@ -38,6 +43,8 @@ function addClippingAndOpacity(layer: AnyLeafletLayer) {
     (this as AnyLeafletLayer).opacity = opacity;
     (this as AnyLeafletLayer).updateOpacity();
   };
+
+  bindDebouncedTileUpdate(layer);
 }
 
 class ExternalWmsLayer extends L.TileLayer.WMS {

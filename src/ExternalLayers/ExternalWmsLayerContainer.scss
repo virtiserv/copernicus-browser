@@ -226,6 +226,37 @@
   font-style: italic;
 }
 
+// Collapsible legend + full abstract shown when a layer row is unfolded. Scoped to the WMS panel
+// (not the shared .layer-details) so VisualizationPanel-specific layout doesn't leak in. The legend
+// image itself is rendered by the shared Legend component, whose base styles come from Legend.scss.
+// The row it sits in is highlighted blue when active; give the details a grey background with dark
+// text (matching VisualizationPanel's .layer-details) so it doesn't inherit the blue.
+.external-wms-layer-details {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  background-color: vars.$mainDark;
+  color: vars.$textColor;
+
+  .layer-legend {
+    padding: 0;
+
+    img {
+      max-width: 100%;
+    }
+  }
+
+  .external-wms-layer-details-abstract {
+    font-size: 11px;
+    color: vars.$textColor;
+    margin-top: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+    overflow: auto;
+  }
+}
+
 .external-wms-layer-metadata {
   display: flex;
   gap: 6px;

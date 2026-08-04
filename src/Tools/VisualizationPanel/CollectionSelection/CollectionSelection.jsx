@@ -42,6 +42,11 @@ import {
   DEM_COPERNICUS_30_CDAS,
   DEM_COPERNICUS_90_CDAS,
 } from '../../SearchPanel/dataSourceHandlers/dataSourceConstants';
+import {
+  CLMS_OPTIONS,
+  filterCLMSOptionsByDatasets,
+  flattenCLMSCategoryOptions,
+} from './CLMSCollectionSelection.utils';
 
 const renderCollectionSelectionForm = ({ selectedCollectionGroup, selectedCollection, onSelect }) => {
   const { datasource } = selectedCollectionGroup;
@@ -142,6 +147,16 @@ const renderCollections = (
       ]),
     );
 
+    const clmsGroup = visibleCollectionGroups.find((g) => g.datasource === DATASOURCES.CLMS);
+    const clmsCategoryOptions = clmsGroup
+      ? flattenCLMSCategoryOptions(
+          filterCLMSOptionsByDatasets(
+            CLMS_OPTIONS,
+            clmsGroup.collections.map((c) => c.dataset),
+          ),
+        ).map((node) => ({ label: node.label, value: node.id, type: 'category' }))
+      : [];
+
     const options = [
       ...visibleCollectionGroups
         .map((g) =>
@@ -155,6 +170,7 @@ const renderCollections = (
           ),
         )
         .flat(),
+      ...clmsCategoryOptions,
     ].filter((opt) => {
       if (hasAccessToCCMVisualization) {
         return true;
@@ -166,7 +182,7 @@ const renderCollections = (
     });
 
     const filterOption = (option, string) => {
-      if (string.length < 3 && option.data.type === 'dataset') {
+      if (string.length < 3 && (option.data.type === 'dataset' || option.data.type === 'category')) {
         return false;
       }
 
@@ -202,11 +218,7 @@ const renderCollections = (
         let preselected = group?.preselectedDataset;
         // Non-CCM users can't see COP DEM 30m (issue #1185), which is the DEM group's default
         // preselection — fall back to 90m so selecting the group doesn't strand them on a hidden dataset.
-        if (
-          value === DATASOURCES.DEM_CDAS &&
-          preselected === DEM_COPERNICUS_30_CDAS &&
-          !hasAnyCCMRole
-        ) {
+        if (value === DATASOURCES.DEM_CDAS && preselected === DEM_COPERNICUS_30_CDAS && !hasAnyCCMRole) {
           preselected = DEM_COPERNICUS_90_CDAS;
         }
         onSelect({
@@ -226,6 +238,13 @@ const renderCollections = (
         if (parentDataset !== DATASOURCES.EXTERNAL_WMS) {
           store.dispatch(clmsSlice.actions.setSelectedCollection(value));
         }
+      }
+      if (type === 'category') {
+        onSelect({ datasource: DATASOURCES.CLMS });
+        store.dispatch(clmsSlice.actions.reset());
+        store.dispatch(clmsSlice.actions.setSelected(true));
+        store.dispatch(clmsSlice.actions.setSelectedPath(value));
+        store.dispatch(clmsSlice.actions.setSelectedCollection(null));
       }
     };
 

@@ -23,6 +23,12 @@ export default class AbstractBYOCDataSourceHandler extends DataSourceHandler {
   searchFilters = {};
   isChecked = false;
 
+  // Lazily-built lookup of each dataset's position in KNOWN_COLLECTIONS' declared order,
+  // used to keep `datasets` sorted deterministically. Built once per instance on the first
+  // willHandle call rather than as a field initialiser, because KNOWN_COLLECTIONS is
+  // populated by subclass field initialisers that run after this base class's fields.
+  knownOrderIndex = null;
+
   leafletZoomConfig = {};
 
   /**
@@ -50,6 +56,13 @@ export default class AbstractBYOCDataSourceHandler extends DataSourceHandler {
         this.allLayers.push(...layersWithDataset);
       }
     }
+    // Theme parts resolve over the network in a non-deterministic order, so datasets can be
+    // pushed in a different order on every load. Re-sort against KNOWN_COLLECTIONS' declared
+    // order to keep the displayed collection list stable across reloads.
+    if (this.knownOrderIndex === null) {
+      this.knownOrderIndex = new Map(Object.keys(this.KNOWN_COLLECTIONS).map((id, i) => [id, i]));
+    }
+    this.datasets.sort((a, b) => this.knownOrderIndex.get(a) - this.knownOrderIndex.get(b));
     this.saveFISLayers(url, layers);
     return handlesAny;
   }

@@ -18,6 +18,8 @@ import {
   DATASET_CDAS_DEM,
   DATASET_CDAS_S1GRD,
   S1GRDCDASLayer,
+  DATASET_CDAS_L8_L9_LOTL1,
+  Landsat89CDASLOTL1Layer,
 } from '@sentinel-hub/sentinelhub-js';
 
 import { S1_DEFAULT_PARAMS } from '../../../const';
@@ -101,6 +103,8 @@ export function constructLayerFromDatasetId(datasetId, mosaickingOrder, addition
       return new S3SLSTRCDASLayer({ evalscript: '//VERSION=3 ---', mosaickingOrder: mosaickingOrder });
     case DATASET_CDAS_S5PL2.id:
       return new S5PL2CDASLayer({ evalscript: '//VERSION=3 ---', mosaickingOrder: mosaickingOrder });
+    case DATASET_CDAS_L8_L9_LOTL1.id:
+      return new Landsat89CDASLOTL1Layer({ evalscript: '//VERSION=3 ---', mosaickingOrder: mosaickingOrder });
     case DATASET_CDAS_DEM.id:
       return new DEMCDASLayer({
         evalscript: '//VERSION=3 ---',

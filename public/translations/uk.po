@@ -12223,26 +12223,24 @@ msgstr ""
 msgid "Search layers…"
 msgstr ""
 
-#, javascript-format
-msgid "${ filtered.length } of ${ layers.length } layers"
-msgstr ""
-
-#, javascript-format
-msgid "${ layers.length } layers"
-msgstr ""
-
 msgid "Metadata"
 msgstr ""
 
 msgid "No layers match"
 msgstr ""
 
+#. Always shown (even with a single page) so the layout doesn't jump when switching between
+#. a paginated service and one with fewer layers. Prev/next disable themselves on a single page.
 msgid "Previous page"
 msgstr ""
 
+#. Always shown (even with a single page) so the layout doesn't jump when switching between
+#. a paginated service and one with fewer layers. Prev/next disable themselves on a single page.
 msgid "Next page"
 msgstr ""
 
+#. Always shown (even with a single page) so the layout doesn't jump when switching between
+#. a paginated service and one with fewer layers. Prev/next disable themselves on a single page.
 msgid "per page"
 msgstr ""
 
@@ -12291,4 +12289,21 @@ msgid ""
 "display it on the map. On the active layer, use **Add to** <span "
 "class=\"icon\"><i class=\"fas fa-plus\"></i></span> to add it to the "
 "**Compare** or **Pins** panels."
+msgstr ""
+
+#, javascript-format
+msgid "${ filteredCount } of ${ totalCount } layers"
+msgstr ""
+
+#, javascript-format
+msgid "${ totalCount } layers"
+msgstr ""
+
+msgid "Anonymous sign-in is taking longer than expected. Please try again."
+msgstr ""
+
+msgid "Anonymous sign-in failed. Please try again."
+msgstr ""
+
+msgid " (Category)"
 msgstr ""

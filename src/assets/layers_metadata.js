@@ -1006,6 +1006,8 @@ export const PREDEFINED_LAYERS_METADATA = [
       { datasourceId: S2_L2A_CDAS, layerId: 'WILDFIRES' },
       { datasourceId: S2_L1C_CDAS, layerId: 'WILDFIRES-NORMAL-MODE' },
       { datasourceId: S2_L2A_CDAS, layerId: 'WILDFIRES-NORMAL-MODE' },
+      { datasourceId: S2_L1C_CDAS, layerId: '3-WILDFIRES' },
+      { datasourceId: S2_L2A_CDAS, layerId: '3-WILDFIRES' },
     ],
 
     description: () =>

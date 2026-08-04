@@ -9,6 +9,7 @@ Some features:
 - Search full products and download raw data (individual files or entire products)
 - Add products to the workspace for further processing
 - Pin your results and make opacity or split image comparisons
+- Add third-party WMS/WMTS map services and visualise their layers alongside Copernicus data
 - Explore imagery in 3D
 - Create and share 2D/3D timelapses
 - Analyse the visualised data (measure, statistics, histogram)

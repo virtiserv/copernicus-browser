@@ -1211,6 +1211,13 @@
                 "legendUrl": null
             },
             {
+                "id": "3-WILDFIRES",
+                "name": "Wildfires",
+                "description": "",
+                "dataset": "S2L1C",
+                "legendUrl": null
+            },
+            {
                 "id": "4-FALSE-COLOR-URBAN",
                 "name": "False color (urban)",
                 "description": "Based on bands B12, B11, B4",
@@ -6137,6 +6144,13 @@
                 "id": "3_NDVI",
                 "name": "NDVI",
                 "description": "Based on a combination of bands (B8 - B4)/(B8 + B4)",
+                "dataset": "S2L2A",
+                "legendUrl": null
+            },
+            {
+                "id": "3-WILDFIRES",
+                "name": "Wildfires",
+                "description": "",
                 "dataset": "S2L2A",
                 "legendUrl": null
             },

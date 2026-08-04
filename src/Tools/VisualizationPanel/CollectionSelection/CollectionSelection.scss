@@ -92,6 +92,15 @@
             color: vars.$mainLight;
             font-weight: bold;
           }
+
+          .option-category {
+            font-style: italic;
+
+            .option-category-suffix {
+              font-style: normal;
+              opacity: 0.6;
+            }
+          }
         }
       }
     }

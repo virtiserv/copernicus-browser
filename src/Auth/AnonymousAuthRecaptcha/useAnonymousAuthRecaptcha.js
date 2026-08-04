@@ -18,6 +18,23 @@ let anonTokenRequestsCounter = 0;
 
 const useAnonymousAuthRecaptcha = () => {
   const captchaRef = useRef(null);
+  // Tracks whether a captcha execution is still awaiting its onExecute/onError callback,
+  // so a concurrent trigger (user retry, scheduled token refresh, post-logout re-auth) can't
+  // fire a second request against the shared captchaRef.
+  const anonAuthRequestInFlightRef = useRef(false);
+
+  // Guards captchaRef.executeCaptcha() call sites that are genuine new triggers (button click,
+  // post-logout re-auth, scheduled token refresh) against firing while one is already in flight.
+  // NOT used for the post-script-load continuation in AuthProvider's initialAnonAuth — that call
+  // resumes a request already marked in-flight by the triggering click, so gating it on the same
+  // flag would deadlock it.
+  const executeCaptchaIfNotInFlight = useCallback(() => {
+    if (anonAuthRequestInFlightRef.current) {
+      return;
+    }
+    anonAuthRequestInFlightRef.current = true;
+    captchaRef.current.executeCaptcha();
+  }, []);
 
   const saveAndDispatchToken = ({ token }) => {
     saveAnonTokenToLocalStorage(token);
@@ -30,7 +47,7 @@ const useAnonymousAuthRecaptcha = () => {
       // After that, user will be prompted to log in or continue anonymously.
       if (anonTokenRequestsCounter < MAX_NUM_ANON_TOKEN_REQUESTS) {
         //schedule refresh if refresh limit is not reached
-        action = captchaRef.current.executeCaptcha;
+        action = executeCaptchaIfNotInFlight;
       } else {
         //schedule dialog popup when refresh limit is reached
         action = clearAnonTokenAndRecaptchaConsent;
@@ -45,11 +62,11 @@ const useAnonymousAuthRecaptcha = () => {
     }
   };
 
-  function clearAnonTokenAndRecaptchaConsent() {
+  const clearAnonTokenAndRecaptchaConsent = useCallback(() => {
     saveAnonTokenToLocalStorage(null);
     removeItemFromLocalStorage(LOCAL_STORAGE_RECAPTCHA_CONSENT_KEY);
     store.dispatch(authSlice.actions.setAnonToken(null));
-  }
+  }, []);
 
   const clearAnonTokenRefresh = useCallback(() => {
     anonTokenRequestsCounter = 0;
@@ -68,16 +85,34 @@ const useAnonymousAuthRecaptcha = () => {
       //increment anonynous token request counter
       anonTokenRequestsCounter = anonTokenRequestsCounter + 1;
 
+      if (!anonToken) {
+        // No token obtained (request failed or timed out). Clearing the consent flag too —
+        // not just the token — is what lets EnsureAuth's modal reappear: consent alone stays
+        // true forever once given, so without this the user would be stuck with no visible
+        // way to retry.
+        clearAnonTokenAndRecaptchaConsent();
+        return null;
+      }
+
       // save token and schedule refresh
       saveAndDispatchToken({ token: anonToken });
       return anonToken;
     } catch (err) {
       console.error(err.message);
-      saveAndDispatchToken({ token: null });
+      clearAnonTokenAndRecaptchaConsent();
+      return null;
     }
   };
 
-  return { saveAndDispatchToken, clearAnonTokenRefresh, getAnonymousToken, captchaRef };
+  return {
+    saveAndDispatchToken,
+    clearAnonTokenRefresh,
+    getAnonymousToken,
+    captchaRef,
+    anonAuthRequestInFlightRef,
+    executeCaptchaIfNotInFlight,
+    clearAnonTokenAndRecaptchaConsent,
+  };
 };
 
 export default useAnonymousAuthRecaptcha;

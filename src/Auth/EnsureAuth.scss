@@ -32,18 +32,31 @@
   }
 
   .login-button {
-    cursor: pointer;
-    color: vars.$whiteColor;
-    padding: 10px 50px;
+    position: relative;
     min-width: 100px;
     margin-top: 40px;
-    background-color: vars.$primaryColor;
     width: fit-content;
     font-weight: vars.$fontWeightBold;
     text-align: center;
 
-    &:hover {
-      background-color: vars.$hoverPrimaryColor;
+    // Plain "Log in" div (UserAuth.jsx) needs its own colors/cursor; the shared
+    // Button component (Anonymous) already styles those via `.copernicus-button.primary`.
+    &:not(.copernicus-button) {
+      padding: 10px 50px;
+      height: auto;
+      cursor: pointer;
+      color: vars.$whiteColor;
+      background-color: vars.$primaryColor;
+
+      &:hover {
+        background-color: vars.$hoverPrimaryColor;
+      }
+    }
+
+    // Explicit override so it doesn't silently depend on Button.scss's import order.
+    &.copernicus-button {
+      padding: 10px 50px;
+      height: auto;
     }
   }
 

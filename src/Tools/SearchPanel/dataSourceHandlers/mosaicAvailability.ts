@@ -18,12 +18,12 @@ export const MOSAIC_AVAILABILITY: Record<string, MosaicAvailabilityEntry> = {
   [S1_MONTHLY_MOSAIC_DH]: {
     minDate: '2014-10-01',
     maxDate: null,
-    displayRange: 'Oct 2014 – May 2026',
+    displayRange: 'Oct 2014 – Present',
   },
   [S1_MONTHLY_MOSAIC_IW]: {
     minDate: '2014-10-01',
     maxDate: null,
-    displayRange: 'Oct 2014 – May 2026',
+    displayRange: 'Oct 2014 – Present',
   },
   [COPERNICUS_WORLDCOVER_ANNUAL_CLOUDLESS_MOSAIC]: {
     minDate: '2020-01-01',
@@ -33,6 +33,6 @@ export const MOSAIC_AVAILABILITY: Record<string, MosaicAvailabilityEntry> = {
   [COPERNICUS_WORLDCOVER_QUARTERLY_CLOUDLESS_MOSAIC]: {
     minDate: '2015-07-01',
     maxDate: null,
-    displayRange: 'Jul 2015 – Jan 2026',
+    displayRange: 'Jul 2015 – Present',
   },
 };

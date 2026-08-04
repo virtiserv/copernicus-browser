@@ -18,9 +18,13 @@ import { t } from 'ttag';
 import { constructGetMapParamsEffects } from '../../utils/effectsUtils';
 import { runEffectFunctions } from '../../utils/effects/runEffectFuntions';
 import { DATASOURCES } from '../../const';
-import { TILE_REQUEST_DEBOUNCE_MS } from '../const';
 import { getCommonLayerOptions } from './commonLayerOptions';
-import { updateLayerClipping, updateLayerOpacity, bindClipOpacityOnMove } from './layerClipOpacity';
+import {
+  updateLayerClipping,
+  updateLayerOpacity,
+  bindClipOpacityOnMove,
+  bindDebouncedTileUpdate,
+} from './layerClipOpacity';
 
 class OpenEoLayer extends L.TileLayer {
   constructor(options) {
@@ -34,20 +38,7 @@ class OpenEoLayer extends L.TileLayer {
     L.setOptions(this, mergedOptions);
     this.dsh = getDataSourceHandler(this.options.datasetId);
 
-    // Tile loading is delayed until the map has been idle for TILE_REQUEST_DEBOUNCE_MS.
-    // This prevents firing requests for every intermediate zoom level
-    // when the user scrolls through multiple zoom steps rapidly.
-    this._debounceTimer = null;
-    const originalUpdate = L.GridLayer.prototype._update.bind(this);
-    this._update = function () {
-      clearTimeout(this._debounceTimer);
-      this._debounceTimer = setTimeout(originalUpdate, TILE_REQUEST_DEBOUNCE_MS);
-    }.bind(this);
-    const originalOnRemove = this.onRemove.bind(this);
-    this.onRemove = function (map) {
-      clearTimeout(this._debounceTimer);
-      originalOnRemove(map);
-    }.bind(this);
+    bindDebouncedTileUpdate(this);
   }
 
   onAdd = (map) => {

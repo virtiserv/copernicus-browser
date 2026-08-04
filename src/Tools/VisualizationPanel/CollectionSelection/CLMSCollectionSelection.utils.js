@@ -1407,3 +1407,14 @@ export const flattenCLMSOptionsWithParent = (options, parentPath) => {
 
   return arr.flat();
 };
+
+export const flattenCLMSCategoryOptions = (options) => {
+  const arr = options.map((opt) => {
+    if (opt.options && opt.options.length > 0) {
+      return [opt, ...flattenCLMSCategoryOptions(opt.options)];
+    }
+    return [];
+  });
+
+  return arr.flat();
+};

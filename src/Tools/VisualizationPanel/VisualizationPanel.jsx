@@ -16,6 +16,7 @@ import SocialShare from '../../components/SocialShare/SocialShare';
 import PinPanel from '../Pins/PinPanel';
 import ComparePanel from '../ComparePanel/ComparePanel';
 import ThemeSelect from './ThemeSelect/ThemeSelect';
+import Loader from '../../Loader/Loader';
 
 import { haveEffectsChangedFromDefault } from './VisualizationPanel.utils';
 import store, { visualizationSlice, compareLayersSlice, pinsSlice, collapsiblePanelSlice } from '../../store';
@@ -280,8 +281,20 @@ function VisualizationPanel({
     selectedTimeRef.current = toTime;
   }, [toTime]);
 
-  if (!dataSourcesInitialized && !dataSourcesLoading) {
+  // Before authToken exists, the user is still on the login/anonymous-auth modal — render
+  // nothing rather than a loader.
+  if (!authToken) {
     return null;
+  }
+
+  // Once authToken is set (anon auth completed or logged in), show a loader only for the
+  // brief gap before ThemesProvider starts loading data sources.
+  if (!dataSourcesInitialized && !dataSourcesLoading) {
+    return (
+      <div className="visualization-panel">
+        <Loader />
+      </div>
+    );
   }
 
   return (

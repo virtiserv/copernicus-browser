@@ -314,14 +314,14 @@ describe('toServerPin (via saveSharedPinsToServer)', () => {
   });
 });
 
-describe('importSharedPins dedup (external-WMS pins)', () => {
+describe('importSharedPins (all shared pins are imported, no dedup)', () => {
   beforeEach(() => {
     sessionStorage.clear();
     axios.get.mockReset();
     window.confirm = jest.fn(() => true);
   });
 
-  it('dedups an external-WMS pin whose datasetId/visualizationUrl are "" / null / undefined across FE-local and shared copies', async () => {
+  it('imports all shared pins, including an exact duplicate and a distinct external-WMS pin at the same location', async () => {
     const existingWmsPin = {
       _id: 'local-1',
       title: 'External WMS',
@@ -359,7 +359,7 @@ describe('importSharedPins dedup (external-WMS pins)', () => {
     await importSharedPins('shared-list-id');
 
     const stored = getLocalPins();
-    expect(stored.map((p) => p._id).sort()).toEqual(['local-1', 'shared-2']);
+    expect(stored.map((p) => p._id).sort()).toEqual(['local-1', 'shared-1', 'shared-2']);
   });
 });
 

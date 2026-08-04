@@ -246,6 +246,10 @@ export const scheduleAction = (expires_at, updateBeforeExpiry, timeoutId, action
   return newTimeoutId;
 };
 
+// Bounds the anonymous-token request itself so a hanging backend can't leave the
+// "Anonymously" button disabled forever — axios has no default timeout.
+const ANON_TOKEN_REQUEST_TIMEOUT_MS = 10000;
+
 export const fetchAnonTokenUsingService = async (anonTokenServiceUrl, body) => {
   try {
     const { data } = await axios.post(anonTokenServiceUrl, body, {
@@ -253,6 +257,7 @@ export const fetchAnonTokenUsingService = async (anonTokenServiceUrl, body) => {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      timeout: ANON_TOKEN_REQUEST_TIMEOUT_MS,
     });
     return data;
   } catch (err) {
